@@ -76,8 +76,8 @@ def plot_baseline_vs_hydra(
     fig, ax = plt.subplots(figsize=(7, 4))
 
     palette = {
-        "NWM": colors.COLORS.get("nwm", "#d95f02"),
-        "Hydra": colors.COLORS.get("ml", "#7570b3"),
+        "NWM": "#8c8c8c",  # gray
+        "Hydra": "#d62728",  # red
     }
 
     sns.barplot(
