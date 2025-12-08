@@ -123,6 +123,19 @@ Static land-use descriptors from NLCD are no longer merged into the parquet; run
 
    This command reuses the acquisition outputs already stored under `data/` and kicks off Optuna-based hyperparameter search when the baseline improvement is <5 %. To process the three core gauges sequentially, run `python scripts/run_multi_site_pipeline.py` (Watauga, Au Sable, Green River).
 
+### Rolling-Origin Cross-Validation
+
+To evaluate multiple chronological folds, point the transformer trainer at a JSON definition such as `configs/rolling_windows.json`:
+
+```bash
+python modeling/train_quick_transformer_torch.py \
+  --data data/clean/modeling/hourly_training_03479000_2010-01-01_2020-12-31.parquet \
+  --rolling-config configs/rolling_windows.json \
+  --output-prefix watauga_cv
+```
+
+Each fold inherits the same hyperparameters but uses its own train/validation/test windows, writing individual metrics plus a consolidated summary at `data/clean/modeling/watauga_cv_rolling_summary.json`.
+
 ## Local-Only Storage Policy
 
 - Keep any of the following inside `local_only/`: `archive/` sweeps, `artifacts/` (figures, tables), `results/` evaluation CSVs, `figs/`, `logs/`, and Hydra/Optuna exports. Everything in that directory is ignored except `README.md` and `.gitkeep`.

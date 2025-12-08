@@ -1,0 +1,362 @@
+[
+  {
+    "number": 0,
+    "value": 36.06071539000351,
+    "params": {
+      "d_model": 96,
+      "num_layers": 3,
+      "num_heads": 6,
+      "conv_depth": 2,
+      "dropout": 0.11865349388692308,
+      "lr": 0.00021220070583416312,
+      "seq_len": 168,
+      "weight_nse": 0.15295340484526082,
+      "weight_quantile": 0.19580994147680836,
+      "flow_emphasis": 0.20350028563786854,
+      "consistency_weight": 0.6491947415239209,
+      "weight_pbias": 0.01990221276652157
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 54.76524838882827,
+        "mae": 37.874209741786515,
+        "nse": -1.2423338426034305,
+        "kge": 0.0031931164113145893,
+        "pbias": -50.66236948787173,
+        "pearson_r": 0.14153870518160572,
+        "spearman_r": 0.4512052481087448
+      },
+      "corrected": {
+        "rmse": 36.06071539000351,
+        "mae": 22.104096920580908,
+        "nse": 0.027792819140577407,
+        "kge": 0.2373998287835437,
+        "pbias": 1.72035840555861,
+        "pearson_r": 0.3356583430976767,
+        "spearman_r": 0.31078177135467044
+      },
+      "rmse_residual": 36.06071472167969,
+      "rmse_improvement_pct": 34.15401837680765,
+      "output_prefix": "greenriver_v2_ablation_hpo_trial0",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.08813791528713323,
+          "bias": -30.446664810180664
+        },
+        "0.50": {
+          "coverage": 0.37686950565133004,
+          "bias": -6.660646915435791
+        },
+        "0.90": {
+          "coverage": 0.9092362141797009,
+          "bias": 32.6702766418457
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  },
+  {
+    "number": 1,
+    "value": 37.59842877183485,
+    "params": {
+      "d_model": 96,
+      "num_layers": 3,
+      "num_heads": 6,
+      "conv_depth": 3,
+      "dropout": 0.10946022558544527,
+      "lr": 0.00022164249667161012,
+      "seq_len": 240,
+      "weight_nse": 0.14688767415595347,
+      "weight_quantile": 0.12235773112446283,
+      "flow_emphasis": 0.12989213080763448,
+      "consistency_weight": 1.2342851159720734,
+      "weight_pbias": 0.03154880619272439
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 54.76524838882827,
+        "mae": 37.874209741786515,
+        "nse": -1.2423338426034305,
+        "kge": 0.0031931164113145893,
+        "pbias": -50.66236948787173,
+        "pearson_r": 0.14153870518160572,
+        "spearman_r": 0.4512052481087448
+      },
+      "corrected": {
+        "rmse": 37.59842877183485,
+        "mae": 22.04323049119134,
+        "nse": -0.05688939609873089,
+        "kge": 0.12449831755695218,
+        "pbias": -0.5513685830386763,
+        "pearson_r": 0.23629547321002412,
+        "spearman_r": 0.37408896912905293
+      },
+      "rmse_residual": 37.59843063354492,
+      "rmse_improvement_pct": 31.346191466366715,
+      "output_prefix": "greenriver_v2_ablation_hpo_trial1",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -35.582969665527344
+        },
+        "0.50": {
+          "coverage": 0.3467290786619477,
+          "bias": -14.24154281616211
+        },
+        "0.90": {
+          "coverage": 0.822810823153328,
+          "bias": 23.606584548950195
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  },
+  {
+    "number": 2,
+    "value": 44.43848273364482,
+    "params": {
+      "d_model": 128,
+      "num_layers": 3,
+      "num_heads": 4,
+      "conv_depth": 2,
+      "dropout": 0.07984459148739657,
+      "lr": 0.00026684247396787666,
+      "seq_len": 168,
+      "weight_nse": 0.23718588553763337,
+      "weight_quantile": 0.07312367901585914,
+      "flow_emphasis": 0.16104991863711232,
+      "consistency_weight": 1.5370655298840794,
+      "weight_pbias": 0.0433154578941683
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 54.76524838882827,
+        "mae": 37.874209741786515,
+        "nse": -1.2423338426034305,
+        "kge": 0.0031931164113145893,
+        "pbias": -50.66236948787173,
+        "pearson_r": 0.14153870518160572,
+        "spearman_r": 0.4512052481087448
+      },
+      "corrected": {
+        "rmse": 44.43848273364482,
+        "mae": 25.052411163461603,
+        "nse": -0.4764154893929322,
+        "kge": 0.30511995286757554,
+        "pbias": 9.31495382585022,
+        "pearson_r": 0.3140645298772721,
+        "spearman_r": 0.2578374694558886
+      },
+      "rmse_residual": 44.438480377197266,
+      "rmse_improvement_pct": 18.856420739415544,
+      "output_prefix": "greenriver_v2_ablation_hpo_trial2",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.19499942915857973,
+          "bias": -23.166820526123047
+        },
+        "0.50": {
+          "coverage": 0.35483502682954676,
+          "bias": -5.555524826049805
+        },
+        "0.90": {
+          "coverage": 0.6908322867907295,
+          "bias": 24.383394241333008
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  },
+  {
+    "number": 3,
+    "value": null,
+    "params": {
+      "d_model": 128,
+      "num_layers": 4,
+      "num_heads": 6
+    },
+    "metrics": null
+  },
+  {
+    "number": 4,
+    "value": 36.70148344091023,
+    "params": {
+      "d_model": 128,
+      "num_layers": 4,
+      "num_heads": 4,
+      "conv_depth": 2,
+      "dropout": 0.07919155477172911,
+      "lr": 0.00021137960218022358,
+      "seq_len": 168,
+      "weight_nse": 0.2507941348886817,
+      "weight_quantile": 0.16718731051244257,
+      "flow_emphasis": 0.26871622573346,
+      "consistency_weight": 2.186722627469562,
+      "weight_pbias": 0.04211712188101287
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 54.76524838882827,
+        "mae": 37.874209741786515,
+        "nse": -1.2423338426034305,
+        "kge": 0.0031931164113145893,
+        "pbias": -50.66236948787173,
+        "pearson_r": 0.14153870518160572,
+        "spearman_r": 0.4512052481087448
+      },
+      "corrected": {
+        "rmse": 36.70148344091023,
+        "mae": 22.048939656008187,
+        "nse": -0.00706472710452033,
+        "kge": 0.33052388296654756,
+        "pbias": 3.1196209082135544,
+        "pearson_r": 0.37617251999141316,
+        "spearman_r": 0.32857675908699996
+      },
+      "rmse_residual": 36.70148468017578,
+      "rmse_improvement_pct": 32.98399163583986,
+      "output_prefix": "greenriver_v2_ablation_hpo_trial4",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.14476538417627582,
+          "bias": -27.871549606323242
+        },
+        "0.50": {
+          "coverage": 0.3603151044639799,
+          "bias": -8.141459465026855
+        },
+        "0.90": {
+          "coverage": 0.7209727137801119,
+          "bias": 25.026987075805664
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  },
+  {
+    "number": 5,
+    "value": null,
+    "params": {
+      "d_model": 128,
+      "num_layers": 3,
+      "num_heads": 6
+    },
+    "metrics": null
+  },
+  {
+    "number": 6,
+    "value": 39.10652737959912,
+    "params": {
+      "d_model": 128,
+      "num_layers": 4,
+      "num_heads": 4,
+      "conv_depth": 3,
+      "dropout": 0.0889749634676002,
+      "lr": 0.00011908115130675557,
+      "seq_len": 240,
+      "weight_nse": 0.14562992791456292,
+      "weight_quantile": 0.18839405910636392,
+      "flow_emphasis": 0.24403413740122026,
+      "consistency_weight": 1.4723764353078614,
+      "weight_pbias": 0.04625662448069931
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 54.76524838882827,
+        "mae": 37.874209741786515,
+        "nse": -1.2423338426034305,
+        "kge": 0.0031931164113145893,
+        "pbias": -50.66236948787173,
+        "pearson_r": 0.14153870518160572,
+        "spearman_r": 0.4512052481087448
+      },
+      "corrected": {
+        "rmse": 39.10652737959912,
+        "mae": 24.54432600657,
+        "nse": -0.1433748985974339,
+        "kge": 0.17395518218051442,
+        "pbias": 6.613438341739248,
+        "pearson_r": 0.24125801019913976,
+        "spearman_r": 0.22464332255968777
+      },
+      "rmse_residual": 39.10652542114258,
+      "rmse_improvement_pct": 28.592440406831823,
+      "output_prefix": "greenriver_v2_ablation_hpo_trial6",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.08813791528713323,
+          "bias": -28.57257652282715
+        },
+        "0.50": {
+          "coverage": 0.5003995889941775,
+          "bias": -0.4745224714279175
+        },
+        "0.90": {
+          "coverage": 0.9909807055599954,
+          "bias": 63.57260513305664
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  }
+]

@@ -1,0 +1,362 @@
+[
+  {
+    "number": 0,
+    "value": 6.696299425784596,
+    "params": {
+      "d_model": 96,
+      "num_layers": 3,
+      "num_heads": 6,
+      "conv_depth": 2,
+      "dropout": 0.11865349388692308,
+      "lr": 0.00021220070583416312,
+      "seq_len": 168,
+      "weight_nse": 0.15295340484526082,
+      "weight_quantile": 0.19580994147680836,
+      "flow_emphasis": 0.20350028563786854,
+      "consistency_weight": 0.6491947415239209,
+      "weight_pbias": 0.01990221276652157
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 7.354273022912419,
+        "mae": 2.67372169943705,
+        "nse": 0.6426269414736484,
+        "kge": 0.7217579918287343,
+        "pbias": 9.601897659837585,
+        "pearson_r": 0.8044356897595284,
+        "spearman_r": 0.7839324944802318
+      },
+      "corrected": {
+        "rmse": 6.696299425784596,
+        "mae": 1.9915707465720502,
+        "nse": 0.7037133787887613,
+        "kge": 0.7158001861496575,
+        "pbias": 0.14361544597340337,
+        "pearson_r": 0.8426116461206614,
+        "spearman_r": 0.8852217441241408
+      },
+      "rmse_residual": 6.6962995529174805,
+      "rmse_improvement_pct": 8.946820373378713,
+      "output_prefix": "watauga_v2_ablation_hpo_trial0",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.021232876712328767,
+          "bias": -4.278648376464844
+        },
+        "0.50": {
+          "coverage": 0.25376712328767126,
+          "bias": -1.891321063041687
+        },
+        "0.90": {
+          "coverage": 0.6843607305936074,
+          "bias": 2.2236270904541016
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  },
+  {
+    "number": 1,
+    "value": 6.811130576710084,
+    "params": {
+      "d_model": 96,
+      "num_layers": 3,
+      "num_heads": 6,
+      "conv_depth": 3,
+      "dropout": 0.10946022558544527,
+      "lr": 0.00022164249667161012,
+      "seq_len": 240,
+      "weight_nse": 0.14688767415595347,
+      "weight_quantile": 0.12235773112446283,
+      "flow_emphasis": 0.12989213080763448,
+      "consistency_weight": 1.2342851159720734,
+      "weight_pbias": 0.03154880619272439
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 7.354273022912419,
+        "mae": 2.67372169943705,
+        "nse": 0.6426269414736484,
+        "kge": 0.7217579918287343,
+        "pbias": 9.601897659837585,
+        "pearson_r": 0.8044356897595284,
+        "spearman_r": 0.7839324944802318
+      },
+      "corrected": {
+        "rmse": 6.811130576710084,
+        "mae": 1.900795809128513,
+        "nse": 0.693464537806046,
+        "kge": 0.7388313162725683,
+        "pbias": -0.4200216002768216,
+        "pearson_r": 0.8334687658857071,
+        "spearman_r": 0.8978383340201845
+      },
+      "rmse_residual": 6.811131000518799,
+      "rmse_improvement_pct": 7.385399542689827,
+      "output_prefix": "watauga_v2_ablation_hpo_trial1",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0013698630136986301,
+          "bias": -4.859622955322266
+        },
+        "0.50": {
+          "coverage": 0.28013698630136985,
+          "bias": -1.9858200550079346
+        },
+        "0.90": {
+          "coverage": 0.852283105022831,
+          "bias": 3.2358345985412598
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  },
+  {
+    "number": 2,
+    "value": 6.732957845156335,
+    "params": {
+      "d_model": 128,
+      "num_layers": 3,
+      "num_heads": 4,
+      "conv_depth": 2,
+      "dropout": 0.07984459148739657,
+      "lr": 0.00026684247396787666,
+      "seq_len": 168,
+      "weight_nse": 0.23718588553763337,
+      "weight_quantile": 0.07312367901585914,
+      "flow_emphasis": 0.16104991863711232,
+      "consistency_weight": 1.5370655298840794,
+      "weight_pbias": 0.0433154578941683
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 7.354273022912419,
+        "mae": 2.67372169943705,
+        "nse": 0.6426269414736484,
+        "kge": 0.7217579918287343,
+        "pbias": 9.601897659837585,
+        "pearson_r": 0.8044356897595284,
+        "spearman_r": 0.7839324944802318
+      },
+      "corrected": {
+        "rmse": 6.732957845156335,
+        "mae": 1.9895756333794223,
+        "nse": 0.7004604988010469,
+        "kge": 0.7198037482130486,
+        "pbias": 1.1587749378896424,
+        "pearson_r": 0.8398481118914768,
+        "spearman_r": 0.8912491924429734
+      },
+      "rmse_residual": 6.732957363128662,
+      "rmse_improvement_pct": 8.44835615730285,
+      "output_prefix": "watauga_v2_ablation_hpo_trial2",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.006278538812785388,
+          "bias": -4.49240779876709
+        },
+        "0.50": {
+          "coverage": 0.394634703196347,
+          "bias": -1.4016616344451904
+        },
+        "0.90": {
+          "coverage": 0.8643835616438356,
+          "bias": 3.2026941776275635
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  },
+  {
+    "number": 3,
+    "value": null,
+    "params": {
+      "d_model": 128,
+      "num_layers": 4,
+      "num_heads": 6
+    },
+    "metrics": null
+  },
+  {
+    "number": 4,
+    "value": 6.652373302672575,
+    "params": {
+      "d_model": 128,
+      "num_layers": 4,
+      "num_heads": 4,
+      "conv_depth": 2,
+      "dropout": 0.07919155477172911,
+      "lr": 0.00021137960218022358,
+      "seq_len": 168,
+      "weight_nse": 0.2507941348886817,
+      "weight_quantile": 0.16718731051244257,
+      "flow_emphasis": 0.26871622573346,
+      "consistency_weight": 2.186722627469562,
+      "weight_pbias": 0.04211712188101287
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 7.354273022912419,
+        "mae": 2.67372169943705,
+        "nse": 0.6426269414736484,
+        "kge": 0.7217579918287343,
+        "pbias": 9.601897659837585,
+        "pearson_r": 0.8044356897595284,
+        "spearman_r": 0.7839324944802318
+      },
+      "corrected": {
+        "rmse": 6.652373302672575,
+        "mae": 2.0435610012648855,
+        "nse": 0.7075877682211209,
+        "kge": 0.7594945926262311,
+        "pbias": 4.916895012598207,
+        "pearson_r": 0.8419640493043162,
+        "spearman_r": 0.8931734968586782
+      },
+      "rmse_residual": 6.652373790740967,
+      "rmse_improvement_pct": 9.544107460425495,
+      "output_prefix": "watauga_v2_ablation_hpo_trial4",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.00045662100456621003,
+          "bias": -4.658781051635742
+        },
+        "0.50": {
+          "coverage": 0.21324200913242009,
+          "bias": -1.8409113883972168
+        },
+        "0.90": {
+          "coverage": 0.8426940639269407,
+          "bias": 4.00477409362793
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  },
+  {
+    "number": 5,
+    "value": null,
+    "params": {
+      "d_model": 128,
+      "num_layers": 3,
+      "num_heads": 6
+    },
+    "metrics": null
+  },
+  {
+    "number": 6,
+    "value": 6.894154044574502,
+    "params": {
+      "d_model": 128,
+      "num_layers": 4,
+      "num_heads": 4,
+      "conv_depth": 3,
+      "dropout": 0.0889749634676002,
+      "lr": 0.00011908115130675557,
+      "seq_len": 240,
+      "weight_nse": 0.14562992791456292,
+      "weight_quantile": 0.18839405910636392,
+      "flow_emphasis": 0.24403413740122026,
+      "consistency_weight": 1.4723764353078614,
+      "weight_pbias": 0.04625662448069931
+    },
+    "metrics": {
+      "baseline": {
+        "rmse": 7.354273022912419,
+        "mae": 2.67372169943705,
+        "nse": 0.6426269414736484,
+        "kge": 0.7217579918287343,
+        "pbias": 9.601897659837585,
+        "pearson_r": 0.8044356897595284,
+        "spearman_r": 0.7839324944802318
+      },
+      "corrected": {
+        "rmse": 6.894154044574502,
+        "mae": 1.96977987137015,
+        "nse": 0.6859460371777062,
+        "kge": 0.7224588642797026,
+        "pbias": -2.6892818572861046,
+        "pearson_r": 0.829756176949438,
+        "spearman_r": 0.8777617439168635
+      },
+      "rmse_residual": 6.894153594970703,
+      "rmse_improvement_pct": 6.256484861309947,
+      "output_prefix": "watauga_v2_ablation_hpo_trial6",
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0007990867579908676,
+          "bias": -5.073171138763428
+        },
+        "0.50": {
+          "coverage": 0.20582191780821918,
+          "bias": -1.906324028968811
+        },
+        "0.90": {
+          "coverage": 0.7480593607305936,
+          "bias": 3.610917329788208
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    }
+  }
+]

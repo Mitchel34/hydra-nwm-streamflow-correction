@@ -20,7 +20,7 @@ import os
 import random
 import time
 from contextlib import nullcontext
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -308,6 +308,8 @@ def train_eval(
     train_end: Optional[str] = None,
     val_start: Optional[str] = None,
     val_end: Optional[str] = None,
+    test_start: Optional[str] = None,
+    test_end: Optional[str] = None,
     patience: int = 5,
     d_model: int = 128,
     num_heads: int = 4,
@@ -380,20 +382,29 @@ def train_eval(
     if train_mask.sum() <= seq_len:
         raise ValueError("Training window shorter than sequence length")
 
-    if val_start is not None and val_end is not None:
-        val_start_ts = pd.Timestamp(val_start)
-        val_end_ts = pd.Timestamp(val_end)
+    val_start_ts = pd.Timestamp(val_start) if val_start is not None else None
+    val_end_ts = pd.Timestamp(val_end) if val_end is not None else None
+    if val_start_ts is not None and val_end_ts is not None:
         val_mask = (df["timestamp"] >= val_start_ts) & (df["timestamp"] <= val_end_ts)
-        test_mask = df["timestamp"] > val_end_ts
     else:
         if val_days > 0:
             val_start_ts = train_end_ts
             val_end_ts = train_end_ts + pd.Timedelta(days=val_days)
             val_mask = (df["timestamp"] >= val_start_ts) & (df["timestamp"] < val_end_ts)
-            test_mask = df["timestamp"] >= val_end_ts
         else:
             val_mask = pd.Series(False, index=df.index)
-            test_mask = ~train_mask
+            val_end_ts = None
+
+    if test_start is not None or test_end is not None:
+        if not (test_start and test_end):
+            raise ValueError("--test-start and --test-end must both be provided for custom evaluation windows.")
+        test_start_ts = pd.Timestamp(test_start)
+        test_end_ts = pd.Timestamp(test_end)
+        test_mask = (df["timestamp"] >= test_start_ts) & (df["timestamp"] <= test_end_ts)
+    elif val_end_ts is not None:
+        test_mask = df["timestamp"] > val_end_ts
+    else:
+        test_mask = ~train_mask
     if test_mask.sum() == 0:
         raise ValueError("No evaluation rows available after split")
 
@@ -1039,6 +1050,8 @@ def train_eval(
     with open(os.path.join(out_dir, f"{output_prefix}_metrics.json"), "w") as fh:
         json.dump(metrics_payload, fh, indent=2)
 
+    return metrics_payload
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -1052,6 +1065,8 @@ if __name__ == "__main__":
     parser.add_argument("--train-end", default=None, help="Explicit train window end (YYYY-MM-DD)")
     parser.add_argument("--val-start", default=None, help="Explicit validation window start (YYYY-MM-DD)")
     parser.add_argument("--val-end", default=None, help="Explicit validation window end (YYYY-MM-DD)")
+    parser.add_argument("--test-start", default=None, help="Explicit test window start (YYYY-MM-DD)")
+    parser.add_argument("--test-end", default=None, help="Explicit test window end (YYYY-MM-DD)")
     parser.add_argument("--patience", type=int, default=5)
     parser.add_argument("--d-model", type=int, default=128)
     parser.add_argument("--num-heads", type=int, default=4)
@@ -1130,6 +1145,11 @@ if __name__ == "__main__":
     parser.add_argument("--no-augment", action="store_true")
     parser.add_argument("--no-ranger", action="store_true")
     parser.add_argument("--output-prefix", default="hydra_v2")
+    parser.add_argument(
+        "--rolling-config",
+        default=None,
+        help="Optional JSON file containing rolling-origin windows (train/val/test ranges).",
+    )
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument(
         "--model-arch",
@@ -1149,47 +1169,86 @@ if __name__ == "__main__":
     if not quantiles:
         quantile_weights = []
 
-    train_eval(
-        data_path=args.data,
-        seq_len=args.seq_len,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        train_days=args.train_days,
-        val_days=args.val_days,
-        train_start=args.train_start,
-        train_end=args.train_end,
-        val_start=args.val_start,
-        val_end=args.val_end,
-        patience=args.patience,
-        d_model=args.d_model,
-        num_heads=args.num_heads,
-        num_layers=args.num_layers,
-        conv_depth=args.conv_depth,
-        dropout=args.dropout,
-        lr=args.lr,
-        quantiles=quantiles,
-        quantile_weights=quantile_weights,
-        weight_nse=args.weight_nse,
-        weight_quantile=args.weight_quantile,
-        flow_emphasis=args.flow_emphasis,
-        consistency_weight=args.consistency_weight,
-        weight_pbias=args.weight_pbias,
-        weight_pbias_final=args.weight_pbias_final,
-        residual_bias_weight=args.residual_bias_weight,
-        bias_shift_alpha=args.bias_shift_alpha,
-        bias_shift_pbias_target=args.bias_shift_pbias_target,
-        bias_shift_qmin=args.bias_shift_qmin,
-        bias_shift_qmax=args.bias_shift_qmax,
-        bias_shift_weight_power=args.bias_shift_weight_power,
-        bias_shift_strategy=args.bias_shift_strategy,
-        weight_kge=args.weight_kge,
-        weight_kge_final=args.weight_kge_final,
-        use_amp=not args.no_amp,
-        use_compile=not args.no_compile,
-        augment=not args.no_augment,
-        use_ranger=not args.no_ranger,
-        output_prefix=args.output_prefix,
-        seed=args.seed,
-        model_arch=args.model_arch,
-        patch_size=args.patch_size,
-    )
+    def _run_single(prefix: str, overrides: dict[str, str | None]) -> Dict[str, Any]:
+        return train_eval(
+            data_path=args.data,
+            seq_len=args.seq_len,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            train_days=args.train_days,
+            val_days=args.val_days,
+            train_start=overrides.get("train_start", args.train_start),
+            train_end=overrides.get("train_end", args.train_end),
+            val_start=overrides.get("val_start", args.val_start),
+            val_end=overrides.get("val_end", args.val_end),
+            test_start=overrides.get("test_start", args.test_start),
+            test_end=overrides.get("test_end", args.test_end),
+            patience=args.patience,
+            d_model=args.d_model,
+            num_heads=args.num_heads,
+            num_layers=args.num_layers,
+            conv_depth=args.conv_depth,
+            dropout=args.dropout,
+            lr=args.lr,
+            quantiles=quantiles,
+            quantile_weights=quantile_weights,
+            weight_nse=args.weight_nse,
+            weight_quantile=args.weight_quantile,
+            flow_emphasis=args.flow_emphasis,
+            consistency_weight=args.consistency_weight,
+            weight_pbias=args.weight_pbias,
+            weight_pbias_final=args.weight_pbias_final,
+            residual_bias_weight=args.residual_bias_weight,
+            bias_shift_alpha=args.bias_shift_alpha,
+            bias_shift_pbias_target=args.bias_shift_pbias_target,
+            bias_shift_qmin=args.bias_shift_qmin,
+            bias_shift_qmax=args.bias_shift_qmax,
+            bias_shift_weight_power=args.bias_shift_weight_power,
+            bias_shift_strategy=args.bias_shift_strategy,
+            weight_kge=args.weight_kge,
+            weight_kge_final=args.weight_kge_final,
+            use_amp=not args.no_amp,
+            use_compile=not args.no_compile,
+            augment=not args.no_augment,
+            use_ranger=not args.no_ranger,
+            output_prefix=prefix,
+            seed=args.seed,
+            model_arch=args.model_arch,
+            patch_size=args.patch_size,
+        )
+
+    if args.rolling_config:
+        with open(args.rolling_config) as fh:
+            config = json.load(fh)
+        windows = config.get("windows", config)
+        if not isinstance(windows, list):
+            raise ValueError("Rolling config must define a list under 'windows'.")
+        summary = []
+        for idx, window in enumerate(windows, start=1):
+            if not isinstance(window, dict):
+                raise ValueError("Each rolling window entry must be a dict.")
+            fold_name = window.get("name") or f"Fold {idx}"
+            slug = "".join(ch if ch.isalnum() else "_" for ch in fold_name.lower()).strip("_")
+            slug = slug or f"fold_{idx}"
+            fold_prefix = f"{args.output_prefix}_{slug}"
+            metrics = _run_single(fold_prefix, window)
+            summary.append(
+                {
+                    "fold": fold_name,
+                    "output_prefix": fold_prefix,
+                    "train_start": window.get("train_start", args.train_start),
+                    "train_end": window.get("train_end", args.train_end),
+                    "val_start": window.get("val_start", args.val_start),
+                    "val_end": window.get("val_end", args.val_end),
+                    "test_start": window.get("test_start", args.test_start),
+                    "test_end": window.get("test_end", args.test_end),
+                    "metrics": metrics,
+                }
+            )
+        summary_path = os.path.join("data/clean/modeling", f"{args.output_prefix}_rolling_summary.json")
+        os.makedirs(os.path.dirname(summary_path), exist_ok=True)
+        with open(summary_path, "w") as fh:
+            json.dump(summary, fh, indent=2)
+        print(f"Rolling-origin summary written to {summary_path}")
+    else:
+        _run_single(args.output_prefix, {})
