@@ -45,8 +45,8 @@ export default function MetricsBarChart({ data, title }: MetricsBarChartProps) {
               borderRadius: '4px',
             }}
             labelStyle={{ color: '#e5e7eb' }}
-            formatter={(value: number, name: string) => [
-              value.toFixed(3),
+            formatter={(value: number | undefined, name: string | undefined) => [
+              value !== undefined ? value.toFixed(3) : '',
               name === 'baseline' ? 'Baseline (NWM)' : 'Corrected (Hydra)',
             ]}
           />
