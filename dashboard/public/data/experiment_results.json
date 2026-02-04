@@ -1,0 +1,133 @@
+{
+  "generated_at": "2024-12-15T12:00:00.000Z",
+  "sites": {
+    "03161000": {
+      "name": "South Fork New River near Jefferson, NC",
+      "watershed": "New River",
+      "type": "mid-basin",
+      "lat": 36.4003,
+      "lon": -81.4206
+    },
+    "03164000": {
+      "name": "New River near Galax, VA",
+      "watershed": "New River",
+      "type": "mainstem",
+      "lat": 36.6456,
+      "lon": -80.9272
+    },
+    "03479000": {
+      "name": "Watauga River near Sugar Grove, NC",
+      "watershed": "Watauga",
+      "type": "headwaters",
+      "lat": 36.2367,
+      "lon": -81.8289
+    },
+    "03486000": {
+      "name": "Watauga River at Elizabethton, TN",
+      "watershed": "Watauga",
+      "type": "regulated",
+      "lat": 36.3431,
+      "lon": -82.2108
+    }
+  },
+  "experiments": {
+    "baseline": {
+      "name": "Baseline (Hydra v2)",
+      "description": "Current best model without new features"
+    },
+    "causal": {
+      "name": "Causal Mask",
+      "description": "Transformer with causal attention masking"
+    },
+    "direct": {
+      "name": "Direct Mode",
+      "description": "Predict USGS directly (no NWM residual)"
+    },
+    "physics": {
+      "name": "Physics Constraint",
+      "description": "Non-negativity penalty on streamflow"
+    },
+    "combined": {
+      "name": "Combined",
+      "description": "Causal mask + physics constraint"
+    },
+    "hydra_v1": {
+      "name": "Hydra v1 (Ablation)",
+      "description": "Transformer-only (no GRU)"
+    },
+    "hydra_v2": {
+      "name": "Hydra v2",
+      "description": "GRU-Transformer hybrid"
+    },
+    "lstm": {
+      "name": "LSTM Baseline",
+      "description": "Simple LSTM encoder"
+    }
+  },
+  "results": [
+    {
+      "experiment": "hydra_v2",
+      "site_id": "03479000",
+      "file": "watauga_cluster_hydra_03479000_metrics.json",
+      "baseline": { "rmse": 3.12, "nse": 0.74, "pbias": -5.2, "kge": 0.71 },
+      "corrected": { "rmse": 2.41, "nse": 0.85, "pbias": -2.1, "kge": 0.83 },
+      "rmse_improvement_pct": 22.8
+    },
+    {
+      "experiment": "hydra_v2",
+      "site_id": "03486000",
+      "file": "watauga_cluster_hydra_03486000_metrics.json",
+      "baseline": { "rmse": 14.31, "nse": 0.71, "pbias": -8.1, "kge": 0.68 },
+      "corrected": { "rmse": 11.87, "nse": 0.81, "pbias": -4.3, "kge": 0.79 },
+      "rmse_improvement_pct": 17.0
+    },
+    {
+      "experiment": "hydra_v2",
+      "site_id": "03161000",
+      "file": "watauga_cluster_hydra_03161000_metrics.json",
+      "baseline": { "rmse": 4.52, "nse": 0.69, "pbias": -13.2, "kge": 0.65 },
+      "corrected": { "rmse": 4.01, "nse": 0.76, "pbias": -16.9, "kge": 0.71 },
+      "rmse_improvement_pct": 11.3
+    },
+    {
+      "experiment": "hydra_v2",
+      "site_id": "03164000",
+      "file": "watauga_cluster_hydra_03164000_metrics.json",
+      "baseline": { "rmse": 7.23, "nse": 0.72, "pbias": -6.8, "kge": 0.70 },
+      "corrected": { "rmse": 5.89, "nse": 0.82, "pbias": -3.2, "kge": 0.80 },
+      "rmse_improvement_pct": 18.5
+    },
+    {
+      "experiment": "lstm",
+      "site_id": "03479000",
+      "file": "watauga_cluster_lstm_03479000_metrics.json",
+      "baseline": { "rmse": 3.12, "nse": 0.74, "pbias": -5.2, "kge": 0.71 },
+      "corrected": { "rmse": 2.78, "nse": 0.79, "pbias": -3.8, "kge": 0.76 },
+      "rmse_improvement_pct": 10.9
+    },
+    {
+      "experiment": "lstm",
+      "site_id": "03486000",
+      "file": "watauga_cluster_lstm_03486000_metrics.json",
+      "baseline": { "rmse": 14.31, "nse": 0.71, "pbias": -8.1, "kge": 0.68 },
+      "corrected": { "rmse": 13.21, "nse": 0.75, "pbias": -6.2, "kge": 0.72 },
+      "rmse_improvement_pct": 7.7
+    },
+    {
+      "experiment": "hydra_v1",
+      "site_id": "03479000",
+      "file": "watauga_cluster_hydra_v1_03479000_metrics.json",
+      "baseline": { "rmse": 3.12, "nse": 0.74, "pbias": -5.2, "kge": 0.71 },
+      "corrected": { "rmse": 2.65, "nse": 0.81, "pbias": -3.1, "kge": 0.78 },
+      "rmse_improvement_pct": 15.1
+    },
+    {
+      "experiment": "hydra_v1",
+      "site_id": "03486000",
+      "file": "watauga_cluster_hydra_v1_03486000_metrics.json",
+      "baseline": { "rmse": 14.31, "nse": 0.71, "pbias": -8.1, "kge": 0.68 },
+      "corrected": { "rmse": 12.54, "nse": 0.77, "pbias": -5.8, "kge": 0.74 },
+      "rmse_improvement_pct": 12.4
+    }
+  ]
+}
