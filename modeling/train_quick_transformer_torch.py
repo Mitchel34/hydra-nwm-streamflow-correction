@@ -36,6 +36,14 @@ except ImportError:  # pragma: no cover - optional dependency
 from modeling.models.hydra_temporal import HydraTemporalModel as HydraTemporalV2
 from modeling.models.hydra_temporal_v1 import HydraTemporalModel as HydraTemporalV1
 
+# Optional TensorBoard for gradient tracking
+try:
+    from torch.utils.tensorboard import SummaryWriter
+    HAS_TENSORBOARD = True
+except ImportError:
+    HAS_TENSORBOARD = False
+    SummaryWriter = None
+
 ERA5_CANDIDATES = [
     "temp_c",
     "dewpoint_c",
@@ -342,6 +350,10 @@ def train_eval(
     seed: Optional[int] = None,
     model_arch: str = "hydra_v2",
     patch_size: int = 14,
+    use_causal_mask: bool = False,
+    target_mode: str = "residual",
+    weight_nonneg: float = 0.0,
+    track_gradients: bool = False,
 ) -> None:
     torch.set_float32_matmul_precision("medium")
     if seed is not None:
@@ -554,6 +566,7 @@ def train_eval(
             quantiles=quantiles if quantiles else None,
             nwm_index=0,
             patch_size=1,
+            use_causal_mask=use_causal_mask,
         )
     elif arch == "hydra_v1":
         model = HydraTemporalV1(
@@ -599,6 +612,26 @@ def train_eval(
     amp_enabled = use_amp and device.type in ("cuda", "mps")
     amp_dtype = torch.bfloat16 if device.type == "mps" else torch.float16
     scaler = torch.cuda.amp.GradScaler() if amp_enabled and device.type == "cuda" else None
+
+    # Validate target_mode
+    if target_mode not in ("residual", "direct"):
+        raise ValueError(f"target_mode must be 'residual' or 'direct', got '{target_mode}'")
+    if target_mode == "direct":
+        print("[INFO] Training in DIRECT mode: predicting USGS streamflow directly (no NWM residual)")
+    else:
+        print("[INFO] Training in RESIDUAL mode: predicting NWM error (USGS - NWM)")
+
+    # Initialize TensorBoard writer for gradient tracking
+    writer = None
+    if track_gradients:
+        if HAS_TENSORBOARD:
+            log_dir = os.path.join("local_only", "logs", "gradients", output_prefix)
+            os.makedirs(log_dir, exist_ok=True)
+            writer = SummaryWriter(log_dir=log_dir)
+            print(f"[INFO] Gradient tracking enabled. TensorBoard logs: {log_dir}")
+        else:
+            print("[WARNING] TensorBoard not available. Install with: pip install tensorboard")
+            track_gradients = False
 
     best_state = copy.deepcopy(model.state_dict())
     best_val_loss = float("inf")
@@ -681,6 +714,11 @@ def train_eval(
                     norm = torch.mean(torch.abs(y_usgs)) + EPS
                     loss = loss + residual_bias_weight * (mean_bias / norm) ** 2
 
+                # Physics-informed constraint: penalize negative streamflow predictions
+                if weight_nonneg > 0:
+                    neg_flow_penalty = torch.mean(torch.relu(-corr_from_res) ** 2)
+                    loss = loss + weight_nonneg * neg_flow_penalty
+
                 if (
                     weight_quantile > 0
                     and quantiles_tensor is not None
@@ -701,6 +739,15 @@ def train_eval(
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
+
+            # Log gradients to TensorBoard
+            global_step = epoch * num_train_batches + batch_idx
+            if writer is not None and batch_idx % progress_stride == 0:
+                for name, param in model.named_parameters():
+                    if param.grad is not None:
+                        writer.add_histogram(f"gradients/{name}", param.grad, global_step)
+                        writer.add_scalar(f"grad_norm/{name}", param.grad.norm().item(), global_step)
+                writer.add_scalar("loss/train_batch", loss.item(), global_step)
 
             running_loss += loss.item() * len(xb)
             sample_count += len(xb)
@@ -829,6 +876,11 @@ def train_eval(
     model.eval()
     total_training_time = time.time() - overall_start
     print(f"Training complete in {total_training_time/60:.2f} minutes")
+
+    # Close TensorBoard writer
+    if writer is not None:
+        writer.close()
+        print(f"[INFO] TensorBoard logs saved. View with: tensorboard --logdir local_only/logs/gradients/")
 
     bias_shift_info = None
     want_bias_shift = (
@@ -1163,6 +1215,28 @@ if __name__ == "__main__":
         default=14,
         help="Temporal patch size used for hydra_v1 patch embeddings (ignored for hydra_v2).",
     )
+    parser.add_argument(
+        "--use-causal-mask",
+        action="store_true",
+        help="Enable causal masking in transformer (prevents attending to future timesteps).",
+    )
+    parser.add_argument(
+        "--target-mode",
+        choices=["residual", "direct"],
+        default="residual",
+        help="'residual' predicts NWM error; 'direct' predicts USGS streamflow directly.",
+    )
+    parser.add_argument(
+        "--weight-nonneg",
+        type=float,
+        default=0.0,
+        help="Weight for non-negativity physics constraint (penalizes negative streamflow).",
+    )
+    parser.add_argument(
+        "--track-gradients",
+        action="store_true",
+        help="Enable gradient tracking with TensorBoard (logs to local_only/logs/gradients/).",
+    )
     args = parser.parse_args()
     quantiles = [float(x) for x in args.quantiles.split(",") if x.strip()]
     quantile_weights = [float(x) for x in args.quantile_weights.split(",") if x.strip()]
@@ -1215,6 +1289,10 @@ if __name__ == "__main__":
             seed=args.seed,
             model_arch=args.model_arch,
             patch_size=args.patch_size,
+            use_causal_mask=args.use_causal_mask,
+            target_mode=args.target_mode,
+            weight_nonneg=args.weight_nonneg,
+            track_gradients=args.track_gradients,
         )
 
     if args.rolling_config:

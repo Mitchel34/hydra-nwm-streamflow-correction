@@ -43,9 +43,11 @@ class HydraTemporalModel(nn.Module):
         logvar_min: float = -4.0,
         logvar_max: float = 2.0,
         moe_experts: int = 1,
+        use_causal_mask: bool = False,
     ) -> None:
         super().__init__()
         del seq_len, conv_depth, patch_size, gain_scale, moe_experts  # retained for config compatibility
+        self.use_causal_mask = use_causal_mask
         self.quantiles = tuple(float(q) for q in quantiles) if quantiles else None
         self.logvar_min = logvar_min
         self.logvar_max = logvar_max
@@ -129,7 +131,16 @@ class HydraTemporalModel(nn.Module):
         seq = self.positional(seq)
         seq = self.dropout(seq)
 
-        encoded = self.transformer(seq)
+        # Apply causal mask if enabled (prevents attending to future timesteps)
+        if self.use_causal_mask:
+            seq_len = seq.size(1)
+            causal_mask = torch.triu(
+                torch.ones(seq_len, seq_len, device=seq.device, dtype=torch.bool),
+                diagonal=1
+            )
+            encoded = self.transformer(seq, mask=causal_mask)
+        else:
+            encoded = self.transformer(seq)
         encoded = self.transformer_norm(encoded)
         summary = self._summary(encoded)
         pool_q = self.pool_token.expand(encoded.size(0), -1, -1)
