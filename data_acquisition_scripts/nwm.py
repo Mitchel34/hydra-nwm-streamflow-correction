@@ -37,7 +37,8 @@ import logging
 import sys
 import argparse
 from datetime import datetime, timedelta
-from typing import Optional, List, Tuple, Iterable
+from typing import Optional, List, Tuple, Iterable, Sequence, Dict
+import glob
 import warnings
 warnings.filterwarnings('ignore')
 import tempfile
@@ -52,6 +53,23 @@ try:
     import s3fs  # for fast, anonymous S3 access
 except Exception:  # pragma: no cover
     s3fs = None
+
+# ----------------------------------------------------------------------
+# Configuration constants for NWM short-range retrievals
+# ----------------------------------------------------------------------
+NWM_VERSION = os.environ.get("NWM_VERSION", "v2").lower()
+NWM_PRODUCT = os.environ.get("NWM_PRODUCT", "short_range").lower()
+DEFAULT_SHORT_RANGE_BASES: Tuple[str, ...] = (
+    "https://www.ncei.noaa.gov/thredds/fileServer/model-nwm",
+    "https://www.ncei.noaa.gov/thredds/fileServer/nwm",
+    "https://www.ncei.noaa.gov/thredds/fileServer/noaa-nwm-archive",
+)
+DEFAULT_SHORT_RANGE_LEADS: Tuple[int, ...] = tuple(range(1, 19))
+DEFAULT_SHORT_RANGE_CYCLES: Tuple[int, ...] = (0, 6, 12, 18)
+DEFAULT_PROCESSED_DIR = os.environ.get(
+    "NWM_PROCESSED_DIR", "data/processed/nwm_v2_short_range"
+)
+DEFAULT_USGS_RAW_ROOT = os.environ.get("USGS_RAW_ROOT", "data/raw")
 
 
 def _finalize_hourly_frame(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
@@ -75,6 +93,73 @@ def _finalize_hourly_frame(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]
 
 # Retrospective storage switch point (compressed full_physics from Feb 2023 onward)
 RETRO_FULL_PHYSICS_START = pd.Timestamp('2023-02-01 00:00:00')
+
+
+def _ensure_dir(path: str) -> str:
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _load_usgs_obs(raw_root: str, usgs_id: str) -> Optional[pd.DataFrame]:
+    """Load hourly USGS observations (cms) for a site from consolidated CSVs."""
+    patterns = [
+        os.path.join(raw_root, "usgs", usgs_id, "*.csv"),
+        os.path.join(raw_root, "usgs", f"*{usgs_id}*.csv"),
+    ]
+    files: List[str] = []
+    for pat in patterns:
+        files.extend(glob.glob(pat))
+    files = sorted(set(files))
+    if not files:
+        return None
+    frames: List[pd.DataFrame] = []
+    for fpath in files:
+        try:
+            frames.append(pd.read_csv(fpath))
+        except Exception:
+            continue
+    if not frames:
+        return None
+    df = pd.concat(frames, ignore_index=True)
+    if 'timestamp' not in df.columns:
+        for candidate in ('datetime', 'time', 'date_time', 'timestamp_utc'):
+            if candidate in df.columns:
+                df['timestamp'] = df[candidate]
+                break
+    if 'timestamp' not in df.columns:
+        return None
+    ts = pd.to_datetime(df['timestamp'], utc=True, errors='coerce')
+    df['timestamp'] = ts.dt.tz_convert(None)
+    flow_col = None
+    if 'flow_cms' in df.columns:
+        flow_col = 'flow_cms'
+        scale = 1.0
+    elif 'discharge_cms' in df.columns:
+        flow_col = 'discharge_cms'
+        scale = 1.0
+    elif 'streamflow_cms' in df.columns:
+        flow_col = 'streamflow_cms'
+        scale = 1.0
+    elif 'flow_cfs' in df.columns:
+        flow_col = 'flow_cfs'
+        scale = 0.028316846592
+    elif 'value' in df.columns:
+        flow_col = 'value'
+        scale = 1.0
+    if flow_col is None:
+        return None
+    obs = pd.DataFrame({
+        'valid_time': df['timestamp'],
+        'usgs_cms': pd.to_numeric(df[flow_col], errors='coerce') * scale,
+    })
+    obs = (
+        obs.set_index('valid_time')
+        .sort_index()
+        .resample('1H')
+        .mean()
+        .reset_index()
+    )
+    return obs
 
 
 def _chrout_key_candidates(ts: pd.Timestamp) -> List[Tuple[str, bool]]:
@@ -190,10 +275,22 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class NWMHourlyCollector:
-    """Collects hourly NWM operational data using short-range forecasts"""
-    
-    def __init__(self, data_dir="data/raw/nwm_v3", site_ids: Optional[Iterable[str]] = None):
+    """Collects hourly NWM data (retrospective, operational, and short-range forecasts)."""
+
+    def __init__(
+        self,
+        data_dir: str = "data/raw/nwm_v3",
+        site_ids: Optional[Iterable[str]] = None,
+        processed_dir: str = DEFAULT_PROCESSED_DIR,
+        raw_root: str = DEFAULT_USGS_RAW_ROOT,
+        nwm_version: str = NWM_VERSION,
+        nwm_product: str = NWM_PRODUCT,
+    ):
         self.data_dir = data_dir
+        self.processed_dir = processed_dir
+        self.raw_root = raw_root
+        self.nwm_version = (nwm_version or "v2").lower()
+        self.nwm_product = (nwm_product or "short_range").lower()
         self.operational_bucket = 'noaa-nwm-pds'
         # Anonymous access to public NOAA bucket
         self.s3_client = boto3.client(
@@ -231,6 +328,14 @@ class NWMHourlyCollector:
 
         logger.info(f"✅ Initialized NWM hourly collector for {len(self.study_sites)} sites")
         logger.info(f"🎯 Target COMIDs: {self.target_comids}")
+        logger.info(
+            "📦 Short-range config → version=%s, product=%s, processed_dir=%s",
+            self.nwm_version,
+            self.nwm_product,
+            self.processed_dir,
+        )
+        self._last_files: List[str] = []
+        self._latest_discovery: List[dict] = []
 
     # ------------------------------
     # Analysis Assimilation (tm00)
@@ -257,6 +362,7 @@ class NWMHourlyCollector:
 
         hours = pd.date_range(start=start_dt, end=end_dt, freq='H')
         rows: List[dict] = []
+        self._last_files = []
         for t in hours:
             ymd = t.strftime('%Y%m%d')
             hh = t.strftime('%H')
@@ -523,102 +629,193 @@ class NWMHourlyCollector:
             logger.debug(f"HTTP download failed: {url} :: {e}")
             return False
 
-    def collect_hourly_archive_data(self, start_date: str, end_date: str, base_url: str) -> Optional[pd.DataFrame]:
-        """Collect hourly NWM short-range forecasts (channel_rt) from an HTTP archive for multi-year ranges.
-
-        Expects directory structure like:
-          {base_url.rstrip('/')}/nwm.YYYYMMDD/short_range/nwm.t{HH}z.short_range.channel_rt.f{FFF}.conus.nc
-
-        Example candidates (confirm which lists short_range/channel_rt):
-          - https://www.ncei.noaa.gov/thredds/fileServer/model-nwm
-          - https://www.ncei.noaa.gov/thredds/fileServer/nwm
-        """
+    def collect_hourly_archive_data(
+        self,
+        start_date: str,
+        end_date: str,
+        base_urls: Optional[Sequence[str]] = None,
+        lead_hours: Optional[Sequence[int]] = None,
+        cycles: Optional[Sequence[int]] = None,
+        fail_on_version: bool = True,
+    ) -> Optional[pd.DataFrame]:
+        """Collect NWM short-range forecasts (channel_rt) from HTTP archives."""
         start_dt = pd.to_datetime(start_date)
         end_dt = pd.to_datetime(end_date)
+        if end_dt < start_dt:
+            raise ValueError("end_date must be >= start_date")
+        bases = (
+            [base_urls] if isinstance(base_urls, str)
+            else list(base_urls) if base_urls
+            else list(DEFAULT_SHORT_RANGE_BASES)
+        )
+        leads = list(lead_hours or DEFAULT_SHORT_RANGE_LEADS)
+        cycles = list(cycles or DEFAULT_SHORT_RANGE_CYCLES)
         rows: List[dict] = []
-
-        logger.info("🚀 COLLECTING ARCHIVE HOURLY (Short-Range) FORECASTS")
-        logger.info("=" * 65)
+        discovered: List[dict] = []
+        logger.info("🚀 COLLECTING SHORT-RANGE FORECAST ARCHIVE (HTTP)")
+        logger.info("=" * 72)
         logger.info(f"📅 Period: {start_dt.date()} → {end_dt.date()}")
-        logger.info(f"🌐 Base URL: {base_url.rstrip('/')}")
-        logger.info("🎯 Product: short_range channel_rt f001–f024 (00Z primary, 12Z fallback)")
+        logger.info("🎯 Product: %s %s leads %s", self.nwm_version, self.nwm_product, leads)
+        logger.info("🌀 Cycles: %s", cycles)
+        logger.info("🌐 Base URLs:\n%s", "\n".join(f"   - {b}" for b in bases))
 
-        cur = start_dt
-        while cur <= end_dt:
-            ymd = cur.strftime('%Y%m%d')
-            logger.info(f"📅 {ymd}")
-            found_for_day = 0
-            for base_hour in (0, 12):
-                for fh in range(1, 25):
-                    f3 = f"{fh:03d}"
-                    key = f"nwm.{ymd}/short_range/nwm.t{base_hour:02d}z.short_range.channel_rt.f{f3}.conus.nc"
-                    url = f"{base_url.rstrip('/')}/{key}"
-                    tmp_path = None
-                    try:
-                        if not self._http_head(url):
-                            continue
-                        with tempfile.NamedTemporaryFile(suffix='.nc', delete=False) as tmp:
-                            tmp_path = tmp.name
-                        if not self._http_download(url, tmp_path):
-                            if tmp_path and os.path.exists(tmp_path):
-                                os.remove(tmp_path)
-                            continue
-                        with xr.open_dataset(tmp_path) as ds:
-                            init_time = pd.Timestamp(year=cur.year, month=cur.month, day=cur.day, hour=base_hour)
-                            valid_time = init_time + pd.Timedelta(hours=fh)
-                            if 'feature_id' in ds and 'streamflow' in ds:
+        day = start_dt.normalize()
+        while day <= end_dt.normalize():
+            ymd = day.strftime("%Y%m%d")
+            for base_hour in cycles:
+                init_time = pd.Timestamp(
+                    year=day.year, month=day.month, day=day.day, hour=base_hour, tz='UTC'
+                ).tz_convert(None)
+                for lead in leads:
+                    rel_key = (
+                        f"nwm.{ymd}/short_range/"
+                        f"nwm.t{base_hour:02d}z.short_range.channel_rt.f{lead:03d}.conus.nc"
+                    )
+                    success = False
+                    for base in bases:
+                        url = f"{base.rstrip('/')}/{rel_key}"
+                        discovered.append({"url": url, "cycle": base_hour, "lead": lead})
+                        tmp_path = None
+                        try:
+                            if not self._http_head(url):
+                                continue
+                            with tempfile.NamedTemporaryFile(suffix='.nc', delete=False) as tmp:
+                                tmp_path = tmp.name
+                            if not self._http_download(url, tmp_path):
+                                continue
+                            with xr.open_dataset(tmp_path) as ds:
+                                version_attr = str(ds.attrs.get('model_version', '')).lower()
+                                if fail_on_version and self.nwm_version not in version_attr:
+                                    raise RuntimeError(
+                                        f"Detected model_version '{version_attr}' in {url}; "
+                                        f"expected substring '{self.nwm_version}'"
+                                    )
+                                if 'feature_id' not in ds or 'streamflow' not in ds:
+                                    continue
                                 feature_ids = np.array(ds['feature_id'].values)
                                 values = np.array(ds['streamflow'].values)
+                                valid_time = (init_time + pd.Timedelta(hours=lead)).to_pydatetime()
                                 for site in self.study_sites:
                                     comid = site['comid']
                                     site_name = site['name']
                                     match = np.where(feature_ids == comid)[0]
                                     if match.size:
                                         idx = int(match[0])
-                                        rows.append({
-                                            'init_time': init_time,
-                                            'timestamp': valid_time,
-                                            'site_name': site_name,
-                                            'comid': comid,
-                                            'streamflow_cms': float(values[idx]),
-                                            'data_source': 'short_range_forecast_archive',
-                                            'hour': valid_time.hour,
-                                            'forecast_hour': f"f{f3}",
-                                            'lead_hour': fh,
-                                            'file': key,
-                                        })
-                                        found_for_day += 1
-                    except Exception as e:
-                        logger.debug(f"Skip URL {url}: {e}")
-                    finally:
-                        try:
+                                        rows.append(
+                                            {
+                                                'site_name': site_name,
+                                                'site_id': site.get('usgs_id'),
+                                                'comid': comid,
+                                                'init_time': init_time,
+                                                'valid_time': pd.Timestamp(valid_time),
+                                                'lead_time_hours': int(lead),
+                                                'forecast_hour': f"f{lead:03d}",
+                                                'nwm_version': self.nwm_version,
+                                                'nwm_product': self.nwm_product,
+                                                'streamflow_cms': float(values[idx]),
+                                                'data_source': 'short_range_forecast_archive',
+                                                'file': rel_key,
+                                                'source_url': url,
+                                            }
+                                        )
+                                success = True
+                                self._last_files.append(url)
+                                break
+                        except Exception as exc:
+                            logger.debug("Skip %s: %s", url, exc)
+                        finally:
                             if tmp_path and os.path.exists(tmp_path):
-                                os.remove(tmp_path)
-                        except Exception:
-                            pass
-            if found_for_day == 0:
-                logger.warning(f"   ⚠️  No files found for {ymd} under {base_url}")
-            else:
-                logger.info(f"   ✅ Collected {found_for_day} records for {ymd}")
-            cur += timedelta(days=1)
+                                try:
+                                    os.remove(tmp_path)
+                                except Exception:
+                                    pass
+                    if not success:
+                        logger.debug("Missing lead %s cycle %s for %s", lead, base_hour, ymd)
+            day += timedelta(days=1)
 
         if not rows:
-            logger.error("❌ No archive hourly data collected for the requested range")
+            logger.error("❌ No short-range archive data collected for the requested window")
             return None
 
-        df = pd.DataFrame(rows).sort_values(['timestamp', 'site_name', 'lead_hour'])
-        out_dir = os.path.join(self.data_dir, 'archive')
-        os.makedirs(out_dir, exist_ok=True)
+        df = pd.DataFrame.from_records(rows)
+        df['init_time'] = pd.to_datetime(df['init_time'])
+        df['valid_time'] = pd.to_datetime(df['valid_time'])
+        df = df.sort_values(['site_name', 'init_time', 'lead_time_hours']).reset_index(drop=True)
+        archive_dir = _ensure_dir(os.path.join(self.data_dir, 'short_range'))
         out_file = os.path.join(
-            out_dir,
-            f"nwm_v3_hourly_archive_{start_dt.strftime('%Y%m%d')}_{end_dt.strftime('%Y%m%d')}{self.site_suffix}.csv"
+            archive_dir,
+            f"nwm_{self.nwm_version}_{self.nwm_product}_{start_dt.strftime('%Y%m%d')}_{end_dt.strftime('%Y%m%d')}{self.site_suffix}.csv",
         )
         df.to_csv(out_file, index=False)
-        logger.info(f"💾 Saved archive hourly CSV: {out_file} (rows={len(df)})")
-
-        hrs = sorted(pd.to_datetime(df['timestamp']).dt.hour.unique().tolist())
-        logger.info(f"⏰ Hourly coverage (unique hours): {hrs}")
+        logger.info("💾 Saved short-range CSV: %s (rows=%d)", out_file, len(df))
+        self._write_short_range_processed(df, start_dt, end_dt)
+        self._latest_discovery = discovered
         return df
+
+    def _write_short_range_processed(self, forecast_df: pd.DataFrame, start_dt: pd.Timestamp, end_dt: pd.Timestamp) -> None:
+        """Persist per-site Parquet datasets with lead-time metadata plus USGS observations."""
+        if forecast_df is None or forecast_df.empty:
+            return
+        processed_dir = _ensure_dir(self.processed_dir)
+        for site in self.study_sites:
+            site_id = site.get('usgs_id') or site['name'].replace(" ", "_")
+            site_comid = site['comid']
+            site_frame = forecast_df[forecast_df['comid'] == site_comid].copy()
+            if site_frame.empty:
+                continue
+            obs = _load_usgs_obs(self.raw_root, site.get('usgs_id')) if site.get('usgs_id') else None
+            if obs is not None:
+                merged = pd.merge(site_frame, obs, on='valid_time', how='left')
+            else:
+                merged = site_frame
+            merged['nwm_version'] = self.nwm_version
+            merged['nwm_product'] = self.nwm_product
+            merged = merged.sort_values(['init_time', 'lead_time_hours'])
+            cols = [
+                'site_id',
+                'site_name',
+                'comid',
+                'init_time',
+                'lead_time_hours',
+                'valid_time',
+                'streamflow_cms',
+                'usgs_cms',
+                'nwm_version',
+                'nwm_product',
+                'forecast_hour',
+                'data_source',
+                'file',
+                'source_url',
+            ]
+            for col in cols:
+                if col not in merged.columns:
+                    merged[col] = np.nan
+            merged = merged[cols]
+            site_dir = _ensure_dir(os.path.join(processed_dir, str(site_id)))
+            out_path = os.path.join(
+                site_dir,
+                f"nwm_{self.nwm_version}_{self.nwm_product}_{start_dt.strftime('%Y%m%d')}_{end_dt.strftime('%Y%m%d')}.parquet",
+            )
+            merged.to_parquet(out_path, index=False)
+            logger.info("💾 Saved processed Parquet for %s: %s (rows=%d)", site_id, out_path, len(merged))
+
+    def collect_short_range_v2_forecasts(
+        self,
+        start_date: str,
+        end_date: str,
+        base_urls: Optional[Sequence[str]] = None,
+        lead_hours: Optional[Sequence[int]] = None,
+        cycles: Optional[Sequence[int]] = None,
+    ) -> Optional[pd.DataFrame]:
+        """Public helper tailored to NWM v2 short-range retrieval."""
+        return self.collect_hourly_archive_data(
+            start_date=start_date,
+            end_date=end_date,
+            base_urls=base_urls or DEFAULT_SHORT_RANGE_BASES,
+            lead_hours=lead_hours or DEFAULT_SHORT_RANGE_LEADS,
+            cycles=cycles or DEFAULT_SHORT_RANGE_CYCLES,
+            fail_on_version=True,
+        )
 
     def collect_retrospective_streamflow(self, start_date: str = "2020-01-01", end_date: str = "2020-01-10",
                                          resample_6h: bool = False, resample_method: str = "sample") -> Optional[pd.DataFrame]:
@@ -948,6 +1145,36 @@ class NWMHourlyCollector:
                     continue
         
         return daily_data
+
+    def run_short_range_smoke_test(self, df: Optional[pd.DataFrame]) -> None:
+        """Print a concise report summarizing the downloaded short-range leads."""
+        if df is None or df.empty:
+            logger.error("❌ Smoke test aborted: no forecast rows available")
+            return
+        init_times = sorted(pd.to_datetime(df['init_time']).unique())
+        lead_set = sorted(set(df['lead_time_hours'].astype(int)))
+        logger.info("🧪 Smoke test — sample init cycles: %s", init_times[:4])
+        logger.info("🧪 Found lead hours: %s", lead_set)
+        if not lead_set or lead_set[0] > 1 or lead_set[-1] < 18:
+            logger.warning("⚠️ Lead coverage missing required span 1–18h")
+        sample_cols = [
+            'site_id',
+            'site_name',
+            'init_time',
+            'lead_time_hours',
+            'valid_time',
+            'streamflow_cms',
+        ]
+        if 'usgs_cms' in df.columns:
+            sample_cols.append('usgs_cms')
+        preview = (
+            df.sort_values(['site_id', 'init_time', 'lead_time_hours'])
+            [sample_cols]
+            .head(5)
+        )
+        logger.info("🧪 Example forecast rows:\n%s", preview.to_string(index=False))
+        unique_files = sorted(set(self._last_files))
+        logger.info("🧪 Discovered %d files (first 5 shown): %s", len(unique_files), unique_files[:5])
     
     def validate_temporal_consistency(self):
         """Validate that training and testing data now have consistent temporal resolution"""
@@ -1003,18 +1230,26 @@ def main():
     
     parser = argparse.ArgumentParser(description="Collect hourly NWM data (operational, retrospective, or archive).")
     parser.add_argument("--out-dir", default="data/raw/nwm_v3", help="Output directory for CSV files.")
+    parser.add_argument("--processed-dir", default=DEFAULT_PROCESSED_DIR, help="Processed Parquet output directory for short-range datasets.")
+    parser.add_argument("--raw-root", default=DEFAULT_USGS_RAW_ROOT, help="Root directory containing raw USGS data (for short-range merges).")
     parser.add_argument("--start-date", default="2025-01-01", help="Start date in YYYY-MM-DD format.")
     parser.add_argument("--end-date", default=datetime.now().strftime("%Y-%m-%d"), help="End date in YYYY-MM-DD format.")
-    parser.add_argument("--mode", choices=["operational", "retrospective", "retrospective_v3", "archive", "v3_auto"], default="operational", help="Data source mode: operational short-range, retrospective v2.1 (Zarr), retrospective v3.0 CHRTOUT, analysis_assim+retrospective auto-stitch (v3_auto), or HTTP archive.")
+    parser.add_argument("--mode", choices=["short_range_v2", "operational", "retrospective", "retrospective_v3", "archive", "v3_auto"], default="short_range_v2", help="Data source mode.")
     parser.add_argument("--resample-6h", action="store_true", help="For retrospective mode, also write a 6-hour dataset aligned at 00/06/12/18Z.")
     parser.add_argument("--resample-method", choices=["sample", "mean"], default="sample", help="6-hour resampling method: sample exact hours or mean of prior 6 hours.")
     parser.add_argument("--archive-base-url", default=None, help="HTTP base URL for archived NWM, e.g., https://www.ncei.noaa.gov/thredds/fileServer/model-nwm")
+    parser.add_argument("--base-url", action="append", default=None, help="Override/additional HTTP base URL(s) for short-range downloads; can be provided multiple times.")
+    parser.add_argument("--lead-hours", default="1-18", help="Lead hours to request for short-range (e.g., 1-18 or 1,3,6,12,18).")
+    parser.add_argument("--cycles", default="0,6,12,18", help="Forecast cycles (UTC hours) to request, comma separated (e.g., 0,12).")
+    parser.add_argument("--nwm-version", default=NWM_VERSION, help="Expected NWM version keyword for validation (default v2).")
+    parser.add_argument("--nwm-product", default=NWM_PRODUCT, help="NWM product label (default short_range).")
     # Performance knobs for retrospective_v3
     parser.add_argument("--max-workers", type=int, default=6, help="Parallel workers for CHRTOUT fetch (retrospective_v3).")
     parser.add_argument("--checkpoint-every", type=int, default=200, help="Flush rows to CSV every N records (retrospective_v3).")
     parser.add_argument("--resume", action="store_true", default=True, help="Resume and skip timestamps already present in output CSV (retrospective_v3). Default: True")
     parser.add_argument("--concurrency", choices=["thread", "process"], default="process", help="Concurrency model for retrospective_v3: threads (fast but may segfault with HDF5) or processes (safer). Default: process")
     parser.add_argument("--sites", nargs='+', default=None, help="USGS site IDs to process (default: all sites in configuration)")
+    parser.add_argument("--smoke-test", action="store_true", help="Print a short lead-time summary after short-range downloads.")
     args = parser.parse_args()
 
     logger.info("🔄 STARTING HOURLY NWM DATA COLLECTION")
@@ -1024,9 +1259,35 @@ def main():
     
     try:
         # Initialize collector
-        collector = NWMHourlyCollector(data_dir=args.out_dir, site_ids=args.sites)
+        def _parse_leads(spec: str) -> List[int]:
+            spec = spec.strip()
+            if "-" in spec:
+                start_s, end_s = spec.split("-", 1)
+                return list(range(int(start_s), int(end_s) + 1))
+            return [int(x) for x in spec.split(",") if x]
+
+        lead_hours = _parse_leads(args.lead_hours)
+        cycles = [int(x) for x in args.cycles.split(",") if x]
+        collector = NWMHourlyCollector(
+            data_dir=args.out_dir,
+            site_ids=args.sites,
+            processed_dir=args.processed_dir,
+            raw_root=args.raw_root,
+            nwm_version=args.nwm_version,
+            nwm_product=args.nwm_product,
+        )
         
-        if args.mode == "operational":
+        if args.mode == "short_range_v2":
+            sr = collector.collect_short_range_v2_forecasts(
+                start_date=args.start_date,
+                end_date=args.end_date,
+                base_urls=args.base_url,
+                lead_hours=lead_hours,
+                cycles=cycles,
+            )
+            if args.smoke_test:
+                collector.run_short_range_smoke_test(sr)
+        elif args.mode == "operational":
             # Collect hourly operational data
             hourly_df = collector.collect_hourly_operational_data(start_date=args.start_date, end_date=args.end_date)
             if hourly_df is not None:
@@ -1072,16 +1333,21 @@ def main():
             )
             if v3a is not None:
                 logger.info("✅ AUTO (retrospective + analysis_assim) HOURLY COLLECTION COMPLETE")
-        else:
-            # Archive HTTP mode
-            if not args.archive_base_url:
-                logger.error("❌ archive mode requires --archive-base-url (e.g., https://www.ncei.noaa.gov/thredds/fileServer/model-nwm)")
+        elif args.mode == "archive":
+            archive_urls = args.base_url or ([args.archive_base_url] if args.archive_base_url else None)
+            if not archive_urls:
+                logger.error("❌ archive mode requires --base-url or --archive-base-url")
                 return
             arc = collector.collect_hourly_archive_data(
                 start_date=args.start_date,
                 end_date=args.end_date,
-                base_url=args.archive_base_url,
+                base_urls=archive_urls,
+                lead_hours=lead_hours,
+                cycles=cycles,
+                fail_on_version=True,
             )
+            if arc is not None and args.smoke_test:
+                collector.run_short_range_smoke_test(arc)
             if arc is not None:
                 logger.info("✅ ARCHIVE COLLECTION COMPLETE")
         

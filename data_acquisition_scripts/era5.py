@@ -9,7 +9,7 @@ timestamps at either hourly cadence (preferred) or 6-hourly (00/06/12/18) to mat
 Defaults:
 - Years: 2020–2023 (training) and 2025 (testing)
 - Cadence: hourly (00..23) by default; switch to 6h with --cadence 6h
-- Variables: t2m, d2m, tp, sp, u10, v10, ssrd, e, swvl1
+- Variables: t2m, tp, swvl1
 
 Requirements:
 - cdsapi, xarray, pandas, numpy
@@ -51,13 +51,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 SINGLE_DATASET = 'reanalysis-era5-single-levels'
 SINGLE_VARIABLES = [
     '2m_temperature',
-    '2m_dewpoint_temperature',
     'total_precipitation',
-    'surface_pressure',
-    '10m_u_component_of_wind',
-    '10m_v_component_of_wind',
-    'surface_solar_radiation_downwards',
-    'evaporation',
 ]
 LAND_DATASET = 'reanalysis-era5-land'
 LAND_VARIABLES = [
@@ -99,31 +93,8 @@ def derive_features(df: pd.DataFrame) -> pd.DataFrame:
     # Units and simple derived metrics (add columns only when inputs exist)
     if '2m_temperature' in df.columns:
         df['temp_c'] = s('2m_temperature') - 273.15
-    if '2m_dewpoint_temperature' in df.columns:
-        df['dewpoint_c'] = s('2m_dewpoint_temperature') - 273.15
-    if 'surface_pressure' in df.columns:
-        df['pressure_hpa'] = s('surface_pressure') / 100.0
     if 'total_precipitation' in df.columns:
         df['precip_mm'] = s('total_precipitation') * 1000.0
-    if 'surface_solar_radiation_downwards' in df.columns:
-        df['radiation_mj_m2'] = s('surface_solar_radiation_downwards') / 1e6
-    # Handle either 'evaporation' or 'total_evaporation'
-    if 'evaporation' in df.columns:
-        df['evap_mm'] = df['evaporation'] * 1000.0
-    elif 'total_evaporation' in df.columns:
-        df['evap_mm'] = df['total_evaporation'] * 1000.0
-    # Wind
-    if '10m_u_component_of_wind' in df.columns and '10m_v_component_of_wind' in df.columns:
-        df['wind_speed'] = np.sqrt(s('10m_u_component_of_wind')**2 + s('10m_v_component_of_wind')**2)
-        wind_dir = np.degrees(np.arctan2(s('10m_v_component_of_wind'), s('10m_u_component_of_wind')))
-        df['wind_dir_deg'] = (wind_dir + 360) % 360
-    # VPD/Relative humidity via Magnus (only if temp and dewpoint exist)
-    if 'temp_c' in df.columns and 'dewpoint_c' in df.columns:
-        es_t = 0.6108 * np.exp(17.27 * s('temp_c') / (s('temp_c') + 237.3))
-        es_d = 0.6108 * np.exp(17.27 * s('dewpoint_c') / (s('dewpoint_c') + 237.3))
-        df['vpd_kpa'] = es_t - es_d
-        with np.errstate(invalid='ignore', divide='ignore'):
-            df['rel_humidity_pct'] = np.clip((es_d / es_t) * 100.0, 0, 100)
     # Soil moisture helpers
     if 'volumetric_soil_water_layer_1' in df.columns:
         df['soil_moisture_vwc'] = df['volumetric_soil_water_layer_1']  # m3/m3
@@ -383,13 +354,7 @@ def process_to_csv(single_nc: str | None, land_nc: str | None, site: dict, year:
         return None
     rename = {
         't2m': '2m_temperature',
-        'd2m': '2m_dewpoint_temperature',
         'tp': 'total_precipitation',
-        'sp': 'surface_pressure',
-        'u10': '10m_u_component_of_wind',
-        'v10': '10m_v_component_of_wind',
-        'ssrd': 'surface_solar_radiation_downwards',
-        'e': 'evaporation',
         'swvl1': 'soil_moisture_vwc',
     }
     frames = []
@@ -426,6 +391,22 @@ def process_to_csv(single_nc: str | None, land_nc: str | None, site: dict, year:
         merged = merged.drop(columns=['volumetric_soil_water_layer_1'], errors='ignore')
     # Drop columns that are completely empty to keep outputs clean
     merged = merged.dropna(axis=1, how='all')
+    # Keep only the narrowed feature set requested for the study
+    keep_cols = [
+        'timestamp',
+        'precip_mm',
+        'soil_moisture_vwc',
+        'temp_c',
+        'doy_sin',
+        'doy_cos',
+        'month_sin',
+        'month_cos',
+        'site_name',
+        'comid',
+        'lat',
+        'lon',
+    ]
+    merged = merged[[c for c in keep_cols if c in merged.columns]]
     csv_path = os.path.join(site_dir, f"era5_enh_{site['nwm_comid']}_{year}_{month}.csv")
     merged.to_csv(csv_path, index=False)
     if verbose:
@@ -482,6 +463,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ERA5 chunked downloader (hourly or 6-hourly)')
     parser.add_argument('--out-dir', default='data/raw/era5', help='Output directory for CSV files.')
     parser.add_argument('--site', help='Filter by site name or COMID substring', default=None)
+    parser.add_argument('--years', nargs=2, type=int, default=None, metavar=('START', 'END'),
+                        help='Optional year range override (inclusive). Overrides --years-train/--years-test.')
     parser.add_argument('--years-train', nargs='*', type=int, default=[2020,2021,2022,2023], help='Training years')
     parser.add_argument('--years-test', nargs='*', type=int, default=[2025], help='Testing years')
     parser.add_argument('--months', nargs='*', default=None, help='Subset months as 01..12')
@@ -493,10 +476,19 @@ if __name__ == '__main__':
     os.makedirs(args.out_dir, exist_ok=True)
 
     print("ERA5 chunked downloader starting…")
+    if args.years:
+        start_year, end_year = args.years
+        if end_year < start_year:
+            parser.error("END year must be >= START year for --years")
+        years_train = tuple(range(start_year, end_year + 1))
+        years_test = tuple()
+    else:
+        years_train = tuple(args.years_train)
+        years_test = tuple(args.years_test)
     run(
         args.out_dir,
-        tuple(args.years_train),
-        tuple(args.years_test),
+        years_train,
+        years_test,
         site_filter=args.site,
         months=args.months,
         cadence=args.cadence,

@@ -1,0 +1,5 @@
+site_id,rows,usgs_cms_missing,usgs_cms_missing_pct,nwm_cms_missing,nwm_cms_missing_pct,precip_mm_missing,precip_mm_missing_pct,temp_c_missing,temp_c_missing_pct,soil_moisture_vwc_missing,soil_moisture_vwc_missing_pct,start,end
+03161000,96409,0,0.0,0,0.0,0,0.0,0,0.0,0,0.0,2010-01-01 00:00:00,2020-12-31
+03164000,96409,0,0.0,0,0.0,0,0.0,0,0.0,0,0.0,2010-01-01 00:00:00,2020-12-31
+03479000,96409,0,0.0,0,0.0,0,0.0,0,0.0,0,0.0,2010-01-01 00:00:00,2020-12-31
+03486000,35079,0,0.0,0,0.0,0,0.0,0,0.0,0,0.0,2016-12-30 10:00:00,2020-12-31

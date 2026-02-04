@@ -80,6 +80,15 @@ python data_acquisition_scripts/nwm.py \
   --max-workers 6 \
   --resume
 
+# NWM v2 short-range forecasts with explicit lead times
+python data_acquisition_scripts/nwm.py \
+  --mode short_range_v2 \
+  --start-date 2020-01-01 \
+  --end-date 2020-01-03 \
+  --out-dir data/raw/nwm_v2_short_range \
+  --processed-dir data/processed/nwm_v2_short_range \
+  --smoke-test
+
 # ERA5 + ERA5-Land atmospheric forcings
 python data_acquisition_scripts/era5.py \
   --sites 03479000 \
@@ -89,6 +98,12 @@ python data_acquisition_scripts/era5.py \
 ```
 
 Logs will land in `logs/` (ignored by Git); move any long-lived CSV/Parquet outputs into `local_only/` once you finish a run.
+
+The short-range workflow writes two artefacts for each run:
+
+- CSV snapshots of every downloaded file under `data/raw/nwm_v2_short_range/short_range/`.
+- Per-site Parquet panels under `data/processed/nwm_v2_short_range/<usgs_id>/` with columns<br>
+  `site_id`, `site_name`, `comid`, `init_time`, `lead_time_hours`, `valid_time`, `streamflow_cms`, `usgs_cms`, `nwm_version`, `nwm_product`, and the source file metadata. These panels are indexed by (`site_id`, `init_time`, `lead_time_hours`) so you can evaluate the 1–18 hour forecast horizon consistently.
 
 ## Building Datasets & Training Models
 
@@ -121,7 +136,7 @@ Static land-use descriptors from NLCD are no longer merged into the parquet; run
      --hpo-trials 10
    ```
 
-   This command reuses the acquisition outputs already stored under `data/` and kicks off Optuna-based hyperparameter search when the baseline improvement is <5 %. To process the three core gauges sequentially, run `python scripts/run_multi_site_pipeline.py` (Watauga, Au Sable, Green River).
+   This command reuses the acquisition outputs already stored under `data/` and kicks off Optuna-based hyperparameter search when the baseline improvement is <5 %. To process the four study gauges sequentially, run `python scripts/run_multi_site_pipeline.py` (Watauga Sugar Grove, Watauga Elizabethton, South Fork New River, New River Galax).
 
 ### Rolling-Origin Cross-Validation
 

@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT))
 from config.master_study_sites import MASTER_STUDY_SITES  # noqa: E402
 
 
-DEFAULT_SITES = ["03479000", "04137500", "09234500"]
+DEFAULT_SITES = ["03479000", "03486000", "03161000", "03164000"]
 DEFAULT_HPO_TRIALS = 8
 
 

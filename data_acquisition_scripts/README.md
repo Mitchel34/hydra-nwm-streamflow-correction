@@ -54,7 +54,23 @@ python data_acquisition_scripts/era5.py \
 	--cadence hourly \
 	--out-dir data/raw/era5
 
+# NWM v2 short-range forecasts (lead-aware)
+python data_acquisition_scripts/nwm.py \
+	--mode short_range_v2 \
+	--start-date 2020-01-01 \
+	--end-date 2020-01-07 \
+	--out-dir data/raw/nwm_v2_short_range \
+	--processed-dir data/processed/nwm_v2_short_range \
+	--sites 03479000 \
+	--smoke-test
+
 ```
+
+### Why the short-range collector matters
+
+- **Vision.** Keep the acquisition story anchored to a single physics configuration (NWM v2 short-range) so every downstream experiment compares ML residual corrections against a stable baseline.
+- **Goals.** Pull only v2 short-range products, explicitly enumerate 1–18 hour lead times for every forecast cycle, and write per-site Parquet panels with aligned USGS observations so evaluation scripts can adopt standard forecast-verification workflows.
+- **Narrative fit.** These curated lead-time tables are what allow the thesis to argue for “site-aware residual corrections” instead of generic model tuning—they provide the raw guidance the models correct, document how far into the future each improvement holds, and preserve version fidelity for reproducibility in `docs/MODEL_RUN_2010_2020.md`.
 
 The former NLCD collector (`land_use.py`) is retained for archival purposes only; static land-use fractions are no longer merged into the training parquet.
 

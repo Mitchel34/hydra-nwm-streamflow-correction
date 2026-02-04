@@ -10,7 +10,7 @@ PIPELINE_LOG="$LOG_DIR/pipeline.log"
 ARCHIVE_BASE_URL="${NWM_ARCHIVE_BASE_URL:-}"
 ARCHIVE_FLAG=()
 if [[ -n "$ARCHIVE_BASE_URL" ]]; then
-  ARCHIVE_FLAG=(--archive-base-url "$ARCHIVE_BASE_URL")
+  ARCHIVE_FLAG=(--base-url "$ARCHIVE_BASE_URL")
   echo "$(date '+%Y-%m-%d %H:%M:%S') using archive fallback: $ARCHIVE_BASE_URL" | tee -a "$PIPELINE_LOG"
 fi
 
@@ -41,14 +41,17 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') finished USGS acquisition" | tee -a "$PIPELIN
 {
   echo "$(date '+%Y-%m-%d %H:%M:%S') starting NWM acquisition" >> "$PIPELINE_LOG"
   python3.11 data_acquisition_scripts/nwm.py \
-    --mode v3_auto \
+    --mode short_range_v2 \
     --start-date 2020-01-01 \
     --end-date 2023-12-31 \
-    --out-dir data/raw/nwm_v3 \
+    --out-dir data/raw/nwm_v2_short_range \
+    --processed-dir data/processed/nwm_v2_short_range \
+    --raw-root data/raw \
     --max-workers 4 \
     --checkpoint-every 200 \
     --resume \
     --concurrency process \
+    --smoke-test \
     "${ARCHIVE_FLAG[@]}"
 } >> "$NWM_LOG" 2>&1
 

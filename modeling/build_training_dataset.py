@@ -213,6 +213,24 @@ def load_era5_features(raw_dir: str, site_name: str, site_id: Optional[str] = No
     return hourly
 
 
+def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
+    ts = pd.to_datetime(df['timestamp'])
+    df['doy'] = ts.dt.dayofyear
+    df['month'] = ts.dt.month
+    df['doy_sin'] = np.sin(2 * np.pi * df['doy'] / 365.25)
+    df['doy_cos'] = np.cos(2 * np.pi * df['doy'] / 365.25)
+    df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12)
+    df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12)
+    return df
+
+
+def _report_missing(site_id: str, df: pd.DataFrame, cols: List[str]) -> None:
+    missing = df[cols].isna().mean().sort_values(ascending=False)
+    if missing.max() > 0:
+        summary = ", ".join([f"{c}={missing[c]:.1%}" for c in missing.index])
+        print(f"[{site_id}] Missing rates: {summary}")
+
+
 def build_dataset(
     raw_dir: str = 'data/raw',
     out_dir: str = 'data/clean/modeling',
@@ -259,6 +277,24 @@ def build_dataset(
         if era5 is not None:
             df = df.merge(era5, on='timestamp', how='left')
         df = df.drop_duplicates(subset=['timestamp']).sort_values('timestamp')
+        # Ensure time features are present even if ERA5 is missing
+        time_cols = {'doy_sin', 'doy_cos', 'month_sin', 'month_cos'}
+        if not time_cols.issubset(df.columns):
+            df = add_time_features(df)
+
+        # Missing-value handling for met features
+        met_cols = [c for c in ['precip_mm', 'soil_moisture_vwc', 'temp_c'] if c in df.columns]
+        if met_cols:
+            _report_missing(site_id, df, met_cols)
+            # Forward-fill temperature + soil moisture only (no future leakage)
+            for col in ['temp_c', 'soil_moisture_vwc']:
+                if col in df.columns:
+                    df[col] = df[col].ffill(limit=6)
+            # Drop rows still missing any met feature
+            df = df.dropna(subset=met_cols)
+            if df.empty:
+                print(f"[{site_id}] Dropped all rows due to missing met features; skipping site.")
+                continue
         # Targets
         df['y_residual_cms'] = df['usgs_cms'] - df['nwm_cms']
         df['y_corrected_cms'] = df['usgs_cms']
