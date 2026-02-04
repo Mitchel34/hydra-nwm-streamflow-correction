@@ -1,5 +1,5 @@
 {
-  "generated_at": "2024-12-15T12:00:00.000Z",
+  "generated_at": "2026-02-04T18:09:54.151879",
   "sites": {
     "03161000": {
       "name": "South Fork New River near Jefferson, NC",
@@ -66,68 +66,100 @@
   },
   "results": [
     {
-      "experiment": "hydra_v2",
-      "site_id": "03479000",
-      "file": "watauga_cluster_hydra_03479000_metrics.json",
-      "baseline": { "rmse": 3.12, "nse": 0.74, "pbias": -5.2, "kge": 0.71 },
-      "corrected": { "rmse": 2.41, "nse": 0.85, "pbias": -2.1, "kge": 0.83 },
-      "rmse_improvement_pct": 22.8
-    },
-    {
-      "experiment": "hydra_v2",
-      "site_id": "03486000",
-      "file": "watauga_cluster_hydra_03486000_metrics.json",
-      "baseline": { "rmse": 14.31, "nse": 0.71, "pbias": -8.1, "kge": 0.68 },
-      "corrected": { "rmse": 11.87, "nse": 0.81, "pbias": -4.3, "kge": 0.79 },
-      "rmse_improvement_pct": 17.0
-    },
-    {
-      "experiment": "hydra_v2",
+      "experiment": "physics",
       "site_id": "03161000",
-      "file": "watauga_cluster_hydra_03161000_metrics.json",
-      "baseline": { "rmse": 4.52, "nse": 0.69, "pbias": -13.2, "kge": 0.65 },
-      "corrected": { "rmse": 4.01, "nse": 0.76, "pbias": -16.9, "kge": 0.71 },
-      "rmse_improvement_pct": 11.3
+      "file": "exp_physics_03161000_metrics.json",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 12.307893403203485,
+        "mae": 5.525807417420956,
+        "nse": 0.6496094728155106,
+        "kge": 0.6780926052378542,
+        "pbias": -10.359448506755745,
+        "pearson_r": 0.8152047242475106,
+        "spearman_r": 0.8758138142676203
+      },
+      "rmse_improvement_pct": 21.514450007478125
     },
     {
-      "experiment": "hydra_v2",
-      "site_id": "03164000",
-      "file": "watauga_cluster_hydra_03164000_metrics.json",
-      "baseline": { "rmse": 7.23, "nse": 0.72, "pbias": -6.8, "kge": 0.70 },
-      "corrected": { "rmse": 5.89, "nse": 0.82, "pbias": -3.2, "kge": 0.80 },
-      "rmse_improvement_pct": 18.5
+      "experiment": "baseline",
+      "site_id": "03161000",
+      "file": "exp_baseline_03161000_metrics.json",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 14.464005196168879,
+        "mae": 5.669569339237228,
+        "nse": 0.5160928464027024,
+        "kge": 0.4413731496483241,
+        "pbias": -21.247068436474486,
+        "pearson_r": 0.8017296339135396,
+        "spearman_r": 0.8749077861512761
+      },
+      "rmse_improvement_pct": 7.765255537512526
     },
     {
-      "experiment": "lstm",
-      "site_id": "03479000",
-      "file": "watauga_cluster_lstm_03479000_metrics.json",
-      "baseline": { "rmse": 3.12, "nse": 0.74, "pbias": -5.2, "kge": 0.71 },
-      "corrected": { "rmse": 2.78, "nse": 0.79, "pbias": -3.8, "kge": 0.76 },
-      "rmse_improvement_pct": 10.9
+      "experiment": "direct",
+      "site_id": "03161000",
+      "file": "exp_direct_03161000_metrics.json",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 13.80572670389681,
+        "mae": 5.402435154639679,
+        "nse": 0.5591372068640619,
+        "kge": 0.47586808754646825,
+        "pbias": -20.18433639789179,
+        "pearson_r": 0.823669272122045,
+        "spearman_r": 0.881611395664148
+      },
+      "rmse_improvement_pct": 11.962996598608653
     },
     {
-      "experiment": "lstm",
-      "site_id": "03486000",
-      "file": "watauga_cluster_lstm_03486000_metrics.json",
-      "baseline": { "rmse": 14.31, "nse": 0.71, "pbias": -8.1, "kge": 0.68 },
-      "corrected": { "rmse": 13.21, "nse": 0.75, "pbias": -6.2, "kge": 0.72 },
-      "rmse_improvement_pct": 7.7
-    },
-    {
-      "experiment": "hydra_v1",
-      "site_id": "03479000",
-      "file": "watauga_cluster_hydra_v1_03479000_metrics.json",
-      "baseline": { "rmse": 3.12, "nse": 0.74, "pbias": -5.2, "kge": 0.71 },
-      "corrected": { "rmse": 2.65, "nse": 0.81, "pbias": -3.1, "kge": 0.78 },
-      "rmse_improvement_pct": 15.1
-    },
-    {
-      "experiment": "hydra_v1",
-      "site_id": "03486000",
-      "file": "watauga_cluster_hydra_v1_03486000_metrics.json",
-      "baseline": { "rmse": 14.31, "nse": 0.71, "pbias": -8.1, "kge": 0.68 },
-      "corrected": { "rmse": 12.54, "nse": 0.77, "pbias": -5.8, "kge": 0.74 },
-      "rmse_improvement_pct": 12.4
+      "experiment": "causal",
+      "site_id": "03161000",
+      "file": "exp_causal_03161000_metrics.json",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 13.378920903523031,
+        "mae": 5.520221969459255,
+        "nse": 0.585974513269522,
+        "kge": 0.531009495175599,
+        "pbias": -18.66516590629471,
+        "pearson_r": 0.8158822012470153,
+        "spearman_r": 0.8806937265302633
+      },
+      "rmse_improvement_pct": 14.68467177769459
     }
   ]
 }
