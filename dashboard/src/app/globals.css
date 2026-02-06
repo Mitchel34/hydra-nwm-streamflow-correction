@@ -1,8 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  /* Hydra Color Palette */
+  --hydra-purple: #8B5CF6;
+  --hydra-purple-light: #A78BFA;
+  --hydra-purple-dark: #6D28D9;
+  --hydra-blue: #3B82F6;
+  --hydra-blue-light: #60A5FA;
+  --hydra-blue-dark: #1D4ED8;
+  --hydra-silver: #CBD5E1;
+  --hydra-silver-light: #E2E8F0;
+  --hydra-silver-dark: #94A3B8;
+  --hydra-gold: #F59E0B;
+  --hydra-gold-light: #FCD34D;
+  --hydra-gold-dark: #D97706;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--hydra-purple) 0%, var(--hydra-blue) 100%);
+  --gradient-gold-shimmer: linear-gradient(90deg, var(--hydra-silver), var(--hydra-gold), var(--hydra-silver));
+  --gradient-hero: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
 }
 
 @theme inline {
@@ -10,17 +29,67 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Hydra theme colors for Tailwind */
+  --color-hydra-purple: var(--hydra-purple);
+  --color-hydra-purple-light: var(--hydra-purple-light);
+  --color-hydra-purple-dark: var(--hydra-purple-dark);
+  --color-hydra-blue: var(--hydra-blue);
+  --color-hydra-blue-light: var(--hydra-blue-light);
+  --color-hydra-blue-dark: var(--hydra-blue-dark);
+  --color-hydra-silver: var(--hydra-silver);
+  --color-hydra-silver-light: var(--hydra-silver-light);
+  --color-hydra-silver-dark: var(--hydra-silver-dark);
+  --color-hydra-gold: var(--hydra-gold);
+  --color-hydra-gold-light: var(--hydra-gold-light);
+  --color-hydra-gold-dark: var(--hydra-gold-dark);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--hydra-silver) 0%,
+    var(--hydra-gold-light) 25%,
+    var(--hydra-gold) 50%,
+    var(--hydra-gold-light) 75%,
+    var(--hydra-silver) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Glow effects */
+.glow-purple {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.3);
+}
+
+.glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3);
+}
+
+.glow-gold {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5), 0 0 40px rgba(245, 158, 11, 0.3);
 }
