@@ -67,26 +67,58 @@ export async function fetchTimeSeries(
   experimentId: string,
   siteId: string
 ): Promise<TimeSeriesPoint[]> {
-  // For now, return mock data - will be replaced with actual predictions
+  // First try to load precomputed time series emitted by external experiment workflows.
+  try {
+    const path = `/data/timeseries/${experimentId}_${siteId}.json`;
+    const response = await fetch(path);
+    if (response.ok) {
+      const payload = (await response.json()) as TimeSeriesPoint[];
+      if (Array.isArray(payload) && payload.length > 0) {
+        return payload;
+      }
+    }
+  } catch {
+    // Fall through to synthetic data generation.
+  }
+
+  // Fallback synthetic series for UI development when experiment exports are incomplete.
+  const seed = `${experimentId}:${siteId}`;
+  let state = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    state = (state * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  const seededRandom = () => {
+    state = (1664525 * state + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+
   const points: TimeSeriesPoint[] = [];
   const startDate = new Date('2019-01-01');
-  
-  for (let i = 0; i < 168; i++) { // 1 week of hourly data
+
+  for (let i = 0; i < 168; i += 1) {
+    // 1 week of hourly data
     const date = new Date(startDate.getTime() + i * 3600000);
-    const baseFlow = 50 + 30 * Math.sin(i / 24 * Math.PI);
-    const noise = (Math.random() - 0.5) * 10;
-    
+    const diurnal = 18 * Math.sin((i / 24) * Math.PI);
+    const eventPulse = 22 * Math.exp(-Math.pow((i - 86) / 28, 2));
+    const baseFlow = 42 + diurnal + eventPulse;
+    const noise = (seededRandom() - 0.5) * 10;
+    const nwmBias = 2.4 + (seededRandom() - 0.5) * 2;
+    const correction = 0.72 + seededRandom() * 0.18;
+    const nwm = Math.max(0, baseFlow + nwmBias + noise * 1.1);
+    const usgs = Math.max(0, baseFlow + noise * 0.45);
+    const corrected = Math.max(0, usgs + (nwm - usgs) * (1 - correction));
+
     points.push({
       timestamp: date.toISOString(),
-      nwm: baseFlow + noise * 1.5,
-      usgs: baseFlow + noise * 0.3,
-      corrected: baseFlow + noise * 0.5,
-      residual: noise * 0.2,
-      lower_ci: baseFlow + noise * 0.5 - 5,
-      upper_ci: baseFlow + noise * 0.5 + 5,
+      nwm,
+      usgs,
+      corrected,
+      residual: nwm - usgs,
+      lower_ci: Math.max(0, corrected - 3.5),
+      upper_ci: corrected + 3.5,
     });
   }
-  
+
   return points;
 }
 

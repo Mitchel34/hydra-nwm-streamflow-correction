@@ -1,29 +1,21 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
+import PipelineSchematic from '@/components/PipelineSchematic';
 
-// Dynamic import for 3D logo (client-side only)
-const HydraLogo3D = dynamic(() => import('@/components/HydraLogo3D'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[400px] flex items-center justify-center">
-      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-hydra-purple to-hydra-blue animate-pulse" />
-    </div>
-  ),
-});
-
-// Feature card component
 function FeatureCard({
   icon,
   title,
   description,
+  eyebrow,
   delay = 0,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
+  eyebrow: string;
   delay?: number;
 }) {
   return (
@@ -31,96 +23,117 @@ function FeatureCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
-      className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-6 hover:border-hydra-purple/50 transition-colors"
+      className="surface-panel rounded-2xl p-6"
     >
-      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-hydra-purple to-hydra-blue flex items-center justify-center mb-4">
+      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-hydra-accent/30 bg-gradient-to-br from-hydra-accent/30 to-hydra-corrected/30 text-hydra-corrected">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-      <p className="text-gray-400 text-sm">{description}</p>
+      <p className="font-display text-[0.68rem] uppercase tracking-[0.22em] text-hydra-accent-soft/85">
+        {eyebrow}
+      </p>
+      <h3 className="mt-2 mb-2 font-display text-lg text-white">{title}</h3>
+      <p className="text-[0.95rem] leading-relaxed text-[#afc6d7]">{description}</p>
     </motion.div>
   );
 }
 
 export default function HomePage() {
-  return (
-    <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
-      {/* Background gradient effect */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 50% at 50% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%), radial-gradient(ellipse 60% 40% at 70% 60%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
-        }}
-      />
+  const [reduceMotion, setReduceMotion] = useState(false);
 
-      {/* Navigation */}
-      <nav className="relative z-10 border-b border-gray-800/50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+  useEffect(() => {
+    const shouldReduce =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const storedSetting =
+      typeof window !== 'undefined'
+        ? window.localStorage.getItem('hydra.reduceMotion')
+        : null;
+
+    if (storedSetting !== null) {
+      setReduceMotion(storedSetting === 'true');
+      return;
+    }
+    setReduceMotion(shouldReduce);
+  }, []);
+
+  const handleMotionToggle = () => {
+    setReduceMotion((prev) => {
+      const next = !prev;
+      window.localStorage.setItem('hydra.reduceMotion', String(next));
+      return next;
+    });
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden text-white">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.13] [background-image:linear-gradient(transparent_95%,rgba(134,171,196,0.22)_95%),linear-gradient(90deg,transparent_95%,rgba(134,171,196,0.18)_95%)] [background-size:28px_28px]" />
+      <div className="pointer-events-none absolute top-24 left-1/2 -translate-x-1/2 select-none font-display text-[24vw] tracking-[0.2em] text-white/3">
+        HYDRA
+      </div>
+
+      <nav className="relative z-10 border-b border-[#2a455c]/55 bg-[#06131f]/70 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-hydra-purple to-hydra-blue" />
-            <span className="font-bold text-lg">HYDRA</span>
+            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-hydra-accent to-hydra-corrected shadow-[0_0_20px_rgba(43,227,214,0.45)]" />
+            <span className="font-display text-lg font-semibold tracking-[0.12em]">HYDRA</span>
           </div>
-          <Link
-            href="/dashboard"
-            className="text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            Dashboard →
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleMotionToggle}
+              className="rounded-full border border-hydra-accent/35 px-3 py-1.5 text-xs text-[#bbd4e5] transition-colors hover:border-hydra-corrected/50 hover:text-white"
+              aria-label={reduceMotion ? 'Enable animations' : 'Reduce animations'}
+            >
+              {reduceMotion ? 'Motion: Reduced' : 'Motion: Full'}
+            </button>
+            <Link
+              href="/dashboard"
+              className="text-sm text-[#c2d8e8] transition-colors hover:text-white"
+            >
+              Dashboard →
+            </Link>
+          </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
       <main className="relative z-10">
-        <div className="max-w-7xl mx-auto px-6 pt-12 pb-20">
-          {/* 3D Logo */}
+        <div className="mx-auto max-w-7xl px-6 pt-16 pb-20">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
-          >
-            <HydraLogo3D height="350px" />
-          </motion.div>
-
-          {/* Title */}
-          <motion.div
-            className="text-center mt-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.6 }}
+            className="mx-auto max-w-4xl text-center"
           >
-            <h1 className="text-6xl md:text-7xl font-bold tracking-tight">
+            <h1 className="font-display text-5xl font-semibold tracking-tight md:text-7xl">
               <span className="gradient-text">HYDRA</span>
             </h1>
-            <p className="text-xl md:text-2xl text-hydra-silver mt-4 font-light">
-              <span className="shimmer-text">
-                Hybrid Deep-learning for Residual Analysis
-              </span>
+            <p className="mt-4 text-lg font-medium text-[#d7e8f4] md:text-2xl">
+              <span className="shimmer-text">Hybrid Deep-learning for Residual Analysis</span>
             </p>
-            <p className="text-gray-400 mt-6 max-w-2xl mx-auto text-lg">
+            <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-[#a9c2d3]">
               A transformer-based machine learning system for correcting errors in
               National Water Model streamflow predictions across the Appalachian
               region.
             </p>
           </motion.div>
 
-          {/* CTA Button */}
           <motion.div
-            className="flex justify-center mt-10"
+            className="mt-10 flex justify-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Link
               href="/dashboard"
-              className="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-hydra-purple to-hydra-blue rounded-full font-semibold text-white shadow-lg hover:shadow-hydra-purple/25 transition-all duration-300 hover:scale-105"
+              className="group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-hydra-accent to-hydra-corrected px-8 py-4 font-display font-medium text-[#022133] shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_10px_25px_rgba(43,227,214,0.26)]"
             >
               <span>Explore Results</span>
               <svg
-                className="w-5 h-5 group-hover:translate-x-1 transition-transform"
+                className="h-5 w-5 transition-transform group-hover:translate-x-1"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -132,46 +145,59 @@ export default function HomePage() {
             </Link>
           </motion.div>
 
-          {/* Features Grid */}
-          <div className="mt-24 grid md:grid-cols-3 gap-6">
+          <motion.section
+            className="mt-14"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <h2 className="mb-5 text-center font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc]">
+              Model Pipeline
+            </h2>
+            <PipelineSchematic reduceMotion={reduceMotion} />
+          </motion.section>
+
+          <div className="mt-16 grid gap-6 md:grid-cols-3">
             <FeatureCard
-              delay={0.6}
+              delay={0.4}
               icon={
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               }
-              title="Multi-Site Analysis"
+              eyebrow="Comparative Analysis"
+              title="Multi-Site Evaluation"
               description="Compare model performance across 4 USGS gauging stations in the New River and Watauga watersheds."
             />
             <FeatureCard
-              delay={0.7}
+              delay={0.5}
               icon={
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               }
-              title="Experiment Comparison"
-              description="Evaluate different model configurations including causal masking, physics constraints, and architecture variations."
+              eyebrow="Ablation Studies"
+              title="Experiment Grid"
+              description="Evaluate causal masking, physics constraints, and architecture variants using consistent metrics."
             />
             <FeatureCard
-              delay={0.8}
+              delay={0.6}
               icon={
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                 </svg>
               }
-              title="Interactive Visualizations"
-              description="Explore hydrographs, error distributions, and performance metrics with interactive D3.js charts."
+              eyebrow="Interactive Insights"
+              title="Chart-Driven Diagnostics"
+              description="Inspect hydrographs, site-level improvements, and residual error distributions for each configuration."
             />
           </div>
 
-          {/* Stats Section */}
           <motion.div
-            className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6"
+            className="mt-[4.5rem] grid grid-cols-2 gap-4 md:grid-cols-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.9 }}
+            transition={{ duration: 0.5, delay: 0.65 }}
           >
             {[
               { value: '4', label: 'Study Sites' },
@@ -179,24 +205,25 @@ export default function HomePage() {
               { value: '6', label: 'Experiments' },
               { value: '2010-2020', label: 'Study Period' },
             ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold gradient-text">
+              <div key={i} className="surface-panel rounded-xl p-4 text-center">
+                <div className="font-display text-2xl font-semibold gradient-text md:text-3xl">
                   {stat.value}
                 </div>
-                <div className="text-gray-500 text-sm mt-1">{stat.label}</div>
+                <div className="mt-1 text-xs tracking-wide text-[#95b0c3] uppercase">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </motion.div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-gray-800/50 py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-gray-500 text-sm">
+      <footer className="relative z-10 border-t border-[#2a455c]/55 bg-[#06131f]/75 py-8">
+        <div className="mx-auto max-w-7xl px-6 text-center">
+          <p className="text-sm text-[#9fbacc]">
             Master&apos;s Thesis Project | Appalachian State University | 2024-2025
           </p>
-          <p className="text-gray-600 text-xs mt-2">
+          <p className="mt-2 text-xs tracking-[0.08em] text-[#7f9bb0] uppercase">
             Hydra Transformer for NWM Streamflow Error Correction
           </p>
         </div>
