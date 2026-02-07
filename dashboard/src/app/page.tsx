@@ -87,6 +87,12 @@ export default function HomePage() {
               {reduceMotion ? 'Motion: Reduced' : 'Motion: Full'}
             </button>
             <Link
+              href="/analysis"
+              className="text-sm text-[#c2d8e8] transition-colors hover:text-white"
+            >
+              Analysis
+            </Link>
+            <Link
               href="/dashboard"
               className="text-sm text-[#c2d8e8] transition-colors hover:text-white"
             >

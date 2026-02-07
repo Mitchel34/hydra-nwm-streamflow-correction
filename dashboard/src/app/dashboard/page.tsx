@@ -247,8 +247,16 @@ export default function Dashboard() {
               <p className="text-xs text-[#8daec2]">NWM Streamflow Error Correction</p>
             </div>
           </div>
-          <div className="text-sm text-[#8daec2]">
-            Last updated: {new Date(data.generated_at).toLocaleDateString()}
+          <div className="flex items-center gap-4">
+            <Link
+              href="/analysis"
+              className="text-sm text-[#8daec2] hover:text-white transition-colors"
+            >
+              Analysis →
+            </Link>
+            <span className="text-sm text-[#8daec2]">
+              Updated: {new Date(data.generated_at).toLocaleDateString()}
+            </span>
           </div>
         </div>
       </header>
