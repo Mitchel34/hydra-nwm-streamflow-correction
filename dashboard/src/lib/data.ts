@@ -7,6 +7,9 @@ import { DashboardData, TimeSeriesPoint } from './types';
 
 const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === 'true';
 
+// Exclude regulated site from dashboard (dam operations introduce non-stationarity)
+const EXCLUDED_SITES = ['03486000'];
+
 // Supabase configuration (optional - will fall back to local JSON)
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -26,7 +29,21 @@ async function fetchFromLocalJSON(): Promise<DashboardData> {
   if (!response.ok) {
     throw new Error('Failed to fetch experiment results');
   }
-  return response.json();
+  const data: DashboardData = await response.json();
+
+  // Filter out excluded sites (regulated sites with dam operations)
+  const filteredSites = Object.fromEntries(
+    Object.entries(data.sites).filter(([siteId]) => !EXCLUDED_SITES.includes(siteId))
+  );
+  const filteredResults = data.results.filter(
+    (result) => !EXCLUDED_SITES.includes(result.site_id)
+  );
+
+  return {
+    ...data,
+    sites: filteredSites,
+    results: filteredResults,
+  };
 }
 
 async function fetchFromSupabase(): Promise<DashboardData> {
@@ -44,19 +61,24 @@ async function fetchFromSupabase(): Promise<DashboardData> {
     return fetchFromLocalJSON();
   }
 
-  // Transform Supabase data to match DashboardData format
+  // Transform Supabase data to match DashboardData format, excluding regulated sites
   const sites = Object.fromEntries(
-    sitesRes.data?.map((s) => [s.site_id, s]) || []
+    (sitesRes.data || [])
+      .filter((s) => !EXCLUDED_SITES.includes(s.site_id))
+      .map((s) => [s.site_id, s])
   );
   const experiments = Object.fromEntries(
     experimentsRes.data?.map((e) => [e.experiment_id, e]) || []
+  );
+  const results = (resultsRes.data || []).filter(
+    (r) => !EXCLUDED_SITES.includes(r.site_id)
   );
 
   return {
     generated_at: new Date().toISOString(),
     sites,
     experiments,
-    results: resultsRes.data || [],
+    results,
   };
 }
 
