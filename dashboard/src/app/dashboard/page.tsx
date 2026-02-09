@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { fetchExperimentResults, fetchTimeSeries } from '@/lib/data';
-import { DashboardData, MetricComparison, TimeSeriesPoint } from '@/lib/types';
+import { fetchExperimentResults, fetchTimeSeries, buildVersionComparison } from '@/lib/data';
+import { DashboardData, MetricComparison, TimeSeriesPoint, VersionComparisonRow } from '@/lib/types';
 import SiteCard from '@/components/SiteCard';
 import ExperimentSelector from '@/components/ExperimentSelector';
 import MetricCard from '@/components/MetricCard';
@@ -30,7 +30,30 @@ const ErrorDistribution = dynamic(
   }
 );
 
+const VersionComparisonChart = dynamic(
+  () => import('@/components/charts/VersionComparison'),
+  {
+    ssr: false,
+    loading: () => <div className="h-72 rounded-lg bg-[#0f202f] animate-pulse" />,
+  }
+);
+
+const QuantileCoverageChart = dynamic(
+  () => import('@/components/charts/QuantileCoverage'),
+  {
+    ssr: false,
+    loading: () => <div className="h-48 rounded-lg bg-[#0f202f] animate-pulse" />,
+  }
+);
+
 const preferredExperimentOrder = [
+  'v3_full',
+  'v3_combined',
+  'v3_autonorm',
+  'v3_eventsample',
+  'v3_physics',
+  'v3_causal',
+  'v3_baseline',
   'hydra_v2',
   'combined',
   'physics',
@@ -49,6 +72,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [versionFilter, setVersionFilter] = useState<'all' | 'v2' | 'v3'>('all');
 
   useEffect(() => {
     fetchExperimentResults()
@@ -130,6 +154,12 @@ export default function Dashboard() {
     [data?.results, selectedExperiment]
   );
 
+  const versionComparison: VersionComparisonRow[] = useMemo(
+    () =>
+      data ? buildVersionComparison(data.results, data.sites) : [],
+    [data]
+  );
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#07131f]">
@@ -200,6 +230,26 @@ export default function Dashboard() {
             ((currentResult.corrected.kge || 0) - (currentResult.baseline.kge || 0)) *
             100,
         },
+        ...(currentResult.corrected.pearson_r != null
+          ? [{
+              metric: 'Pearson r',
+              baseline: currentResult.baseline.pearson_r || 0,
+              corrected: currentResult.corrected.pearson_r || 0,
+              improvement:
+                ((currentResult.corrected.pearson_r || 0) - (currentResult.baseline.pearson_r || 0)) *
+                100,
+            }]
+          : []),
+        ...(currentResult.corrected.spearman_r != null
+          ? [{
+              metric: 'Spearman ρ',
+              baseline: currentResult.baseline.spearman_r || 0,
+              corrected: currentResult.corrected.spearman_r || 0,
+              improvement:
+                ((currentResult.corrected.spearman_r || 0) - (currentResult.baseline.spearman_r || 0)) *
+                100,
+            }]
+          : []),
       ]
     : [];
 
@@ -291,6 +341,8 @@ export default function Dashboard() {
             selected={selectedExperiment}
             onSelect={handleExperimentSelect}
             availableExperiments={availableExperiments}
+            versionFilter={versionFilter}
+            onVersionFilterChange={setVersionFilter}
           />
         </section>
 
@@ -390,7 +442,7 @@ export default function Dashboard() {
             {currentResult ? (
               <section>
                 <h2 className="mb-4 font-display text-lg">Performance Metrics</h2>
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
                   <MetricCard
                     label="RMSE"
                     baseline={currentResult.baseline.rmse || 0}
@@ -417,7 +469,72 @@ export default function Dashboard() {
                     corrected={currentResult.corrected.kge || 0}
                     higherIsBetter={true}
                   />
+                  {(currentResult.corrected.pearson_r != null) && (
+                    <MetricCard
+                      label="Pearson r"
+                      baseline={currentResult.baseline.pearson_r || 0}
+                      corrected={currentResult.corrected.pearson_r || 0}
+                      higherIsBetter={true}
+                    />
+                  )}
+                  {(currentResult.corrected.spearman_r != null) && (
+                    <MetricCard
+                      label="Spearman ρ"
+                      baseline={currentResult.baseline.spearman_r || 0}
+                      corrected={currentResult.corrected.spearman_r || 0}
+                      higherIsBetter={true}
+                    />
+                  )}
                 </div>
+
+                {/* Quantile Coverage (v3 experiments only) */}
+                {currentResult.quantiles && Object.keys(currentResult.quantiles).length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="mb-3 font-display text-base text-[#bbd4e5]">
+                      Quantile Calibration
+                    </h3>
+                    <QuantileCoverageChart
+                      quantiles={currentResult.quantiles}
+                      experimentName={selectedExperimentName}
+                    />
+                  </div>
+                )}
+
+                {/* Bias Shift Info (v3 experiments only) */}
+                {currentResult.bias_shift && (
+                  <div className="mt-4 surface-panel rounded-xl p-4">
+                    <h3 className="font-display text-sm uppercase tracking-[0.12em] text-[#9bb7ca] mb-2">
+                      Bias Correction
+                    </h3>
+                    <div className="grid gap-3 sm:grid-cols-4 text-sm">
+                      <div>
+                        <span className="text-[#7f9db2]">Strategy</span>
+                        <p className="text-white font-medium">{currentResult.bias_shift.strategy}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#7f9db2]">PBIAS</span>
+                        <p className="text-white font-medium">
+                          {currentResult.bias_shift.pbias_percent != null
+                            ? `${currentResult.bias_shift.pbias_percent.toFixed(1)}%`
+                            : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[#7f9db2]">Alpha</span>
+                        <p className="text-white font-medium">{currentResult.bias_shift.alpha}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#7f9db2]">Status</span>
+                        <p className={`font-medium ${
+                          currentResult.bias_shift.status === 'applied'
+                            ? 'text-hydra-corrected' : 'text-[#f59e0b]'
+                        }`}>
+                          {currentResult.bias_shift.status}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </section>
             ) : (
               <section className="rounded-xl border border-[#345066] bg-[#0c1b29] px-4 py-4 text-sm text-[#a6c1d3]">
@@ -450,13 +567,24 @@ export default function Dashboard() {
                 />
               </section>
             </div>
+
+            {/* Version Comparison: best v2 vs best v3 per site */}
+            {versionComparison.length > 0 && (
+              <section>
+                <h2 className="mb-4 font-display text-lg">v2 vs v3 Comparison</h2>
+                <p className="mb-3 text-sm text-[#8daec2]">
+                  Best experiment from each architecture version per site (by RMSE improvement).
+                </p>
+                <VersionComparisonChart data={versionComparison} />
+              </section>
+            )}
           </div>
         </div>
       </main>
 
       <footer className="mt-8 border-t border-[#2a445b] bg-[#071420]/80 px-6 py-4">
         <div className="mx-auto max-w-7xl text-center text-sm text-[#8daec2]">
-          Hydra Transformer Streamflow Error Correction | Thesis Project 2024-2025
+          Hydra Transformer Streamflow Error Correction | Thesis Project 2024–2025
         </div>
       </footer>
     </div>

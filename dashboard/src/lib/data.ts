@@ -3,7 +3,12 @@
  * Supports both local JSON files and Supabase
  */
 
-import { DashboardData, TimeSeriesPoint } from './types';
+import {
+  DashboardData,
+  ExperimentResult,
+  TimeSeriesPoint,
+  VersionComparisonRow,
+} from './types';
 
 const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === 'true';
 
@@ -30,6 +35,13 @@ async function fetchFromLocalJSON(): Promise<DashboardData> {
     throw new Error('Failed to fetch experiment results');
   }
   const data: DashboardData = await response.json();
+
+  // Infer model_version where missing (backward compat)
+  for (const r of data.results) {
+    if (!r.model_version) {
+      r.model_version = r.experiment.startsWith('v3_') ? 'v3' : 'v2';
+    }
+  }
 
   // Filter out excluded sites (regulated sites with dam operations)
   const filteredSites = Object.fromEntries(
@@ -70,9 +82,12 @@ async function fetchFromSupabase(): Promise<DashboardData> {
   const experiments = Object.fromEntries(
     experimentsRes.data?.map((e) => [e.experiment_id, e]) || []
   );
-  const results = (resultsRes.data || []).filter(
-    (r) => !EXCLUDED_SITES.includes(r.site_id)
-  );
+  const results = (resultsRes.data || [])
+    .filter((r) => !EXCLUDED_SITES.includes(r.site_id))
+    .map((r) => ({
+      ...r,
+      model_version: r.model_version || (r.experiment?.startsWith('v3_') ? 'v3' : 'v2'),
+    }));
 
   return {
     generated_at: new Date().toISOString(),
@@ -145,6 +160,52 @@ export async function fetchTimeSeries(
 }
 
 /**
+ * Build v2-vs-v3 comparison rows for "Version Comparison" chart.
+ * For each site, find the best v2 and best v3 experiment by RMSE improvement.
+ */
+export function buildVersionComparison(
+  results: ExperimentResult[],
+  sites: Record<string, { name: string }>,
+): VersionComparisonRow[] {
+  const siteIds = [...new Set(results.map((r) => r.site_id))];
+  const rows: VersionComparisonRow[] = [];
+
+  for (const siteId of siteIds) {
+    const siteResults = results.filter((r) => r.site_id === siteId);
+    const v2 = siteResults.filter((r) => r.model_version === 'v2');
+    const v3 = siteResults.filter((r) => r.model_version === 'v3');
+
+    const bestV2 = v2.reduce<ExperimentResult | null>(
+      (best, r) =>
+        !best || (r.rmse_improvement_pct ?? 0) > (best.rmse_improvement_pct ?? 0) ? r : best,
+      null,
+    );
+    const bestV3 = v3.reduce<ExperimentResult | null>(
+      (best, r) =>
+        !best || (r.rmse_improvement_pct ?? 0) > (best.rmse_improvement_pct ?? 0) ? r : best,
+      null,
+    );
+
+    if (bestV2 && bestV3) {
+      rows.push({
+        site_id: siteId,
+        site_name: sites[siteId]?.name ?? siteId,
+        v2_experiment: bestV2.experiment,
+        v2_nse: bestV2.corrected.nse ?? 0,
+        v2_rmse: bestV2.corrected.rmse ?? 0,
+        v2_improvement: bestV2.rmse_improvement_pct ?? 0,
+        v3_experiment: bestV3.experiment,
+        v3_nse: bestV3.corrected.nse ?? 0,
+        v3_rmse: bestV3.corrected.rmse ?? 0,
+        v3_improvement: bestV3.rmse_improvement_pct ?? 0,
+      });
+    }
+  }
+
+  return rows;
+}
+
+/**
  * Format metric name for display
  */
 export function formatMetricName(metric: string): string {
@@ -155,6 +216,8 @@ export function formatMetricName(metric: string): string {
     kge: 'KGE',
     nrmse: 'NRMSE',
     mae: 'MAE (m³/s)',
+    pearson_r: 'Pearson r',
+    spearman_r: 'Spearman ρ',
   };
   return names[metric] || metric.toUpperCase();
 }
@@ -179,10 +242,10 @@ export function isMetricImproved(
   baseline: number,
   corrected: number
 ): boolean {
-  // Higher is better: NSE, KGE
+  // Higher is better: NSE, KGE, pearson_r, spearman_r
   // Lower is better: RMSE, MAE, NRMSE
   // Closer to 0 is better: PBIAS
-  const higherIsBetter = ['nse', 'kge'];
+  const higherIsBetter = ['nse', 'kge', 'pearson_r', 'spearman_r'];
   const lowerIsBetter = ['rmse', 'mae', 'nrmse'];
   
   if (higherIsBetter.includes(metric)) {
@@ -205,7 +268,7 @@ export function calculateImprovement(
 ): number {
   if (baseline === 0) return 0;
   
-  const higherIsBetter = ['nse', 'kge'];
+  const higherIsBetter = ['nse', 'kge', 'pearson_r', 'spearman_r'];
   const lowerIsBetter = ['rmse', 'mae', 'nrmse'];
   
   if (lowerIsBetter.includes(metric)) {

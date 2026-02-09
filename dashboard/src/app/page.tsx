@@ -173,7 +173,7 @@ export default function HomePage() {
               }
               eyebrow="Comparative Analysis"
               title="Multi-Site Evaluation"
-              description="Compare model performance across 4 USGS gauging stations in the New River and Watauga watersheds."
+              description="Compare model performance across 3 unregulated USGS gauging stations in the New River and Watauga watersheds."
             />
             <FeatureCard
               delay={0.5}
@@ -184,7 +184,7 @@ export default function HomePage() {
               }
               eyebrow="Ablation Studies"
               title="Experiment Grid"
-              description="Evaluate causal masking, physics constraints, and architecture variants using consistent metrics."
+              description="Evaluate causal masking, physics constraints, quantile regression, and v2/v3 architecture variants using consistent metrics."
             />
             <FeatureCard
               delay={0.6}
@@ -206,10 +206,10 @@ export default function HomePage() {
             transition={{ duration: 0.5, delay: 0.65 }}
           >
             {[
-              { value: '4', label: 'Study Sites' },
-              { value: '21%', label: 'Avg RMSE Reduction' },
-              { value: '6', label: 'Experiments' },
-              { value: '2010-2020', label: 'Study Period' },
+              { value: '3', label: 'Unregulated Sites' },
+              { value: '27%', label: 'Best RMSE Reduction' },
+              { value: '15', label: 'Experiments (v2+v3)' },
+              { value: '2010–2020', label: 'Study Period' },
             ].map((stat, i) => (
               <div key={i} className="surface-panel rounded-xl p-4 text-center">
                 <div className="font-display text-2xl font-semibold gradient-text md:text-3xl">
@@ -227,7 +227,7 @@ export default function HomePage() {
       <footer className="relative z-10 border-t border-[#2a455c]/55 bg-[#06131f]/75 py-8">
         <div className="mx-auto max-w-7xl px-6 text-center">
           <p className="text-sm text-[#9fbacc]">
-            Master&apos;s Thesis Project | Appalachian State University | 2024-2025
+            Master&apos;s Thesis Project | Appalachian State University | 2024–2025
           </p>
           <p className="mt-2 text-xs tracking-[0.08em] text-[#7f9bb0] uppercase">
             Hydra Transformer for NWM Streamflow Error Correction

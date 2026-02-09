@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import StudyRegionMap from '@/components/StudyRegionMap';
+import { fetchExperimentResults, buildVersionComparison } from '@/lib/data';
+import { DashboardData, ExperimentResult, ModelVersion } from '@/lib/types';
 
 interface FindingCardProps {
   icon: React.ReactNode;
@@ -36,47 +38,102 @@ function FindingCard({ icon, title, value, description, positive = true }: Findi
   );
 }
 
-interface VisualizationCardProps {
-  src: string;
-  alt: string;
-  title: string;
-  description: string;
-}
+/** Compute summary rows for the experiment table from real results. */
+function computeExperimentSummary(
+  results: ExperimentResult[],
+  sites: Record<string, { name: string }>
+) {
+  const byExperiment: Record<string, ExperimentResult[]> = {};
+  for (const r of results) {
+    (byExperiment[r.experiment] ??= []).push(r);
+  }
 
-function VisualizationCard({ src, alt, title, description }: VisualizationCardProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="surface-panel rounded-2xl overflow-hidden"
-    >
-      <div className="p-4 border-b border-[#22384b]">
-        <h3 className="font-display text-lg text-white">{title}</h3>
-        <p className="text-sm text-[#8fb4cc] mt-1">{description}</p>
-      </div>
-      <div className="p-4 bg-[#0a1a26]">
-        <Image
-          src={src}
-          alt={alt}
-          width={800}
-          height={500}
-          className="w-full h-auto rounded-lg"
-          priority
-        />
-      </div>
-    </motion.div>
-  );
+  return Object.entries(byExperiment)
+    .map(([experiment, rows]) => {
+      const improvements = rows
+        .map((r) => r.rmse_improvement_pct ?? 0)
+        .filter((v) => v !== 0);
+      const avgImprovement = improvements.length
+        ? improvements.reduce((a, b) => a + b, 0) / improvements.length
+        : 0;
+      const best = rows.reduce<ExperimentResult | null>(
+        (b, r) => (!b || (r.rmse_improvement_pct ?? 0) > (b.rmse_improvement_pct ?? 0) ? r : b),
+        null,
+      );
+      const bestSiteName = best ? (sites[best.site_id]?.name ?? best.site_id) : 'N/A';
+      const bestPct = best?.rmse_improvement_pct ?? 0;
+      const version: ModelVersion = experiment.startsWith('v3_') ? 'v3' : 'v2';
+      return {
+        experiment,
+        version,
+        avgImprovement,
+        bestSite: `${bestSiteName} (${bestPct.toFixed(1)}%)`,
+        nSites: rows.length,
+      };
+    })
+    .sort((a, b) => b.avgImprovement - a.avgImprovement);
 }
 
 export default function AnalysisPage() {
-  // Summary for unregulated sites only (Jefferson, Galax, Sugar Grove)
-  const experimentSummary = [
-    { experiment: 'Causal Mask', avgImprovement: '+15.8%', bestSite: 'Galax, VA (21.3%)' },
-    { experiment: 'Physics Constraint', avgImprovement: '+12.4%', bestSite: 'Jefferson, NC (21.5%)' },
-    { experiment: 'Baseline', avgImprovement: '+9.7%', bestSite: 'Galax, VA (10.6%)' },
-    { experiment: 'Direct Mode', avgImprovement: '+8.2%', bestSite: 'Jefferson, NC (16.1%)' },
-    { experiment: 'Combined', avgImprovement: '+11.2%', bestSite: 'Galax, VA (20.1%)' },
-  ];
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchExperimentResults()
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const experimentSummary = useMemo(
+    () => (data ? computeExperimentSummary(data.results, data.sites) : []),
+    [data],
+  );
+
+  const versionComparison = useMemo(
+    () => (data ? buildVersionComparison(data.results, data.sites) : []),
+    [data],
+  );
+
+  // Key findings computed from real data
+  const findings = useMemo(() => {
+    if (!data) return null;
+    const all = data.results;
+    const bestResult = all.reduce<ExperimentResult | null>(
+      (b, r) => (!b || (r.rmse_improvement_pct ?? 0) > (b.rmse_improvement_pct ?? 0) ? r : b),
+      null,
+    );
+    const successCount = all.filter((r) => (r.rmse_improvement_pct ?? 0) > 0).length;
+    const improvements = all.map((r) => r.rmse_improvement_pct ?? 0).filter(Boolean);
+    const avgImprovement = improvements.length
+      ? improvements.reduce((a, b) => a + b, 0) / improvements.length
+      : 0;
+
+    // Best NSE improvement at any single site
+    const bestNseGain = all.reduce(
+      (best, r) => {
+        const gain = (r.corrected.nse ?? 0) - (r.baseline.nse ?? 0);
+        return gain > best ? gain : best;
+      },
+      0,
+    );
+
+    const bestSiteName = bestResult
+      ? data.sites[bestResult.site_id]?.name ?? bestResult.site_id
+      : 'N/A';
+    const bestExpName = bestResult
+      ? data.experiments[bestResult.experiment]?.name ?? bestResult.experiment
+      : 'N/A';
+
+    return {
+      bestRmsePct: bestResult?.rmse_improvement_pct ?? 0,
+      bestLabel: `${bestExpName} @ ${bestSiteName}`,
+      successRate: all.length > 0 ? (successCount / all.length) * 100 : 0,
+      successCount,
+      totalCount: all.length,
+      avgImprovement,
+      bestNseGain,
+    };
+  }, [data]);
 
   return (
     <div className="min-h-screen text-white">
@@ -112,6 +169,11 @@ export default function AnalysisPage() {
           <p className="mt-3 text-lg text-[#a9c2d3] max-w-3xl">
             Comprehensive evaluation of deep learning approaches for National Water Model
             streamflow error correction across Appalachian watersheds.
+            {data && (
+              <span className="text-hydra-corrected ml-1">
+                ({data.results.length} experiment results loaded)
+              </span>
+            )}
           </p>
         </motion.div>
 
@@ -120,122 +182,162 @@ export default function AnalysisPage() {
           <StudyRegionMap />
         </section>
 
-        {/* Key Findings */}
-        <section className="mb-12">
-          <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc] mb-5">
-            Key Findings (Unregulated Sites)
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <FindingCard
-              icon={
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              }
-              title="Best Result"
-              value="21.5%"
-              description="RMSE reduction (Physics @ Jefferson)"
-              positive={true}
-            />
-            <FindingCard
-              icon={
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
-              title="Success Rate"
-              value="100%"
-              description="All 15 experiments improved"
-              positive={true}
-            />
-            <FindingCard
-              icon={
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              }
-              title="Average Improvement"
-              value="+11.5%"
-              description="Mean RMSE reduction across sites"
-              positive={true}
-            />
-            <FindingCard
-              icon={
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              }
-              title="NSE Improvement"
-              value="+0.22"
-              description="Avg efficiency gain at Jefferson"
-              positive={true}
-            />
-          </div>
-        </section>
+        {/* Loading state */}
+        {loading && (
+          <div className="mb-12 text-center text-[#8fb4cc]">Loading experiment data...</div>
+        )}
 
-        {/* Experiment Summary Table */}
-        <section className="mb-12">
-          <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc] mb-5">
-            Experiment Summary
-          </h2>
-          <div className="surface-panel rounded-xl overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-[#122334]">
-                <tr>
-                  <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Configuration</th>
-                  <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Avg RMSE Improvement</th>
-                  <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Best Site</th>
-                </tr>
-              </thead>
-              <tbody>
-                {experimentSummary.map((row, i) => (
-                  <tr key={i} className="border-t border-[#22384b]">
-                    <td className="px-5 py-3 text-white">{row.experiment}</td>
-                    <td className={`px-5 py-3 font-medium ${
-                      row.avgImprovement.startsWith('+') ? 'text-hydra-corrected' : 'text-hydra-alert'
-                    }`}>
-                      {row.avgImprovement}
-                    </td>
-                    <td className="px-5 py-3 text-[#a9c2d3]">{row.bestSite}</td>
+        {/* Key Findings — data-driven */}
+        {findings && (
+          <section className="mb-12">
+            <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc] mb-5">
+              Key Findings (Unregulated Sites)
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <FindingCard
+                icon={
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                }
+                title="Best Result"
+                value={`${findings.bestRmsePct.toFixed(1)}%`}
+                description={`RMSE reduction (${findings.bestLabel})`}
+                positive={true}
+              />
+              <FindingCard
+                icon={
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
+                title="Success Rate"
+                value={`${findings.successRate.toFixed(0)}%`}
+                description={`${findings.successCount}/${findings.totalCount} experiments improved`}
+                positive={true}
+              />
+              <FindingCard
+                icon={
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                }
+                title="Average Improvement"
+                value={`+${findings.avgImprovement.toFixed(1)}%`}
+                description="Mean RMSE reduction across sites"
+                positive={true}
+              />
+              <FindingCard
+                icon={
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                }
+                title="Best NSE Gain"
+                value={`+${findings.bestNseGain.toFixed(3)}`}
+                description="Largest single-site efficiency gain"
+                positive={true}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* Version Comparison Summary */}
+        {versionComparison.length > 0 && (
+          <section className="mb-12">
+            <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc] mb-5">
+              Architecture Comparison: v2 vs v3
+            </h2>
+            <div className="surface-panel rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-[#122334]">
+                  <tr>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Site</th>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Best v2</th>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">v2 ΔRMSE</th>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Best v3</th>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">v3 ΔRMSE</th>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Winner</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {versionComparison.map((row) => {
+                    const winner = row.v3_improvement > row.v2_improvement ? 'v3' : 'v2';
+                    return (
+                      <tr key={row.site_id} className="border-t border-[#22384b]">
+                        <td className="px-5 py-3 text-white">{row.site_name}</td>
+                        <td className="px-5 py-3 text-[#a9c2d3] text-sm">{row.v2_experiment}</td>
+                        <td className="px-5 py-3 font-medium text-hydra-accent">
+                          +{row.v2_improvement.toFixed(1)}%
+                        </td>
+                        <td className="px-5 py-3 text-[#a9c2d3] text-sm">{row.v3_experiment}</td>
+                        <td className="px-5 py-3 font-medium text-hydra-corrected">
+                          +{row.v3_improvement.toFixed(1)}%
+                        </td>
+                        <td className="px-5 py-3">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            winner === 'v3'
+                              ? 'bg-hydra-corrected/20 text-hydra-corrected'
+                              : 'bg-hydra-accent/20 text-hydra-accent'
+                          }`}>
+                            {winner.toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
-        {/* Visualizations */}
-        <section className="mb-12">
-          <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc] mb-5">
-            Visualizations
-          </h2>
-          <div className="grid gap-6 lg:grid-cols-2">
-            <VisualizationCard
-              src="/analysis/rmse_by_experiment.png"
-              alt="RMSE Improvement by Experiment"
-              title="RMSE Improvement by Experiment"
-              description="Average improvement across all sites with standard deviation error bars"
-            />
-            <VisualizationCard
-              src="/analysis/site_experiment_heatmap.png"
-              alt="Site-Experiment Heatmap"
-              title="Performance Heatmap"
-              description="RMSE improvement (%) for each site-experiment combination"
-            />
-            <VisualizationCard
-              src="/analysis/nse_kge_scatter.png"
-              alt="NSE vs KGE Scatter"
-              title="NSE vs KGE Improvement"
-              description="Correlation between efficiency metrics, colored by site type"
-            />
-            <VisualizationCard
-              src="/analysis/baseline_vs_corrected.png"
-              alt="Baseline vs Corrected"
-              title="NWM Baseline vs Hydra Corrected"
-              description="Direct comparison of RMSE and NSE values"
-            />
-          </div>
-        </section>
+        {/* Experiment Summary Table — data-driven */}
+        {experimentSummary.length > 0 && (
+          <section className="mb-12">
+            <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc] mb-5">
+              Experiment Summary
+            </h2>
+            <div className="surface-panel rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-[#122334]">
+                  <tr>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Configuration</th>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Version</th>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Avg RMSE Improvement</th>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Best Site</th>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Sites</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {experimentSummary.map((row) => (
+                    <tr key={row.experiment} className="border-t border-[#22384b]">
+                      <td className="px-5 py-3 text-white">
+                        {data?.experiments[row.experiment]?.name ?? row.experiment}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          row.version === 'v3'
+                            ? 'bg-hydra-corrected/20 text-hydra-corrected'
+                            : 'bg-hydra-accent/20 text-hydra-accent'
+                        }`}>
+                          {row.version.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className={`px-5 py-3 font-medium ${
+                        row.avgImprovement > 0 ? 'text-hydra-corrected' : 'text-hydra-alert'
+                      }`}>
+                        {row.avgImprovement > 0 ? '+' : ''}{row.avgImprovement.toFixed(1)}%
+                      </td>
+                      <td className="px-5 py-3 text-[#a9c2d3]">{row.bestSite}</td>
+                      <td className="px-5 py-3 text-[#a9c2d3]">{row.nSites}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
         {/* Technical Discussion */}
         <section className="mb-12">
@@ -248,26 +350,28 @@ export default function AnalysisPage() {
               <p className="text-[#a9c2d3] leading-relaxed">
                 The Hydra architecture combines GRU recurrence with transformer attention mechanisms
                 to capture both short-term temporal dependencies and long-range patterns in
-                hydrometeorological time series. Results indicate that enforcing temporal causality
-                through attention masking improves generalization, particularly at mainstem sites.
+                hydrometeorological time series. The v3 architecture adds auto-normalization,
+                quantile regression, and event-focused sampling to improve robustness and
+                calibration. Results indicate that the v3 combined configuration achieves the
+                best overall performance.
               </p>
             </div>
             <div>
               <h3 className="font-display text-lg text-white mb-2">Physics-Informed Learning</h3>
               <p className="text-[#a9c2d3] leading-relaxed">
-                The non-negativity penalty on streamflow predictions shows the best performance
-                at mid-basin sites (Jefferson, NC: 21.5% improvement), indicating that
-                physics-informed loss functions can enhance physical consistency without
-                sacrificing predictive accuracy.
+                The non-negativity penalty on streamflow predictions demonstrates strong performance
+                across sites. In v3, physics constraints are combined with causal masking and
+                event-focused sampling to enforce physical consistency while maintaining predictive
+                accuracy during extreme events.
               </p>
             </div>
             <div>
               <h3 className="font-display text-lg text-white mb-2">Site-Specific Performance Patterns</h3>
               <p className="text-[#a9c2d3] leading-relaxed">
-                Mainstem sites (Galax) benefit most from causal masking, likely due to longer
-                response times and more predictable flow patterns. Headwater sites (Sugar Grove)
-                show more modest but consistent improvements, reflecting their flashier response
-                to precipitation events.
+                Headwater sites with flashier responses (Sugar Grove, Jefferson) benefit from
+                event-focused sampling, while mainstem sites (Galax) show strong improvement
+                from causal masking due to longer response times and more predictable flow.
+                The v3 auto-normalization feature helps standardize across diverse site characteristics.
               </p>
             </div>
           </div>
@@ -276,7 +380,7 @@ export default function AnalysisPage() {
         {/* Model Improvement Suggestions */}
         <section className="mb-12">
           <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc] mb-5">
-            Model Improvement Suggestions
+            Future Directions
           </h2>
           <div className="grid gap-5 lg:grid-cols-2">
             <div className="surface-panel rounded-xl p-5">
@@ -290,8 +394,7 @@ export default function AnalysisPage() {
                   <h3 className="font-display text-white mb-1">Enhanced Feature Engineering</h3>
                   <p className="text-sm text-[#a9c2d3]">
                     Incorporate terrain derivatives (slope, aspect, TWI), soil moisture indices from SMAP/SMOS,
-                    and snow water equivalent from SNODAS. These could help the model better understand
-                    antecedent conditions that influence runoff response.
+                    and snow water equivalent from SNODAS to better capture antecedent conditions.
                   </p>
                 </div>
               </div>
@@ -307,45 +410,8 @@ export default function AnalysisPage() {
                 <div>
                   <h3 className="font-display text-white mb-1">Multi-Scale Attention</h3>
                   <p className="text-sm text-[#a9c2d3]">
-                    Implement hierarchical attention operating at hourly, daily, and weekly scales.
-                    This would allow the model to capture both rapid storm response and slower
-                    baseflow recession patterns simultaneously.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="surface-panel rounded-xl p-5">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hydra-observed/20 text-hydra-observed">
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-white mb-1">Event-Focused Training</h3>
-                  <p className="text-sm text-[#a9c2d3]">
-                    Apply stratified sampling to oversample high-flow events during training.
-                    Current training may underweight extreme events that are critical for
-                    flood forecasting applications like post-Helene scenarios.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="surface-panel rounded-xl p-5">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f59e0b]/20 text-[#f59e0b]">
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-white mb-1">Precipitation Nowcasting Integration</h3>
-                  <p className="text-sm text-[#a9c2d3]">
-                    Incorporate MRMS radar-derived QPE and short-term QPF as inputs. The model
-                    currently relies on NWM forcings which may have timing errors during
-                    fast-moving convective events common in the Southern Appalachians.
+                    Implement hierarchical attention at hourly, daily, and weekly scales
+                    to capture both rapid storm response and slower baseflow recession.
                   </p>
                 </div>
               </div>
@@ -361,9 +427,8 @@ export default function AnalysisPage() {
                 <div>
                   <h3 className="font-display text-white mb-1">Uncertainty Quantification</h3>
                   <p className="text-sm text-[#a9c2d3]">
-                    Implement Monte Carlo dropout or deep ensembles to provide prediction intervals.
-                    Operational users need confidence bounds, especially during extreme events
-                    where model uncertainty is highest.
+                    Extend quantile regression with deep ensembles and conformal prediction
+                    for calibrated prediction intervals during extreme events.
                   </p>
                 </div>
               </div>
@@ -379,9 +444,8 @@ export default function AnalysisPage() {
                 <div>
                   <h3 className="font-display text-white mb-1">Transfer Learning Protocol</h3>
                   <p className="text-sm text-[#a9c2d3]">
-                    Pre-train on the full CAMELS dataset, then fine-tune on Appalachian sites.
-                    This would leverage hydrologic knowledge from diverse watersheds while
-                    adapting to regional characteristics.
+                    Pre-train on the full CAMELS dataset, then fine-tune on Appalachian sites
+                    to leverage hydrologic knowledge from diverse watersheds.
                   </p>
                 </div>
               </div>
@@ -394,7 +458,7 @@ export default function AnalysisPage() {
       <footer className="border-t border-[#2a455c]/55 bg-[#06131f]/75 py-8">
         <div className="mx-auto max-w-7xl px-6 text-center">
           <p className="text-sm text-[#9fbacc]">
-            Master&apos;s Thesis Project | Appalachian State University | 2024-2025
+            Master&apos;s Thesis Project | Appalachian State University | 2024–2025
           </p>
         </div>
       </footer>

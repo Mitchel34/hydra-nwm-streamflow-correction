@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-07T14:26:33.258814",
+  "generated_at": "2026-02-09T13:23:10.879689",
   "sites": {
     "03161000": {
       "name": "South Fork New River near Jefferson, NC",
@@ -62,37 +62,42 @@
     "lstm": {
       "name": "LSTM Baseline",
       "description": "Simple LSTM encoder"
+    },
+    "v3_baseline": {
+      "name": "Hydra v3 Baseline",
+      "description": "v3 architecture with feature gate, multi-scale conv, regime bias"
+    },
+    "v3_causal": {
+      "name": "v3 + Causal Mask",
+      "description": "Hydra v3 with causal attention masking"
+    },
+    "v3_physics": {
+      "name": "v3 + Physics",
+      "description": "Hydra v3 with non-negativity constraint (\u03bb=0.1)"
+    },
+    "v3_combined": {
+      "name": "v3 + Causal + Physics",
+      "description": "Hydra v3 with causal mask and physics constraint"
+    },
+    "v3_eventsample": {
+      "name": "v3 + Event Sampling",
+      "description": "Hydra v3 with 3\u00d7 oversampling on Q90+ events"
+    },
+    "v3_full": {
+      "name": "v3 Full",
+      "description": "Hydra v3 with causal + physics + event oversampling"
+    },
+    "v3_autonorm": {
+      "name": "v3 AutoNorm",
+      "description": "v3 full + automatic loss normalisation"
     }
   },
   "results": [
     {
-      "experiment": "physics",
-      "site_id": "03161000",
-      "file": "exp_physics_03161000_metrics.json",
-      "baseline": {
-        "rmse": 15.681731738359716,
-        "mae": 6.32205181651494,
-        "nse": 0.4311825061382557,
-        "kge": 0.3685654246706028,
-        "pbias": -24.736287455544595,
-        "pearson_r": 0.7651407410294324,
-        "spearman_r": 0.8173095371324274
-      },
-      "corrected": {
-        "rmse": 12.307893403203485,
-        "mae": 5.525807417420956,
-        "nse": 0.6496094728155106,
-        "kge": 0.6780926052378542,
-        "pbias": -10.359448506755745,
-        "pearson_r": 0.8152047242475106,
-        "spearman_r": 0.8758138142676203
-      },
-      "rmse_improvement_pct": 21.514450007478125
-    },
-    {
       "experiment": "baseline",
       "site_id": "03161000",
       "file": "exp_baseline_03161000_metrics.json",
+      "model_version": "v2",
       "baseline": {
         "rmse": 15.681731738359716,
         "mae": 6.32205181651494,
@@ -111,300 +116,41 @@
         "pearson_r": 0.8017296339135396,
         "spearman_r": 0.8749077861512761
       },
-      "rmse_improvement_pct": 7.765255537512526
-    },
-    {
-      "experiment": "causal",
-      "site_id": "03164000",
-      "file": "exp_causal_03164000_metrics.json",
-      "baseline": {
-        "rmse": 77.55168623862751,
-        "mae": 31.678292203921274,
-        "nse": 0.26793526281438174,
-        "kge": 0.472687147870145,
-        "pbias": -13.984678114530478,
-        "pearson_r": 0.56447854551384,
-        "spearman_r": 0.7355444503240803
+      "rmse_improvement_pct": 7.765255537512526,
+      "rmse_residual": 14.464004516601562,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -13.34498119354248
+        },
+        "0.50": {
+          "coverage": 0.057765854215423254,
+          "bias": -7.408174514770508
+        },
+        "0.90": {
+          "coverage": 0.6842285518579828,
+          "bias": 4.62230920791626
+        }
       },
-      "corrected": {
-        "rmse": 61.01192037627649,
-        "mae": 25.666872586898027,
-        "nse": 0.5468975746498277,
-        "kge": 0.6828793963927835,
-        "pbias": -3.7759045214968703,
-        "pearson_r": 0.7440842558125454,
-        "spearman_r": 0.841967990111461
-      },
-      "rmse_improvement_pct": 21.327409711579904
-    },
-    {
-      "experiment": "direct",
-      "site_id": "03164000",
-      "file": "exp_direct_03164000_metrics.json",
-      "baseline": {
-        "rmse": 77.55168623862751,
-        "mae": 31.678292203921274,
-        "nse": 0.26793526281438174,
-        "kge": 0.472687147870145,
-        "pbias": -13.984678114530478,
-        "pearson_r": 0.56447854551384,
-        "spearman_r": 0.7355444503240803
-      },
-      "corrected": {
-        "rmse": 65.0458192612502,
-        "mae": 24.47800587600654,
-        "nse": 0.4850017261940538,
-        "kge": 0.5676439178358005,
-        "pbias": -15.38075946286009,
-        "pearson_r": 0.7141794070723168,
-        "spearman_r": 0.8889730223028994
-      },
-      "rmse_improvement_pct": 16.125847913734074
-    },
-    {
-      "experiment": "baseline",
-      "site_id": "03486000",
-      "file": "exp_baseline_03486000_metrics.json",
-      "baseline": {
-        "rmse": 27.372321765962177,
-        "mae": 22.55069935757981,
-        "nse": 0.45421441582391586,
-        "kge": 0.5118699441488506,
-        "pbias": -15.513548261396227,
-        "pearson_r": 0.7093876675637879,
-        "spearman_r": 0.7680556079139692
-      },
-      "corrected": {
-        "rmse": 30.888524394387716,
-        "mae": 23.879280869972625,
-        "nse": 0.3049867075462861,
-        "kge": 0.6548760705104661,
-        "pbias": 15.639790289518073,
-        "pearson_r": 0.7106772333645626,
-        "spearman_r": 0.7542277492098168
-      },
-      "rmse_improvement_pct": -12.845832584059348
-    },
-    {
-      "experiment": "physics",
-      "site_id": "03486000",
-      "file": "exp_physics_03486000_metrics.json",
-      "baseline": {
-        "rmse": 27.372321765962177,
-        "mae": 22.55069935757981,
-        "nse": 0.45421441582391586,
-        "kge": 0.5118699441488506,
-        "pbias": -15.513548261396227,
-        "pearson_r": 0.7093876675637879,
-        "spearman_r": 0.7680556079139692
-      },
-      "corrected": {
-        "rmse": 29.143517341192553,
-        "mae": 23.323032339520566,
-        "nse": 0.3812962919558658,
-        "kge": 0.6812690701252258,
-        "pbias": 9.16679807202413,
-        "pearson_r": 0.6949483266324361,
-        "spearman_r": 0.741970753114465
-      },
-      "rmse_improvement_pct": -6.47075388918188
-    },
-    {
-      "experiment": "combined",
-      "site_id": "03164000",
-      "file": "exp_combined_03164000_metrics.json",
-      "baseline": {
-        "rmse": 77.55168623862751,
-        "mae": 31.678292203921274,
-        "nse": 0.26793526281438174,
-        "kge": 0.472687147870145,
-        "pbias": -13.984678114530478,
-        "pearson_r": 0.56447854551384,
-        "spearman_r": 0.7355444503240803
-      },
-      "corrected": {
-        "rmse": 61.973869469928445,
-        "mae": 24.4683676178644,
-        "nse": 0.5324971923568622,
-        "kge": 0.6075855530625979,
-        "pbias": -13.746082962569655,
-        "pearson_r": 0.7433351525316307,
-        "spearman_r": 0.8743188123927819
-      },
-      "rmse_improvement_pct": 20.08701231945612
-    },
-    {
-      "experiment": "physics",
-      "site_id": "03479000",
-      "file": "exp_physics_03479000_metrics.json",
-      "baseline": {
-        "rmse": 7.9234176558673495,
-        "mae": 2.350053778168911,
-        "nse": 0.6170966948230197,
-        "kge": 0.6824295367669914,
-        "pbias": 0.5829215135687795,
-        "pearson_r": 0.7858227629453111,
-        "spearman_r": 0.8489248516606775
-      },
-      "corrected": {
-        "rmse": 7.720844677067623,
-        "mae": 2.0749372945919626,
-        "nse": 0.6364253047506906,
-        "kge": 0.6466683424473227,
-        "pbias": -11.167210305889945,
-        "pearson_r": 0.8040278220853468,
-        "spearman_r": 0.8900929408922772
-      },
-      "rmse_improvement_pct": 2.5566363859378254
-    },
-    {
-      "experiment": "baseline",
-      "site_id": "03479000",
-      "file": "exp_baseline_03479000_metrics.json",
-      "baseline": {
-        "rmse": 7.9234176558673495,
-        "mae": 2.350053778168911,
-        "nse": 0.6170966948230197,
-        "kge": 0.6824295367669914,
-        "pbias": 0.5829215135687795,
-        "pearson_r": 0.7858227629453111,
-        "spearman_r": 0.8489248516606775
-      },
-      "corrected": {
-        "rmse": 7.6758993641847955,
-        "mae": 2.025875294942975,
-        "nse": 0.6406459350805178,
-        "kge": 0.6494782842589953,
-        "pbias": -10.03233634527086,
-        "pearson_r": 0.80665345641652,
-        "spearman_r": 0.9026385451148076
-      },
-      "rmse_improvement_pct": 3.1238829307358915
-    },
-    {
-      "experiment": "direct",
-      "site_id": "03161000",
-      "file": "exp_direct_03161000_metrics.json",
-      "baseline": {
-        "rmse": 15.681731738359716,
-        "mae": 6.32205181651494,
-        "nse": 0.4311825061382557,
-        "kge": 0.3685654246706028,
-        "pbias": -24.736287455544595,
-        "pearson_r": 0.7651407410294324,
-        "spearman_r": 0.8173095371324274
-      },
-      "corrected": {
-        "rmse": 13.80572670389681,
-        "mae": 5.402435154639679,
-        "nse": 0.5591372068640619,
-        "kge": 0.47586808754646825,
-        "pbias": -20.18433639789179,
-        "pearson_r": 0.823669272122045,
-        "spearman_r": 0.881611395664148
-      },
-      "rmse_improvement_pct": 11.962996598608653
-    },
-    {
-      "experiment": "causal",
-      "site_id": "03161000",
-      "file": "exp_causal_03161000_metrics.json",
-      "baseline": {
-        "rmse": 15.681731738359716,
-        "mae": 6.32205181651494,
-        "nse": 0.4311825061382557,
-        "kge": 0.3685654246706028,
-        "pbias": -24.736287455544595,
-        "pearson_r": 0.7651407410294324,
-        "spearman_r": 0.8173095371324274
-      },
-      "corrected": {
-        "rmse": 13.378920903523031,
-        "mae": 5.520221969459255,
-        "nse": 0.585974513269522,
-        "kge": 0.531009495175599,
-        "pbias": -18.66516590629471,
-        "pearson_r": 0.8158822012470153,
-        "spearman_r": 0.8806937265302633
-      },
-      "rmse_improvement_pct": 14.68467177769459
-    },
-    {
-      "experiment": "direct",
-      "site_id": "03479000",
-      "file": "exp_direct_03479000_metrics.json",
-      "baseline": {
-        "rmse": 7.9234176558673495,
-        "mae": 2.350053778168911,
-        "nse": 0.6170966948230197,
-        "kge": 0.6824295367669914,
-        "pbias": 0.5829215135687795,
-        "pearson_r": 0.7858227629453111,
-        "spearman_r": 0.8489248516606775
-      },
-      "corrected": {
-        "rmse": 7.460411537326,
-        "mae": 2.008758926243069,
-        "nse": 0.6605392335403761,
-        "kge": 0.6940397751864247,
-        "pbias": -6.638886045380704,
-        "pearson_r": 0.8151842755292388,
-        "spearman_r": 0.9108260904306572
-      },
-      "rmse_improvement_pct": 5.843515243683889
-    },
-    {
-      "experiment": "causal",
-      "site_id": "03479000",
-      "file": "exp_causal_03479000_metrics.json",
-      "baseline": {
-        "rmse": 7.9234176558673495,
-        "mae": 2.350053778168911,
-        "nse": 0.6170966948230197,
-        "kge": 0.6824295367669914,
-        "pbias": 0.5829215135687795,
-        "pearson_r": 0.7858227629453111,
-        "spearman_r": 0.8489248516606775
-      },
-      "corrected": {
-        "rmse": 7.714441249998255,
-        "mae": 2.0029550873232536,
-        "nse": 0.6370281296243935,
-        "kge": 0.6375246026662988,
-        "pbias": -10.469055651678582,
-        "pearson_r": 0.8059402979298508,
-        "spearman_r": 0.9056370018172636
-      },
-      "rmse_improvement_pct": 2.6374528637190546
-    },
-    {
-      "experiment": "combined",
-      "site_id": "03486000",
-      "file": "exp_combined_03486000_metrics.json",
-      "baseline": {
-        "rmse": 27.372321765962177,
-        "mae": 22.55069935757981,
-        "nse": 0.45421441582391586,
-        "kge": 0.5118699441488506,
-        "pbias": -15.513548261396227,
-        "pearson_r": 0.7093876675637879,
-        "spearman_r": 0.7680556079139692
-      },
-      "corrected": {
-        "rmse": 54.226935147362184,
-        "mae": 35.65799270374902,
-        "nse": -1.1420465566249391,
-        "kge": 0.14147710351641285,
-        "pbias": 37.41902629584168,
-        "pearson_r": 0.5347953064161346,
-        "spearman_r": 0.6985284705137108
-      },
-      "rmse_improvement_pct": -98.1086427779541
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
     },
     {
       "experiment": "baseline",
       "site_id": "03164000",
       "file": "exp_baseline_03164000_metrics.json",
+      "model_version": "v2",
       "baseline": {
         "rmse": 77.55168623862751,
         "mae": 31.678292203921274,
@@ -423,36 +169,41 @@
         "pearson_r": 0.6605559089276284,
         "spearman_r": 0.8570950222762785
       },
-      "rmse_improvement_pct": 10.573031644503658
+      "rmse_improvement_pct": 10.573031644503658,
+      "rmse_residual": 69.35211944580078,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -69.16429901123047
+        },
+        "0.50": {
+          "coverage": 0.05816874072382692,
+          "bias": -36.12318801879883
+        },
+        "0.90": {
+          "coverage": 0.6307797693800662,
+          "bias": 6.748714923858643
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
     },
     {
-      "experiment": "physics",
-      "site_id": "03164000",
-      "file": "exp_physics_03164000_metrics.json",
-      "baseline": {
-        "rmse": 77.55168623862751,
-        "mae": 31.678292203921274,
-        "nse": 0.26793526281438174,
-        "kge": 0.472687147870145,
-        "pbias": -13.984678114530478,
-        "pearson_r": 0.56447854551384,
-        "spearman_r": 0.7355444503240803
-      },
-      "corrected": {
-        "rmse": 67.7600179988254,
-        "mae": 24.736523816705034,
-        "nse": 0.44112584967747925,
-        "kge": 0.5643006271241711,
-        "pbias": -11.643603040733172,
-        "pearson_r": 0.6770956714188145,
-        "spearman_r": 0.8731024310455652
-      },
-      "rmse_improvement_pct": 12.625990116672668
-    },
-    {
-      "experiment": "combined",
+      "experiment": "baseline",
       "site_id": "03479000",
-      "file": "exp_combined_03479000_metrics.json",
+      "file": "exp_baseline_03479000_metrics.json",
+      "model_version": "v2",
       "baseline": {
         "rmse": 7.9234176558673495,
         "mae": 2.350053778168911,
@@ -463,20 +214,261 @@
         "spearman_r": 0.8489248516606775
       },
       "corrected": {
-        "rmse": 7.622854989050843,
-        "mae": 1.9965874214832477,
-        "nse": 0.6455954134033397,
-        "kge": 0.6604302630930203,
-        "pbias": -9.886037126208562,
-        "pearson_r": 0.8087119483836995,
-        "spearman_r": 0.9033608336246258
+        "rmse": 7.6758993641847955,
+        "mae": 2.025875294942975,
+        "nse": 0.6406459350805178,
+        "kge": 0.6494782842589953,
+        "pbias": -10.03233634527086,
+        "pearson_r": 0.80665345641652,
+        "spearman_r": 0.9026385451148076
       },
-      "rmse_improvement_pct": 3.793346253733543
+      "rmse_improvement_pct": 3.1238829307358915,
+      "rmse_residual": 7.675899505615234,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.00022967386311437759,
+          "bias": -4.716987133026123
+        },
+        "0.50": {
+          "coverage": 0.20044786403307305,
+          "bias": -2.457082748413086
+        },
+        "0.90": {
+          "coverage": 0.823897565457051,
+          "bias": 3.375150680541992
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "baseline",
+      "site_id": "03486000",
+      "file": "exp_baseline_03486000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 27.372321765962177,
+        "mae": 22.55069935757981,
+        "nse": 0.45421441582391586,
+        "kge": 0.5118699441488506,
+        "pbias": -15.513548261396227,
+        "pearson_r": 0.7093876675637879,
+        "spearman_r": 0.7680556079139692
+      },
+      "corrected": {
+        "rmse": 30.888524394387716,
+        "mae": 23.879280869972625,
+        "nse": 0.3049867075462861,
+        "kge": 0.6548760705104661,
+        "pbias": 15.639790289518073,
+        "pearson_r": 0.7106772333645626,
+        "spearman_r": 0.7542277492098168
+      },
+      "rmse_improvement_pct": -12.845832584059348,
+      "rmse_residual": 30.88852310180664,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.02032079456589988,
+          "bias": -35.33071517944336
+        },
+        "0.50": {
+          "coverage": 0.43210228894343283,
+          "bias": -9.271913528442383
+        },
+        "0.90": {
+          "coverage": 0.7164792510988071,
+          "bias": 24.750518798828125
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "causal",
+      "site_id": "03161000",
+      "file": "exp_causal_03161000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 13.378920903523031,
+        "mae": 5.520221969459255,
+        "nse": 0.585974513269522,
+        "kge": 0.531009495175599,
+        "pbias": -18.66516590629471,
+        "pearson_r": 0.8158822012470153,
+        "spearman_r": 0.8806937265302633
+      },
+      "rmse_improvement_pct": 14.68467177769459,
+      "rmse_residual": 13.378921508789062,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -13.925728797912598
+        },
+        "0.50": {
+          "coverage": 0.07243564130372739,
+          "bias": -7.254881381988525
+        },
+        "0.90": {
+          "coverage": 0.519721445287973,
+          "bias": 0.9396908283233643
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "causal",
+      "site_id": "03164000",
+      "file": "exp_causal_03164000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 61.01192037627649,
+        "mae": 25.666872586898027,
+        "nse": 0.5468975746498277,
+        "kge": 0.6828793963927835,
+        "pbias": -3.7759045214968703,
+        "pearson_r": 0.7440842558125454,
+        "spearman_r": 0.841967990111461
+      },
+      "rmse_improvement_pct": 21.327409711579904,
+      "rmse_residual": 61.01192092895508,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0005137572782281082,
+          "bias": -67.1445541381836
+        },
+        "0.50": {
+          "coverage": 0.16388857175476654,
+          "bias": -25.07843589782715
+        },
+        "0.90": {
+          "coverage": 0.6660006850097043,
+          "bias": 49.297271728515625
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "causal",
+      "site_id": "03479000",
+      "file": "exp_causal_03479000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.714441249998255,
+        "mae": 2.0029550873232536,
+        "nse": 0.6370281296243935,
+        "kge": 0.6375246026662988,
+        "pbias": -10.469055651678582,
+        "pearson_r": 0.8059402979298508,
+        "spearman_r": 0.9056370018172636
+      },
+      "rmse_improvement_pct": 2.6374528637190546,
+      "rmse_residual": 7.714441299438477,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0040192926045016075,
+          "bias": -4.798563480377197
+        },
+        "0.50": {
+          "coverage": 0.26791456132292146,
+          "bias": -2.0777218341827393
+        },
+        "0.90": {
+          "coverage": 0.805064308681672,
+          "bias": 2.075125217437744
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
     },
     {
       "experiment": "causal",
       "site_id": "03486000",
       "file": "exp_causal_03486000_metrics.json",
+      "model_version": "v2",
       "baseline": {
         "rmse": 27.372321765962177,
         "mae": 22.55069935757981,
@@ -495,12 +487,359 @@
         "pearson_r": 0.7155138171465629,
         "spearman_r": 0.7588286755081349
       },
-      "rmse_improvement_pct": 0.52932073831497
+      "rmse_improvement_pct": 0.52932073831497,
+      "rmse_residual": 27.227434158325195,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -44.36623764038086
+        },
+        "0.50": {
+          "coverage": 0.2753011016610537,
+          "bias": -20.92767906188965
+        },
+        "0.90": {
+          "coverage": 0.6817740738626634,
+          "bias": 14.56779670715332
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "combined",
+      "site_id": "03164000",
+      "file": "exp_combined_03164000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 61.973869469928445,
+        "mae": 24.4683676178644,
+        "nse": 0.5324971923568622,
+        "kge": 0.6075855530625979,
+        "pbias": -13.746082962569655,
+        "pearson_r": 0.7433351525316307,
+        "spearman_r": 0.8743188123927819
+      },
+      "rmse_improvement_pct": 20.08701231945612,
+      "rmse_residual": 61.973873138427734,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -65.42466735839844
+        },
+        "0.50": {
+          "coverage": 0.09270464664916087,
+          "bias": -31.33778190612793
+        },
+        "0.90": {
+          "coverage": 0.7941545838566046,
+          "bias": 33.46601486206055
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "combined",
+      "site_id": "03479000",
+      "file": "exp_combined_03479000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.622854989050843,
+        "mae": 1.9965874214832477,
+        "nse": 0.6455954134033397,
+        "kge": 0.6604302630930203,
+        "pbias": -9.886037126208562,
+        "pearson_r": 0.8087119483836995,
+        "spearman_r": 0.9033608336246258
+      },
+      "rmse_improvement_pct": 3.793346253733543,
+      "rmse_residual": 7.622855186462402,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0040192926045016075,
+          "bias": -4.970812797546387
+        },
+        "0.50": {
+          "coverage": 0.16944189251263206,
+          "bias": -2.939373254776001
+        },
+        "0.90": {
+          "coverage": 0.7682016536518145,
+          "bias": 1.9516630172729492
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "combined",
+      "site_id": "03486000",
+      "file": "exp_combined_03486000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 27.372321765962177,
+        "mae": 22.55069935757981,
+        "nse": 0.45421441582391586,
+        "kge": 0.5118699441488506,
+        "pbias": -15.513548261396227,
+        "pearson_r": 0.7093876675637879,
+        "spearman_r": 0.7680556079139692
+      },
+      "corrected": {
+        "rmse": 54.226935147362184,
+        "mae": 35.65799270374902,
+        "nse": -1.1420465566249391,
+        "kge": 0.14147710351641285,
+        "pbias": 37.41902629584168,
+        "pearson_r": 0.5347953064161346,
+        "spearman_r": 0.6985284705137108
+      },
+      "rmse_improvement_pct": -98.1086427779541,
+      "rmse_residual": 54.22693634033203,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -42.08721923828125
+        },
+        "0.50": {
+          "coverage": 0.44654375249728867,
+          "bias": -8.65675163269043
+        },
+        "0.90": {
+          "coverage": 0.9267652263257036,
+          "bias": 53.22426986694336
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "direct",
+      "site_id": "03161000",
+      "file": "exp_direct_03161000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 13.80572670389681,
+        "mae": 5.402435154639679,
+        "nse": 0.5591372068640619,
+        "kge": 0.47586808754646825,
+        "pbias": -20.18433639789179,
+        "pearson_r": 0.823669272122045,
+        "spearman_r": 0.881611395664148
+      },
+      "rmse_improvement_pct": 11.962996598608653,
+      "rmse_residual": 13.805727005004883,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0003424853016724699,
+          "bias": -14.557472229003906
+        },
+        "0.50": {
+          "coverage": 0.022889434328443405,
+          "bias": -9.33368968963623
+        },
+        "0.90": {
+          "coverage": 0.4085278840116445,
+          "bias": 0.23421618342399597
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "direct",
+      "site_id": "03164000",
+      "file": "exp_direct_03164000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 65.0458192612502,
+        "mae": 24.47800587600654,
+        "nse": 0.4850017261940538,
+        "kge": 0.5676439178358005,
+        "pbias": -15.38075946286009,
+        "pearson_r": 0.7141794070723168,
+        "spearman_r": 0.8889730223028994
+      },
+      "rmse_improvement_pct": 16.125847913734074,
+      "rmse_residual": 65.04582214355469,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.000799177988354835,
+          "bias": -61.57122802734375
+        },
+        "0.50": {
+          "coverage": 0.11827834227651558,
+          "bias": -27.902250289916992
+        },
+        "0.90": {
+          "coverage": 0.8081401986528143,
+          "bias": 48.481101989746094
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "direct",
+      "site_id": "03479000",
+      "file": "exp_direct_03479000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.460411537326,
+        "mae": 2.008758926243069,
+        "nse": 0.6605392335403761,
+        "kge": 0.6940397751864247,
+        "pbias": -6.638886045380704,
+        "pearson_r": 0.8151842755292388,
+        "spearman_r": 0.9108260904306572
+      },
+      "rmse_improvement_pct": 5.843515243683889,
+      "rmse_residual": 7.460411548614502,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.021359669269637116,
+          "bias": -4.2440266609191895
+        },
+        "0.50": {
+          "coverage": 0.3151699586587046,
+          "bias": -1.6324328184127808
+        },
+        "0.90": {
+          "coverage": 0.6813849333945797,
+          "bias": 3.5123634338378906
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
     },
     {
       "experiment": "direct",
       "site_id": "03486000",
       "file": "exp_direct_03486000_metrics.json",
+      "model_version": "v2",
       "baseline": {
         "rmse": 27.372321765962177,
         "mae": 22.55069935757981,
@@ -519,7 +858,1360 @@
         "pearson_r": 0.6565398706091629,
         "spearman_r": 0.7323865739932692
       },
-      "rmse_improvement_pct": -11.320954575359872
+      "rmse_improvement_pct": -11.320954575359872,
+      "rmse_residual": 30.471128463745117,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -49.759544372558594
+        },
+        "0.50": {
+          "coverage": 0.36463268451395625,
+          "bias": -14.596147537231445
+        },
+        "0.90": {
+          "coverage": 0.7432501855128717,
+          "bias": 25.947986602783203
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "physics",
+      "site_id": "03161000",
+      "file": "exp_physics_03161000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 12.307893403203485,
+        "mae": 5.525807417420956,
+        "nse": 0.6496094728155106,
+        "kge": 0.6780926052378542,
+        "pbias": -10.359448506755745,
+        "pearson_r": 0.8152047242475106,
+        "spearman_r": 0.8758138142676203
+      },
+      "rmse_improvement_pct": 21.514450007478125,
+      "rmse_residual": 12.307892799377441,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.018551287173925454,
+          "bias": -11.549710273742676
+        },
+        "0.50": {
+          "coverage": 0.1468691135338775,
+          "bias": -5.47724723815918
+        },
+        "0.90": {
+          "coverage": 0.592556652776985,
+          "bias": 6.254284381866455
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "physics",
+      "site_id": "03164000",
+      "file": "exp_physics_03164000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 67.7600179988254,
+        "mae": 24.736523816705034,
+        "nse": 0.44112584967747925,
+        "kge": 0.5643006271241711,
+        "pbias": -11.643603040733172,
+        "pearson_r": 0.6770956714188145,
+        "spearman_r": 0.8731024310455652
+      },
+      "rmse_improvement_pct": 12.625990116672668,
+      "rmse_residual": 67.76001739501953,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -68.63541412353516
+        },
+        "0.50": {
+          "coverage": 0.03253796095444685,
+          "bias": -48.063228607177734
+        },
+        "0.90": {
+          "coverage": 0.37698367393538074,
+          "bias": 1.1667686700820923
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "physics",
+      "site_id": "03479000",
+      "file": "exp_physics_03479000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.720844677067623,
+        "mae": 2.0749372945919626,
+        "nse": 0.6364253047506906,
+        "kge": 0.6466683424473227,
+        "pbias": -11.167210305889945,
+        "pearson_r": 0.8040278220853468,
+        "spearman_r": 0.8900929408922772
+      },
+      "rmse_improvement_pct": 2.5566363859378254,
+      "rmse_residual": 7.7208452224731445,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.011598530087276068,
+          "bias": -4.3500237464904785
+        },
+        "0.50": {
+          "coverage": 0.1260909508497933,
+          "bias": -2.937037944793701
+        },
+        "0.90": {
+          "coverage": 0.6355075792374828,
+          "bias": 1.0828309059143066
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "physics",
+      "site_id": "03486000",
+      "file": "exp_physics_03486000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 27.372321765962177,
+        "mae": 22.55069935757981,
+        "nse": 0.45421441582391586,
+        "kge": 0.5118699441488506,
+        "pbias": -15.513548261396227,
+        "pearson_r": 0.7093876675637879,
+        "spearman_r": 0.7680556079139692
+      },
+      "corrected": {
+        "rmse": 29.143517341192553,
+        "mae": 23.323032339520566,
+        "nse": 0.3812962919558658,
+        "kge": 0.6812690701252258,
+        "pbias": 9.16679807202413,
+        "pearson_r": 0.6949483266324361,
+        "spearman_r": 0.741970753114465
+      },
+      "rmse_improvement_pct": -6.47075388918188,
+      "rmse_residual": 29.143516540527344,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.021119926936468976,
+          "bias": -37.744293212890625
+        },
+        "0.50": {
+          "coverage": 0.44152063473942577,
+          "bias": -12.02614688873291
+        },
+        "0.90": {
+          "coverage": 0.7938238483931731,
+          "bias": 40.53492736816406
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_autonorm",
+      "site_id": "03161000",
+      "file": "exp_v3_autonorm_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 13.541090291561211,
+        "mae": 5.748862394099026,
+        "nse": 0.575876660876238,
+        "kge": 0.46858582341533384,
+        "pbias": -22.679815412054836,
+        "pearson_r": 0.8535356727791645,
+        "spearman_r": 0.8897345605672099
+      },
+      "rmse_improvement_pct": 13.650542443359079,
+      "rmse_residual": 13.54109001159668,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -21.63668441772461
+        },
+        "0.50": {
+          "coverage": 0.0,
+          "bias": -22.967613220214844
+        },
+        "0.90": {
+          "coverage": 0.0,
+          "bias": -22.280982971191406
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_autonorm",
+      "site_id": "03164000",
+      "file": "exp_v3_autonorm_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 65.3365935198473,
+        "mae": 26.134722993395375,
+        "nse": 0.48038704218658745,
+        "kge": 0.577973178528975,
+        "pbias": -13.19400199731616,
+        "pearson_r": 0.7065645897774238,
+        "spearman_r": 0.8494551472909077
+      },
+      "rmse_improvement_pct": 15.750905378374648,
+      "rmse_residual": 65.33659362792969,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -92.29000091552734
+        },
+        "0.50": {
+          "coverage": 0.0,
+          "bias": -84.54054260253906
+        },
+        "0.90": {
+          "coverage": 0.0,
+          "bias": -91.92316436767578
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_autonorm",
+      "site_id": "03479000",
+      "file": "exp_v3_autonorm_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.607958758555561,
+        "mae": 2.1610320448827514,
+        "nse": 0.6469791821208694,
+        "kge": 0.6776864793126858,
+        "pbias": -7.578309306942759,
+        "pearson_r": 0.8074099750829227,
+        "spearman_r": 0.8846920626349727
+      },
+      "rmse_improvement_pct": 3.981348844815586,
+      "rmse_residual": 7.607958793640137,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -7.440479278564453
+        },
+        "0.50": {
+          "coverage": 0.001607717041800643,
+          "bias": -7.09259557723999
+        },
+        "0.90": {
+          "coverage": 0.003961874138723013,
+          "bias": -6.614871978759766
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_baseline",
+      "site_id": "03161000",
+      "file": "exp_v3_baseline_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 14.344659446394918,
+        "mae": 5.322922478623638,
+        "nse": 0.5240455535340521,
+        "kge": 0.42908362287976265,
+        "pbias": -20.51179135235965,
+        "pearson_r": 0.8207836514177458,
+        "spearman_r": 0.8756097132946602
+      },
+      "rmse_improvement_pct": 8.526305093551192,
+      "rmse_residual": 14.344659805297852,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -12.985066413879395
+        },
+        "0.50": {
+          "coverage": 0.03259318454249672,
+          "bias": -8.96645450592041
+        },
+        "0.90": {
+          "coverage": 0.6039157486157886,
+          "bias": 3.1311793327331543
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_baseline",
+      "site_id": "03164000",
+      "file": "exp_v3_baseline_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 60.61055735797646,
+        "mae": 25.463963508823717,
+        "nse": 0.5528393769557776,
+        "kge": 0.6852188628812168,
+        "pbias": -10.985734544014468,
+        "pearson_r": 0.7561062193571186,
+        "spearman_r": 0.8447620100530232
+      },
+      "rmse_improvement_pct": 21.844952318023083,
+      "rmse_residual": 60.61055374145508,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.000799177988354835,
+          "bias": -58.40339660644531
+        },
+        "0.50": {
+          "coverage": 0.08437036191346044,
+          "bias": -35.437198638916016
+        },
+        "0.90": {
+          "coverage": 0.5617650416714237,
+          "bias": 20.321979522705078
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_baseline",
+      "site_id": "03479000",
+      "file": "exp_v3_baseline_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.530038505344618,
+        "mae": 1.9767085335700403,
+        "nse": 0.65417338688907,
+        "kge": 0.6553739821878479,
+        "pbias": -10.264632235330254,
+        "pearson_r": 0.8158406287816435,
+        "spearman_r": 0.9018937051514695
+      },
+      "rmse_improvement_pct": 4.964766059396495,
+      "rmse_residual": 7.530038356781006,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.001607717041800643,
+          "bias": -5.540451526641846
+        },
+        "0.50": {
+          "coverage": 0.056384933394579693,
+          "bias": -4.179556846618652
+        },
+        "0.90": {
+          "coverage": 0.2765847496554892,
+          "bias": -1.6163235902786255
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_causal",
+      "site_id": "03161000",
+      "file": "exp_v3_causal_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 12.639882600952149,
+        "mae": 5.061077366940023,
+        "nse": 0.630451890823855,
+        "kge": 0.5118889014362229,
+        "pbias": -19.987790146888944,
+        "pearson_r": 0.8745742830321233,
+        "spearman_r": 0.8901243603389773
+      },
+      "rmse_improvement_pct": 19.397405772264154,
+      "rmse_residual": 12.639883041381836,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -15.419326782226562
+        },
+        "0.50": {
+          "coverage": 0.004509389805354187,
+          "bias": -11.441545486450195
+        },
+        "0.90": {
+          "coverage": 0.24276499800216908,
+          "bias": -4.096506595611572
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_causal",
+      "site_id": "03164000",
+      "file": "exp_v3_causal_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 63.273684166035615,
+        "mae": 24.691196607255897,
+        "nse": 0.5126811148589538,
+        "kge": 0.6014186161038007,
+        "pbias": -11.43964074695928,
+        "pearson_r": 0.7256824618981659,
+        "spearman_r": 0.8719607802915319
+      },
+      "rmse_improvement_pct": 18.410949864659685,
+      "rmse_residual": 63.273685455322266,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -64.11608123779297
+        },
+        "0.50": {
+          "coverage": 0.033222970658750996,
+          "bias": -42.27958297729492
+        },
+        "0.90": {
+          "coverage": 0.37458613997031626,
+          "bias": 4.4788947105407715
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_causal",
+      "site_id": "03479000",
+      "file": "exp_v3_causal_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.643788369868542,
+        "mae": 2.0585288074642736,
+        "nse": 0.6436462558205169,
+        "kge": 0.6099414670019625,
+        "pbias": -14.634977057504791,
+        "pearson_r": 0.8170577990144637,
+        "spearman_r": 0.9056259538595625
+      },
+      "rmse_improvement_pct": 3.529149896468478,
+      "rmse_residual": 7.643788814544678,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.001722553973357832,
+          "bias": -5.032718181610107
+        },
+        "0.50": {
+          "coverage": 0.07728525493798806,
+          "bias": -3.5029373168945312
+        },
+        "0.90": {
+          "coverage": 0.2569476343592099,
+          "bias": -1.3037793636322021
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_combined",
+      "site_id": "03161000",
+      "file": "exp_v3_combined_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 11.409001519336522,
+        "mae": 4.871900211765149,
+        "nse": 0.6989211975403407,
+        "kge": 0.637105900779581,
+        "pbias": -16.552871875541484,
+        "pearson_r": 0.8693319767548859,
+        "spearman_r": 0.8975649859233263
+      },
+      "rmse_improvement_pct": 27.246545791696562,
+      "rmse_residual": 11.409001350402832,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0017695073919744278,
+          "bias": -13.728671073913574
+        },
+        "0.50": {
+          "coverage": 0.05285689822478452,
+          "bias": -7.161406993865967
+        },
+        "0.90": {
+          "coverage": 0.4721159883554997,
+          "bias": 3.834831953048706
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_combined",
+      "site_id": "03164000",
+      "file": "exp_v3_combined_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 66.86081088086625,
+        "mae": 25.754597263529988,
+        "nse": 0.4558604714914418,
+        "kge": 0.5052846702236451,
+        "pbias": -18.811217709464955,
+        "pearson_r": 0.7044253184584763,
+        "spearman_r": 0.8602661152519352
+      },
+      "rmse_improvement_pct": 13.785484076858495,
+      "rmse_residual": 66.86080932617188,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.00017125242607603607,
+          "bias": -64.81446075439453
+        },
+        "0.50": {
+          "coverage": 0.033108802374700305,
+          "bias": -46.25532150268555
+        },
+        "0.90": {
+          "coverage": 0.41808425619362943,
+          "bias": -5.948212146759033
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_combined",
+      "site_id": "03479000",
+      "file": "exp_v3_combined_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.658082236845722,
+        "mae": 1.9823138915245337,
+        "nse": 0.642312248297563,
+        "kge": 0.6232912951956998,
+        "pbias": -10.20038171188656,
+        "pearson_r": 0.8131622932736545,
+        "spearman_r": 0.90208783529395
+      },
+      "rmse_improvement_pct": 3.34874962479284,
+      "rmse_residual": 7.658082485198975,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.002411575562700965,
+          "bias": -5.416845321655273
+        },
+        "0.50": {
+          "coverage": 0.060231970601745524,
+          "bias": -3.5177416801452637
+        },
+        "0.90": {
+          "coverage": 0.3301561782269178,
+          "bias": -0.3881005644798279
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_eventsample",
+      "site_id": "03161000",
+      "file": "exp_v3_eventsample_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 12.580745103926661,
+        "mae": 5.422263205245352,
+        "nse": 0.6339017688034421,
+        "kge": 0.516600742665636,
+        "pbias": -22.015074943109347,
+        "pearson_r": 0.8780689115452637,
+        "spearman_r": 0.8873704758465996
+      },
+      "rmse_improvement_pct": 19.774516527709793,
+      "rmse_residual": 12.580745697021484,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -13.773629188537598
+        },
+        "0.50": {
+          "coverage": 0.0339631257491866,
+          "bias": -9.905176162719727
+        },
+        "0.90": {
+          "coverage": 0.33500770591928763,
+          "bias": -3.1900899410247803
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_eventsample",
+      "site_id": "03164000",
+      "file": "exp_v3_eventsample_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 63.35944827802837,
+        "mae": 24.17643415248752,
+        "nse": 0.5113591499035794,
+        "kge": 0.5362810741262485,
+        "pbias": -16.616175164043543,
+        "pearson_r": 0.7403555188639527,
+        "spearman_r": 0.8722898000869261
+      },
+      "rmse_improvement_pct": 18.300360248685564,
+      "rmse_residual": 63.35945129394531,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -65.96052551269531
+        },
+        "0.50": {
+          "coverage": 0.033793812079004455,
+          "bias": -43.875736236572266
+        },
+        "0.90": {
+          "coverage": 0.36191346044068956,
+          "bias": -16.067745208740234
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_eventsample",
+      "site_id": "03479000",
+      "file": "exp_v3_eventsample_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.619420560342453,
+        "mae": 2.012993453550514,
+        "nse": 0.6459146909161897,
+        "kge": 0.6280302563788183,
+        "pbias": -7.275771064039188,
+        "pearson_r": 0.815197276516041,
+        "spearman_r": 0.902513948486472
+      },
+      "rmse_improvement_pct": 3.8366915481198216,
+      "rmse_residual": 7.619420528411865,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.01986678915939366,
+          "bias": -4.292218208312988
+        },
+        "0.50": {
+          "coverage": 0.356453835553514,
+          "bias": -1.6867820024490356
+        },
+        "0.90": {
+          "coverage": 0.7243339457969683,
+          "bias": 1.7939413785934448
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_full",
+      "site_id": "03161000",
+      "file": "exp_v3_full_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 12.870264702852571,
+        "mae": 4.865399948544504,
+        "nse": 0.6168579114490098,
+        "kge": 0.512132949211046,
+        "pbias": -18.566641633572797,
+        "pearson_r": 0.8579905553403911,
+        "spearman_r": 0.8961126178400785
+      },
+      "rmse_improvement_pct": 17.928294415532577,
+      "rmse_residual": 12.870264053344727,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0019407500428106628,
+          "bias": -13.206326484680176
+        },
+        "0.50": {
+          "coverage": 0.006621382499001085,
+          "bias": -11.151520729064941
+        },
+        "0.90": {
+          "coverage": 0.1539471431017752,
+          "bias": -5.41269063949585
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_full",
+      "site_id": "03164000",
+      "file": "exp_v3_full_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 61.712207194955475,
+        "mae": 25.71172283887727,
+        "nse": 0.5364365818665047,
+        "kge": 0.622095082693304,
+        "pbias": -12.51400344848196,
+        "pearson_r": 0.7436998580866662,
+        "spearman_r": 0.8723265239181741
+      },
+      "rmse_improvement_pct": 20.424416040334393,
+      "rmse_residual": 61.71220779418945,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.015298550062792557,
+          "bias": -53.33108901977539
+        },
+        "0.50": {
+          "coverage": 0.12575636488183584,
+          "bias": -28.57201385498047
+        },
+        "0.90": {
+          "coverage": 0.5403584884119191,
+          "bias": 8.471541404724121
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_full",
+      "site_id": "03479000",
+      "file": "exp_v3_full_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.821166254609538,
+        "mae": 2.0563154159131734,
+        "nse": 0.6269156318227842,
+        "kge": 0.5815725215715786,
+        "pbias": -15.237086070203892,
+        "pearson_r": 0.8111461188715205,
+        "spearman_r": 0.9019768390675358
+      },
+      "rmse_improvement_pct": 1.2904961684317349,
+      "rmse_residual": 7.821166038513184,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.001320624712907671,
+          "bias": -4.557260513305664
+        },
+        "0.50": {
+          "coverage": 0.13298116674322463,
+          "bias": -2.7521140575408936
+        },
+        "0.90": {
+          "coverage": 0.5245751033532384,
+          "bias": -0.036454278975725174
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_physics",
+      "site_id": "03161000",
+      "file": "exp_v3_physics_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 13.890711737446008,
+        "mae": 5.533902582808427,
+        "nse": 0.5536927911376334,
+        "kge": 0.5241598094890122,
+        "pbias": -20.124899476973937,
+        "pearson_r": 0.7911827086278285,
+        "spearman_r": 0.8768367715190654
+      },
+      "rmse_improvement_pct": 11.42106006400187,
+      "rmse_residual": 13.890711784362793,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0022832353444831328,
+          "bias": -13.462040901184082
+        },
+        "0.50": {
+          "coverage": 0.03618928021005765,
+          "bias": -8.618626594543457
+        },
+        "0.90": {
+          "coverage": 0.3601232947086021,
+          "bias": -0.6743470430374146
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_physics",
+      "site_id": "03164000",
+      "file": "exp_v3_physics_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 62.404710111613596,
+        "mae": 24.567511262707495,
+        "nse": 0.5259744645757729,
+        "kge": 0.5929692750268662,
+        "pbias": -13.576696035157726,
+        "pearson_r": 0.7388453542143941,
+        "spearman_r": 0.8723105214599154
+      },
+      "rmse_improvement_pct": 19.53145941973006,
+      "rmse_residual": 62.40470886230469,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -67.75778198242188
+        },
+        "0.50": {
+          "coverage": 0.012387258819499944,
+          "bias": -49.81727981567383
+        },
+        "0.90": {
+          "coverage": 0.29381207900445255,
+          "bias": -14.241422653198242
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "v3_physics",
+      "site_id": "03479000",
+      "file": "exp_v3_physics_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.746037422796612,
+        "mae": 2.0396323205375264,
+        "nse": 0.6340487802513192,
+        "kge": 0.6189980737039124,
+        "pbias": -9.928667941466633,
+        "pearson_r": 0.8074900105735263,
+        "spearman_r": 0.9072224937429189
+      },
+      "rmse_improvement_pct": 2.2386833658754046,
+      "rmse_residual": 7.746037483215332,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0031580156178226916,
+          "bias": -5.2035298347473145
+        },
+        "0.50": {
+          "coverage": 0.06293063849333946,
+          "bias": -3.706366539001465
+        },
+        "0.90": {
+          "coverage": 0.5221061093247589,
+          "bias": -0.1294865757226944
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
     }
   ]
 }
