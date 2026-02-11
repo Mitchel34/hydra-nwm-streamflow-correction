@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 
 try:
     from torch_optimizer import Ranger
@@ -35,6 +35,7 @@ except ImportError:  # pragma: no cover - optional dependency
 
 from modeling.models.hydra_temporal import HydraTemporalModel as HydraTemporalV2
 from modeling.models.hydra_temporal_v1 import HydraTemporalModel as HydraTemporalV1
+from modeling.models.hydra_temporal_v3 import HydraTemporalV3
 
 # Optional TensorBoard for gradient tracking
 try:
@@ -305,6 +306,32 @@ def quantile_pinball(
     return torch.mean(loss * weights)
 
 
+class LossAutoNormalizer:
+    """Normalize each loss component by its exponential moving average.
+
+    When enabled, each loss term is divided by its running mean so that all
+    components contribute ~1.0 regardless of absolute scale.  The user-specified
+    weight then acts as a pure priority signal rather than also compensating for
+    scale differences.
+    """
+
+    def __init__(self, momentum: float = 0.98, enabled: bool = True):
+        self.momentum = momentum
+        self.enabled = enabled
+        self._ema: dict[str, float] = {}
+
+    def __call__(self, name: str, value: torch.Tensor, weight: float = 1.0) -> torch.Tensor:
+        if not self.enabled or weight == 0.0:
+            return weight * value
+        v = value.detach().item()
+        if name not in self._ema:
+            self._ema[name] = max(v, 1e-8)
+        else:
+            self._ema[name] = self.momentum * self._ema[name] + (1 - self.momentum) * v
+        normed = value / max(self._ema[name], 1e-8)
+        return weight * normed
+
+
 def train_eval(
     data_path: str,
     seq_len: int = 168,
@@ -354,6 +381,8 @@ def train_eval(
     target_mode: str = "residual",
     weight_nonneg: float = 0.0,
     track_gradients: bool = False,
+    event_oversample_factor: float = 0.0,
+    loss_auto_norm: bool = False,
 ) -> None:
     torch.set_float32_matmul_precision("medium")
     if seed is not None:
@@ -544,7 +573,33 @@ def train_eval(
         use_amp = False
 
     pin_memory = device.type == "cuda"
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, pin_memory=pin_memory)
+
+    # A3: Event-stratified sampling — oversample sequences containing high-flow events
+    train_sampler = None
+    train_shuffle = True
+    if event_oversample_factor > 0 and len(train_ds) > 0:
+        # Compute per-sequence weight based on target-timestep flow magnitude
+        usgs_vals = train_ds.usgs[train_ds.seq_len:train_ds.seq_len + len(train_ds)]
+        q90 = float(np.quantile(usgs_vals[np.isfinite(usgs_vals)], 0.90))
+        q75 = float(np.quantile(usgs_vals[np.isfinite(usgs_vals)], 0.75))
+        sample_weights = np.ones(len(train_ds), dtype=np.float64)
+        # Moderate boost for Q75-Q90 flows
+        mask_mid = (usgs_vals >= q75) & (usgs_vals < q90)
+        sample_weights[mask_mid] = 1.0 + event_oversample_factor * 0.5
+        # Full boost for Q90+ (flood events)
+        mask_high = usgs_vals >= q90
+        sample_weights[mask_high] = 1.0 + event_oversample_factor
+        train_sampler = WeightedRandomSampler(
+            weights=torch.from_numpy(sample_weights),
+            num_samples=len(train_ds),
+            replacement=True,
+        )
+        train_shuffle = False  # sampler and shuffle are mutually exclusive
+        pct_boosted = 100.0 * float(np.sum(mask_mid | mask_high)) / len(train_ds)
+        print(f"[INFO] Event-stratified sampling: {pct_boosted:.1f}% of sequences boosted "
+              f"(factor={event_oversample_factor}, Q75={q75:.2f}, Q90={q90:.2f})")
+
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=train_shuffle, sampler=train_sampler, pin_memory=pin_memory)
     val_loader = (
         DataLoader(val_ds, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
         if val_ds is not None
@@ -553,7 +608,22 @@ def train_eval(
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
 
     arch = model_arch.lower()
-    if arch == "hydra_v2":
+    if arch == "hydra_v3":
+        model = HydraTemporalV3(
+            input_dim=len(dynamic_cols),
+            static_dim=len(static_cols),
+            d_model=d_model,
+            num_heads=num_heads,
+            num_layers=num_layers,
+            seq_len=seq_len,
+            conv_depth=conv_depth,
+            dropout=dropout,
+            quantiles=quantiles if quantiles else None,
+            nwm_index=0,
+            patch_size=1,
+            use_causal_mask=use_causal_mask,
+        )
+    elif arch == "hydra_v2":
         model = HydraTemporalV2(
             input_dim=len(dynamic_cols),
             static_dim=len(static_cols),
@@ -583,7 +653,7 @@ def train_eval(
             patch_size=max(1, patch_size),
         )
     else:
-        raise ValueError(f"Unsupported model_arch '{model_arch}'. Choose 'hydra_v2' or 'hydra_v1'.")
+        raise ValueError(f"Unsupported model_arch '{model_arch}'. Choose 'hydra_v3', 'hydra_v2', or 'hydra_v1'.")
 
     if use_compile:
         try:
@@ -603,8 +673,16 @@ def train_eval(
         print("torch_optimizer.Ranger unavailable; falling back to AdamW")
     use_ranger = use_ranger and Ranger is not None
     if use_ranger:
-        optimizer = Ranger(model.parameters(), lr=lr, weight_decay=5e-5)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
+        try:
+            optimizer = Ranger(model.parameters(), lr=lr, weight_decay=5e-5)
+        except Exception as e:
+            print(f"[WARNING] Ranger init failed ({e}); falling back to AdamW")
+            use_ranger = False
+            optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=5e-5)
+        if use_ranger:
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
+        else:
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
     else:
         optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=5e-5)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
@@ -640,6 +718,7 @@ def train_eval(
     progress_stride = max(1, num_train_batches // 5)
 
     mse = nn.MSELoss()
+    normalizer = LossAutoNormalizer(momentum=0.98, enabled=loss_auto_norm)
 
     overall_start = time.time()
     for epoch in range(epochs):
@@ -690,7 +769,12 @@ def train_eval(
                     corr_mse = (pred_corr_t - y_usgs_t) ** 2
                     loss_corr = (corr_mse * corr_weights).mean()
 
-                loss = loss_res + loss_corr + consistency_weight * mse(pred_corr_t, y_usgs_t)
+                # --- Assemble multi-objective loss with optional auto-normalization ---
+                loss = (
+                    normalizer("nll_res", loss_res, 1.0)
+                    + normalizer("nll_corr", loss_corr, 1.0)
+                    + normalizer("consistency", mse(pred_corr_t, y_usgs_t), consistency_weight)
+                )
 
                 if curr_weight_pbias > 0:
                     numer = torch.sum(corr_from_res - y_usgs)
@@ -701,23 +785,24 @@ def train_eval(
                         torch.zeros_like(denom),
                     )
                     pbias_penalty = torch.abs(pbias_percent) / 100.0
-                    loss = loss + curr_weight_pbias * pbias_penalty
+                    loss = loss + normalizer("pbias", pbias_penalty, curr_weight_pbias)
 
                 if weight_nse > 0:
-                    loss = loss + weight_nse * nse_surrogate(corr_from_res, y_usgs)
+                    loss = loss + normalizer("nse", nse_surrogate(corr_from_res, y_usgs), weight_nse)
 
                 if curr_weight_kge > 0:
-                    loss = loss + curr_weight_kge * kge_stabilizer(corr_from_res, y_usgs)
+                    loss = loss + normalizer("kge", kge_stabilizer(corr_from_res, y_usgs), curr_weight_kge)
 
                 if residual_bias_weight > 0:
                     mean_bias = torch.mean(corr_from_res - y_usgs)
                     norm = torch.mean(torch.abs(y_usgs)) + EPS
-                    loss = loss + residual_bias_weight * (mean_bias / norm) ** 2
+                    bias_term = (mean_bias / norm) ** 2
+                    loss = loss + normalizer("res_bias", bias_term, residual_bias_weight)
 
                 # Physics-informed constraint: penalize negative streamflow predictions
                 if weight_nonneg > 0:
                     neg_flow_penalty = torch.mean(torch.relu(-corr_from_res) ** 2)
-                    loss = loss + weight_nonneg * neg_flow_penalty
+                    loss = loss + normalizer("nonneg", neg_flow_penalty, weight_nonneg)
 
                 if (
                     weight_quantile > 0
@@ -727,7 +812,7 @@ def train_eval(
                 ):
                     q_pred_raw = inverse_transform(outputs["quantiles"])
                     quantile_loss_val = quantile_pinball(q_pred_raw, y_usgs, quantiles_tensor, quantile_weight_tensor)
-                    loss = loss + weight_quantile * quantile_loss_val
+                    loss = loss + normalizer("quantile", quantile_loss_val, weight_quantile)
 
             if scaler:
                 scaler.scale(loss).backward()
@@ -1205,9 +1290,9 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument(
         "--model-arch",
-        choices=["hydra_v2", "hydra_v1"],
+        choices=["hydra_v3", "hydra_v2", "hydra_v1"],
         default="hydra_v2",
-        help="Selects the Hydra architecture (legacy v2 vs. hybrid v1 prototype).",
+        help="Selects the Hydra architecture: v3 (feature gate + multi-scale + regime bias), v2 (GRU-Transformer), v1 (Transformer-only).",
     )
     parser.add_argument(
         "--patch-size",
@@ -1236,6 +1321,18 @@ if __name__ == "__main__":
         "--track-gradients",
         action="store_true",
         help="Enable gradient tracking with TensorBoard (logs to local_only/logs/gradients/).",
+    )
+    parser.add_argument(
+        "--event-oversample-factor",
+        type=float,
+        default=0.0,
+        help="Oversampling boost for high-flow sequences (0=off). E.g. 3.0 gives Q90+ events 4x base weight.",
+    )
+    parser.add_argument(
+        "--loss-auto-norm",
+        action="store_true",
+        help="Enable automatic loss normalization: each component is divided by its running EMA "
+             "so user-specified weights act as pure priority signals independent of loss scale.",
     )
     args = parser.parse_args()
     quantiles = [float(x) for x in args.quantiles.split(",") if x.strip()]
@@ -1293,6 +1390,8 @@ if __name__ == "__main__":
             target_mode=args.target_mode,
             weight_nonneg=args.weight_nonneg,
             track_gradients=args.track_gradients,
+            event_oversample_factor=args.event_oversample_factor,
+            loss_auto_norm=args.loss_auto_norm,
         )
 
     if args.rolling_config:

@@ -19,6 +19,7 @@ def plot_hydrograph_with_uncertainty(
     csv_path: Path,
     output: Path,
     year: int = 2022,
+    site_name: str = "Watauga River",
 ) -> None:
     utils.configure_style()
     utils.validate_inputs([csv_path])
@@ -67,7 +68,7 @@ def plot_hydrograph_with_uncertainty(
         df_plot["timestamp"], 
         df_plot["usgs_cms"], 
         label="Observed", 
-        color="black", 
+        color=colors.COLORS["obs"], 
         linewidth=1.2,
         zorder=2
     )
@@ -77,7 +78,7 @@ def plot_hydrograph_with_uncertainty(
         df_plot["timestamp"], 
         df_plot["nwm_cms"], 
         label="NWM", 
-        color="blue", 
+        color=colors.COLORS["nwm"], 
         linestyle="--", 
         linewidth=1.0,
         alpha=0.8,
@@ -89,7 +90,7 @@ def plot_hydrograph_with_uncertainty(
         df_plot["timestamp"], 
         df_plot["corrected_pred_cms"], 
         label="Corrected (Hydra)", 
-        color="#d62728",  # Matplotlib 'tab:red'
+        color=colors.COLORS["ml"],
         linewidth=1.2,
         zorder=3
     )
@@ -99,14 +100,14 @@ def plot_hydrograph_with_uncertainty(
         df_plot["timestamp"],
         df_plot["lower_bound"],
         df_plot["upper_bound"],
-        color="#d62728",
+        color=colors.COLORS["ml"],
         alpha=0.2,
         label="80% Prediction Interval",
         zorder=0
     )
 
     # Formatting
-    ax.set_title(f"Watauga River Streamflow Comparison ({year})", fontsize=14, fontweight="bold")
+    ax.set_title(f"{site_name} Streamflow Comparison ({year})", fontsize=14, fontweight="bold")
     ax.set_ylabel("Streamflow (m³/s)", fontsize=12)
     ax.set_xlabel("Date", fontsize=12)
     
@@ -137,6 +138,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--eval", type=Path, required=True, help="Evaluation CSV path")
     parser.add_argument("--out", type=Path, required=True, help="Output file path")
     parser.add_argument("--year", type=int, default=2022, help="Year to plot")
+    parser.add_argument("--site-name", type=str, default="Watauga River", help="Site name for title")
     return parser
 
 
@@ -146,6 +148,7 @@ def main() -> None:
         csv_path=args.eval,
         output=args.out,
         year=args.year,
+        site_name=args.site_name,
     )
 
 

@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from . import utils
+from .colors import COLORS
 
 
 def _build_event_window(
@@ -52,6 +53,7 @@ def plot_high_flow_event(
     event_start: Optional[pd.Timestamp],
     event_end: Optional[pd.Timestamp],
     buffer_hours: int = 12,
+    title: Optional[str] = None,
 ) -> None:
     utils.configure_style()
     utils.validate_inputs([csv_path])
@@ -133,7 +135,7 @@ def plot_high_flow_event(
         bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="none"),
     )
 
-    ax.set_title("2022 High-Flow Storm: Observed vs. NWM vs. Hydra", fontsize=14, fontweight="bold")
+    ax.set_title(title or "High-Flow Storm: Observed vs. NWM vs. Hydra", fontsize=14, fontweight="bold")
     ax.set_ylabel("Streamflow (m³/s)", fontsize=12)
     ax.set_xlabel("Date", fontsize=12)
     ax.set_ylim(bottom=0)
@@ -163,6 +165,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=12,
         help="Hours to add before/after the event window for context",
     )
+    parser.add_argument("--title", type=str, default=None, help="Custom plot title")
     return parser
 
 
@@ -174,6 +177,7 @@ def main() -> None:
         event_start=pd.Timestamp(args.event_start) if args.event_start else None,
         event_end=pd.Timestamp(args.event_end) if args.event_end else None,
         buffer_hours=args.buffer_hours,
+        title=args.title,
     )
 
 

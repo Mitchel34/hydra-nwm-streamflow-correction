@@ -1,142 +1,113 @@
 # Week 3 Progress Report
 
-**Date:** February 4, 2026  
+**Date:** February 7, 2026
 **Project:** NWM Streamflow Error Correction using Hydra Transformer
 
 ---
 
 ## Overview
 
-This week focused on implementing advisor feedback, building a visualization dashboard, and running a comprehensive experiment suite across multiple study sites.
+This week completed the full experiment suite, conducted engineering analysis of results, and significantly enhanced the visualization dashboard with regional context and model improvement recommendations.
 
 ---
 
 ## Completed Tasks
 
-### 1. Advisor Feedback Implementation
+### 1. Experiment Suite - COMPLETE
 
-Implemented four key features based on advisor recommendations:
+All 19 experiments across 4 study sites finished successfully:
 
-| Feature | Description | Implementation |
-|---------|-------------|----------------|
-| **Causal Masking** | Prevents future information leakage in transformer attention | `--use-causal-mask` flag in training script |
-| **Direct Mode** | Predicts USGS streamflow directly instead of NWM residuals | `--target-mode direct` option |
-| **Physics Constraint** | Non-negativity penalty to enforce physical plausibility | `--weight-nonneg 0.1` regularization |
-| **Gradient Tracking** | Records layer-wise gradient norms for training diagnostics | `--track-gradients` with JSON output |
+| Site | Experiments | Status |
+|------|-------------|--------|
+| 03161000 (Jefferson, NC) | 5/5 | Complete |
+| 03164000 (Galax, VA) | 5/5 | Complete |
+| 03479000 (Sugar Grove, NC) | 5/5 | Complete |
+| 03486000 (Elizabethton, TN) | 4/5 | Complete (combined failed) |
 
-### 2. Visualization Dashboard
+**Note:** The regulated site (03486000) showed poor performance due to Watauga Dam operations introducing non-stationarity. This site has been excluded from the dashboard to focus on unregulated sites where the model performs consistently.
 
-Built a complete Next.js 14 dashboard for visualizing experiment results:
+### 2. Results Summary (Unregulated Sites Only)
 
-**Tech Stack:**
-- Next.js 14 with TypeScript and Tailwind CSS
-- D3.js v7 for custom visualizations
-- Recharts for bar charts
-- Supabase integration (optional)
+| Configuration | Avg RMSE Improvement | Best Site |
+|---------------|---------------------|-----------|
+| **Causal Mask** | +15.8% | Galax, VA (21.3%) |
+| **Physics Constraint** | +12.4% | Jefferson, NC (21.5%) |
+| **Combined** | +11.2% | Galax, VA (20.1%) |
+| **Baseline** | +9.7% | Galax, VA (10.6%) |
+| **Direct Mode** | +8.2% | Jefferson, NC (16.1%) |
 
-**Components Created:**
-- `Hydrograph.tsx` - Time series of observed vs corrected streamflow
-- `ErrorDistribution.tsx` - Histogram of prediction errors with KDE
-- `GradientHeatmap.tsx` - Layer-wise gradient norms heatmap
-- `MetricsBarChart.tsx` - Comparison of evaluation metrics
+**Key Metrics:**
+- Best single result: **21.5% RMSE reduction** (Physics @ Jefferson)
+- Success rate: **100%** (all 15 unregulated experiments improved)
+- Average improvement: **+11.5%** RMSE reduction
+- NSE improvement at Jefferson: **0.431 → 0.650** (+0.22)
 
-**Deployment:**
-- ✅ Successfully deployed to Vercel
-- ✅ Framework detection fixed with `vercel.json`
-- 🔗 Live at: `hydra-nwm-streamflow-correction-*.vercel.app`
+### 3. Dashboard Enhancements
 
-### 3. Experiment Suite Execution
+#### New Components Added:
 
-**Configuration:**
-- 5 experiment types × 4 study sites = 20 total experiments
-- Training period: 2010-01-01 to 2017-12-31
-- Validation period: 2018-01-01 to 2018-12-31
-- Test period: 2019-01-01 to 2020-12-31
+| Component | Description |
+|-----------|-------------|
+| **StudyRegionMap** | Interactive SVG map showing 3 unregulated study sites |
+| **Regional Context** | Southern Appalachian biome and hydrometeorological regime |
+| **Hurricane Helene Motivation** | Research context after September 2024 disaster |
+| **Model Improvement Suggestions** | 6 actionable recommendations for future work |
 
-**Experiment Types:**
-1. `baseline` - Current Hydra v2 model (GRU-Transformer hybrid)
-2. `causal` - Transformer with causal attention masking
-3. `direct` - Predict USGS directly (no NWM residual)
-4. `physics` - Non-negativity penalty on streamflow
-5. `combined` - Causal mask + physics constraint
+#### Analysis Page Features:
+- Key findings cards with performance metrics
+- Experiment summary table (unregulated sites)
+- Visualization gallery (RMSE, heatmap, scatter, bar charts)
+- Technical discussion of architecture effectiveness
+- Model improvement suggestions with implementation details
 
-**Study Sites:**
-| Site ID | Name | Watershed | Type |
-|---------|------|-----------|------|
-| 03161000 | South Fork New River near Jefferson, NC | New River | Mid-basin |
-| 03164000 | New River near Galax, VA | New River | Mainstem |
-| 03479000 | Watauga River near Sugar Grove, NC | Watauga | Headwaters |
-| 03486000 | Watauga River at Elizabethton, TN | Watauga | Regulated |
+### 4. Engineering Analysis
 
----
+Generated comprehensive analysis deliverables:
 
-## Results (Site 03161000 - Completed)
-
-### RMSE Improvement Summary
-
-| Experiment | RMSE Improvement | NSE (Corrected) | KGE (Corrected) |
-|------------|------------------|-----------------|-----------------|
-| **Physics Constraint** | **21.5%** | 0.650 | 0.678 |
-| Causal Mask | 14.7% | - | - |
-| Direct Mode | 12.0% | - | - |
-| Baseline | 7.8% | - | - |
-
-**Key Finding:** The physics constraint (non-negativity penalty) shows the largest improvement, suggesting that enforcing physical plausibility is highly effective for error correction.
-
-### Detailed Metrics (Physics Constraint)
-
-| Metric | NWM Baseline | Corrected | Change |
-|--------|--------------|-----------|--------|
-| RMSE | 15.68 | 12.31 | -21.5% |
-| MAE | 6.32 | 5.53 | -12.5% |
-| NSE | 0.431 | 0.650 | +50.8% |
-| KGE | 0.369 | 0.678 | +83.7% |
-| PBIAS | -24.7% | -10.4% | +58.0% |
-| Pearson r | 0.765 | 0.815 | +6.5% |
+```
+deliverables/analysis/
+├── rmse_by_experiment.png        # Bar chart with error bars
+├── site_experiment_heatmap.png   # Performance matrix
+├── nse_kge_scatter.png           # Efficiency metric correlation
+├── baseline_vs_corrected.png     # Direct comparison
+├── site_performance_radar.png    # Multi-metric radar chart
+├── experiment_analysis_narrative.md
+└── experiment_results_processed.csv
+```
 
 ---
 
-## In Progress
+## Technical Decisions
 
-### Remaining Experiments (Sites 03164000, 03479000, 03486000)
+### Regulated Site Exclusion
 
-- **Status:** Running successfully! ✅
-- **Started:** Wed Feb 4 20:38:35 EST 2026
-- **Monitor:** `tail -f logs/experiments_v2_stdout.log`
+Site 03486000 (Elizabethton, TN) was excluded from the dashboard because:
+- Located downstream of Watauga Dam
+- Dam operations introduce non-stationarity in flow patterns
+- Combined experiment showed -98.1% degradation
+- Only causal mask achieved marginal improvement (0.5%)
 
-**Completed so far:**
-| Experiment | Site | RMSE Improvement | Training Time |
-|------------|------|------------------|---------------|
-| baseline | 03164000 | 10.57% | 16.0 min |
+**Recommendation:** Regulated sites require explicit dam operation features or specialized architectures.
 
-**Currently running:** causal @ site 03164000
+### Model Improvement Suggestions
 
-**Progress:**
-- [x] baseline @ 03164000 (10.57% RMSE improvement)
-- [ ] causal @ 03164000
-- [ ] direct @ 03164000  
-- [ ] physics @ 03164000
-- [ ] combined @ 03164000
-- [ ] all 5 experiments @ 03479000
-- [ ] all 5 experiments @ 03486000
+Added 6 research directions for future work:
 
-**Estimated total time:** ~4 hours (15 experiments × ~16 min each)
+1. **Enhanced Feature Engineering** - Terrain derivatives, SMAP soil moisture, SNODAS SWE
+2. **Multi-Scale Attention** - Hierarchical attention at hourly/daily/weekly scales
+3. **Event-Focused Training** - Stratified sampling to oversample high-flow events
+4. **Precipitation Nowcasting** - MRMS radar QPE/QPF integration
+5. **Uncertainty Quantification** - MC dropout or deep ensembles
+6. **Transfer Learning** - Pre-train on CAMELS, fine-tune on Appalachian sites
 
 ---
 
-## Technical Issues Resolved
+## Git Commits This Week
 
-### Git Push Errors
-- **Issue:** `pack-objects died of signal 10` bus errors
-- **Solution:** Upgraded git from 2.29.2 to 2.52.0 via Homebrew, removed stale lock files
-
-### Vercel 404 Errors
-- **Issue:** "No framework detected" despite successful build
-- **Solution:** Added `vercel.json` with explicit Next.js framework configuration
-
-### Empty Experiment Logs
-- **Issue:** Experiments for sites other than 03161000 had empty logs
-- **Investigation:** Re-running with explicit logging to diagnose
+| Commit | Description |
+|--------|-------------|
+| `d36f69d` | feat: add engineering analysis page and complete experiment results |
+| `19fd350` | feat: add study region map and remove regulated site from dashboard |
 
 ---
 
@@ -146,49 +117,59 @@ Built a complete Next.js 14 dashboard for visualizing experiment results:
 dashboard/
 ├── src/
 │   ├── app/
-│   │   └── page.tsx          # Main dashboard page
+│   │   ├── page.tsx              # Home page with pipeline schematic
+│   │   ├── dashboard/page.tsx    # Interactive results dashboard
+│   │   └── analysis/page.tsx     # Engineering analysis page (NEW)
 │   ├── components/
+│   │   ├── StudyRegionMap.tsx    # Regional map component (NEW)
+│   │   ├── PipelineSchematic.tsx
 │   │   └── charts/
 │   │       ├── Hydrograph.tsx
 │   │       ├── ErrorDistribution.tsx
-│   │       ├── GradientHeatmap.tsx
 │   │       └── MetricsBarChart.tsx
 │   └── lib/
-│       └── data.ts           # Data fetching utilities
+│       ├── data.ts               # Data fetching (excludes regulated site)
+│       └── types.ts
 ├── public/
-│   └── data/
-│       └── experiment_results.json
-├── vercel.json               # Vercel deployment config
-└── package.json
+│   ├── data/
+│   │   └── experiment_results.json
+│   └── analysis/                  # Visualization PNGs (NEW)
+│       ├── rmse_by_experiment.png
+│       ├── site_experiment_heatmap.png
+│       ├── nse_kge_scatter.png
+│       └── baseline_vs_corrected.png
+└── vercel.json
 ```
+
+---
+
+## Scripts Created
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/analyze_experiment_results.py` | Generate visualizations and narrative |
+| `scripts/run_failed_experiments.sh` | Re-run experiments that failed due to PyTorch error |
+| `scripts/run_remaining_experiments.sh` | Batch execution of pending experiments |
 
 ---
 
 ## Next Steps
 
-1. **Complete remaining experiments** - Wait for sites 03164000, 03479000, 03486000
-2. **Aggregate multi-site results** - Compare performance across watersheds
-3. **Update dashboard** - Push new results after experiments complete
-4. **Statistical analysis** - Bootstrap confidence intervals for metrics
-5. **Thesis writing** - Document methodology and findings
+1. **Thesis Writing** - Document methodology, results, and discussion
+2. **Attention Visualization** - Implement attention weight analysis for flood events
+3. **Bootstrap Analysis** - Add confidence intervals to performance metrics
+4. **Extreme Event Focus** - Analyze model performance during historical floods
+5. **Defense Preparation** - Prepare presentation slides and demo
 
 ---
 
-## Commands Reference
+## Live Dashboard
 
-```bash
-# Monitor running experiments
-tail -f logs/experiment_remaining_sites.log
-
-# Check experiment status
-ps aux | grep train_quick_transformer
-
-# Export results to dashboard
-python scripts/export_results_to_json.py
-
-# Push updates to Vercel
-git add -A && git commit -m "update results" && git push
-```
+- **URL:** [Vercel Deployment](https://hydra-nwm-streamflow-correction.vercel.app)
+- **Pages:**
+  - `/` - Home page with project overview
+  - `/dashboard` - Interactive experiment results
+  - `/analysis` - Engineering analysis with visualizations
 
 ---
 
@@ -196,4 +177,3 @@ git add -A && git commit -m "update results" && git push
 
 - **GitHub:** [hydra-nwm-streamflow-correction](https://github.com/Mitchel34/hydra-nwm-streamflow-correction)
 - **Branch:** `feat/dashboard-experiments`
-- **Dashboard:** Deployed on Vercel
