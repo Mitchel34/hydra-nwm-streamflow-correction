@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import PipelineSchematic from '@/components/PipelineSchematic';
+import Navigation from '@/components/Navigation';
 
 function FeatureCard({
   icon,
@@ -56,14 +57,6 @@ export default function HomePage() {
     setReduceMotion(shouldReduce);
   }, []);
 
-  const handleMotionToggle = () => {
-    setReduceMotion((prev) => {
-      const next = !prev;
-      window.localStorage.setItem('hydra.reduceMotion', String(next));
-      return next;
-    });
-  };
-
   return (
     <div className="relative min-h-screen overflow-hidden text-white">
       <div className="pointer-events-none absolute inset-0 opacity-[0.13] [background-image:linear-gradient(transparent_95%,rgba(134,171,196,0.22)_95%),linear-gradient(90deg,transparent_95%,rgba(134,171,196,0.18)_95%)] [background-size:28px_28px]" />
@@ -71,36 +64,7 @@ export default function HomePage() {
         HYDRA
       </div>
 
-      <nav className="relative z-10 border-b border-[#2a455c]/55 bg-[#06131f]/70 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-hydra-accent to-hydra-corrected shadow-[0_0_20px_rgba(43,227,214,0.45)]" />
-            <span className="font-display text-lg font-semibold tracking-[0.12em]">HYDRA</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleMotionToggle}
-              className="rounded-full border border-hydra-accent/35 px-3 py-1.5 text-xs text-[#bbd4e5] transition-colors hover:border-hydra-corrected/50 hover:text-white"
-              aria-label={reduceMotion ? 'Enable animations' : 'Reduce animations'}
-            >
-              {reduceMotion ? 'Motion: Reduced' : 'Motion: Full'}
-            </button>
-            <Link
-              href="/analysis"
-              className="text-sm text-[#c2d8e8] transition-colors hover:text-white"
-            >
-              Analysis
-            </Link>
-            <Link
-              href="/dashboard"
-              className="text-sm text-[#c2d8e8] transition-colors hover:text-white"
-            >
-              Dashboard →
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Navigation />
 
       <main className="relative z-10">
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-20">
@@ -117,14 +81,14 @@ export default function HomePage() {
               <span className="shimmer-text">Hybrid Deep-learning for Residual Analysis</span>
             </p>
             <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-[#a9c2d3]">
-              A transformer-based machine learning system for correcting errors in
-              National Water Model streamflow predictions across the Appalachian
-              region.
+              A compact 1-million parameter hybrid GRU-Transformer model that improves
+              National Water Model streamflow predictions by up to 27% across unregulated
+              Appalachian watersheds.
             </p>
           </motion.div>
 
           <motion.div
-            className="mt-10 flex justify-center"
+            className="mt-10 flex justify-center gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -149,6 +113,26 @@ export default function HomePage() {
                 />
               </svg>
             </Link>
+            <Link
+              href="/model"
+              className="group relative inline-flex items-center gap-2 rounded-full border-2 border-hydra-accent/50 bg-transparent px-8 py-4 font-display font-medium text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:border-hydra-corrected hover:bg-hydra-accent/10"
+            >
+              <span>Model Specs</span>
+              <svg
+                className="h-5 w-5 transition-transform group-hover:translate-x-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                />
+              </svg>
+            </Link>
           </motion.div>
 
           <motion.section
@@ -163,17 +147,28 @@ export default function HomePage() {
             <PipelineSchematic reduceMotion={reduceMotion} />
           </motion.section>
 
-          <div className="mt-16 grid gap-6 md:grid-cols-3">
+          <div className="mt-16 grid gap-6 md:grid-cols-4">
             <FeatureCard
               delay={0.4}
+              icon={
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                </svg>
+              }
+              eyebrow="Compact Architecture"
+              title="Edge-Ready Design"
+              description="Just 3.81 MB model size enables deployment on Raspberry Pi, Jetson Nano, and mobile devices for real-time monitoring."
+            />
+            <FeatureCard
+              delay={0.45}
               icon={
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               }
               eyebrow="Comparative Analysis"
-              title="Multi-Site Evaluation"
-              description="Compare model performance across 3 unregulated USGS gauging stations in the New River and Watauga watersheds."
+              title="Multi-Site Validation"
+              description="Tested across 3 unregulated watersheds in southern Appalachia with consistent performance improvements."
             />
             <FeatureCard
               delay={0.5}
@@ -183,19 +178,19 @@ export default function HomePage() {
                 </svg>
               }
               eyebrow="Ablation Studies"
-              title="Experiment Grid"
-              description="Evaluate causal masking, physics constraints, quantile regression, and v2/v3 architecture variants using consistent metrics."
+              title="15 Experiment Grid"
+              description="Systematic evaluation of architectural variants, physics constraints, and training strategies across all sites."
             />
             <FeatureCard
-              delay={0.6}
+              delay={0.55}
               icon={
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                 </svg>
               }
-              eyebrow="Interactive Insights"
-              title="Chart-Driven Diagnostics"
-              description="Inspect hydrographs, site-level improvements, and residual error distributions for each configuration."
+              eyebrow="Interactive Dashboard"
+              title="Visual Diagnostics"
+              description="Explore hydrographs, performance metrics, and error distributions with interactive charts and comparisons."
             />
           </div>
 

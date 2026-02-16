@@ -8,6 +8,7 @@ import { DashboardData, MetricComparison, TimeSeriesPoint, VersionComparisonRow 
 import SiteCard from '@/components/SiteCard';
 import ExperimentSelector from '@/components/ExperimentSelector';
 import MetricCard from '@/components/MetricCard';
+import Navigation from '@/components/Navigation';
 
 const Hydrograph = dynamic(() => import('@/components/charts/Hydrograph'), {
   ssr: false,
@@ -279,35 +280,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen text-white">
-      <header className="border-b border-[#2a445b] bg-[#071420]/80 px-6 py-4 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-2 transition-opacity hover:opacity-80"
-            >
-              <div className="h-8 w-8 rounded-md bg-gradient-to-br from-hydra-accent to-hydra-corrected" />
-              <span className="font-display text-lg font-semibold tracking-[0.12em]">
-                HYDRA
-              </span>
-            </Link>
-            <div className="h-6 w-px bg-[#36536a]" />
-            <div>
-              <h1 className="font-display text-xl">Dashboard</h1>
-              <p className="text-xs text-[#8daec2]">NWM Streamflow Error Correction</p>
-            </div>
+      <Navigation />
+      <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-6 py-4">
+        <div className="mx-auto max-w-7xl flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-2xl gradient-text">Experiment Dashboard</h1>
+            <p className="text-sm text-[#8daec2] mt-1">Interactive exploration of model performance across sites and configurations</p>
           </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/analysis"
-              className="text-sm text-[#8daec2] hover:text-white transition-colors"
-            >
-              Analysis →
-            </Link>
-            <span className="text-sm text-[#8daec2]">
-              Updated: {new Date(data.generated_at).toLocaleDateString()}
-            </span>
-          </div>
+          <span className="text-sm text-[#8daec2]">
+            Updated: {new Date(data.generated_at).toLocaleDateString()}
+          </span>
         </div>
       </header>
 

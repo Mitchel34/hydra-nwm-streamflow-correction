@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import StudyRegionMap from '@/components/StudyRegionMap';
+import Navigation from '@/components/Navigation';
 import { fetchExperimentResults, buildVersionComparison } from '@/lib/data';
 import { DashboardData, ExperimentResult, ModelVersion } from '@/lib/types';
 
@@ -137,24 +138,7 @@ export default function AnalysisPage() {
 
   return (
     <div className="min-h-screen text-white">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-20 border-b border-[#2a455c]/55 bg-[#06131f]/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-hydra-accent to-hydra-corrected" />
-            <span className="font-display text-lg font-semibold tracking-[0.12em]">HYDRA</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-sm text-[#8fb4cc] hover:text-white transition-colors">
-              Home
-            </Link>
-            <Link href="/dashboard" className="text-sm text-[#8fb4cc] hover:text-white transition-colors">
-              Dashboard
-            </Link>
-            <span className="text-sm text-hydra-corrected font-medium">Analysis</span>
-          </div>
-        </div>
-      </nav>
+      <Navigation />
 
       <main className="mx-auto max-w-7xl px-6 py-10">
         {/* Header */}
