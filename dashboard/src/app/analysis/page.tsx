@@ -6,8 +6,8 @@ import { motion } from 'framer-motion';
 import StudyRegionMap from '@/components/StudyRegionMap';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { fetchExperimentResults, buildVersionComparison } from '@/lib/data';
-import { DashboardData, ExperimentResult, ExperimentCategory, getExperimentCategory } from '@/lib/types';
+import { fetchExperimentResults, fetchRigorousEval, buildVersionComparison } from '@/lib/data';
+import { DashboardData, RigorousEvalData, ExperimentResult, ExperimentCategory, getExperimentCategory } from '@/lib/types';
 
 interface FindingCardProps {
   icon: React.ReactNode;
@@ -78,11 +78,12 @@ function computeExperimentSummary(
 
 export default function AnalysisPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [evalData, setEvalData] = useState<RigorousEvalData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchExperimentResults()
-      .then(setData)
+    Promise.all([fetchExperimentResults(), fetchRigorousEval()])
+      .then(([d, e]) => { setData(d); setEvalData(e); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -223,6 +224,64 @@ export default function AnalysisPage() {
                 description="Largest single-site efficiency gain"
                 positive={true}
               />
+            </div>
+          </section>
+        )}
+
+        {/* Cross-Site Skill Summary (from rigorous eval) */}
+        {evalData && (
+          <section className="mb-12">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc]">
+                Skill Scores (SS_RMSE)
+              </h2>
+              <Link
+                href="/evaluation"
+                className="text-xs text-hydra-corrected/70 hover:text-hydra-corrected transition-colors"
+              >
+                Full evaluation →
+              </Link>
+            </div>
+            <div className="surface-panel rounded-xl overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#122334]">
+                  <tr>
+                    <th className="text-left px-5 py-3 text-sm font-display text-[#8fb4cc]">Experiment</th>
+                    <th className="text-right px-5 py-3 text-sm font-display text-[#8fb4cc]">Median SS_RMSE</th>
+                    <th className="text-right px-5 py-3 text-sm font-display text-[#8fb4cc]">IQR</th>
+                    <th className="text-right px-5 py-3 text-sm font-display text-[#8fb4cc]">Sig. (p&lt;0.01)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...evalData.experiments]
+                    .sort((a, b) => (evalData.cross_site[b]?.median_ss_rmse ?? -999) - (evalData.cross_site[a]?.median_ss_rmse ?? -999))
+                    .slice(0, 8)
+                    .map((exp) => {
+                      const cs = evalData.cross_site[exp];
+                      const name = data?.experiments[exp]?.name ?? exp;
+                      return (
+                        <tr key={exp} className="border-t border-[#22384b]">
+                          <td className="px-5 py-3 text-white text-sm">{name}</td>
+                          <td className={`px-5 py-3 text-right font-mono text-sm font-medium ${
+                            (cs?.median_ss_rmse ?? 0) > 0 ? 'text-hydra-corrected' : 'text-hydra-alert'
+                          }`}>
+                            {cs?.median_ss_rmse != null
+                              ? (cs.median_ss_rmse > 0 ? '+' : '') + (cs.median_ss_rmse * 100).toFixed(1) + '%'
+                              : '--'}
+                          </td>
+                          <td className="px-5 py-3 text-right text-xs text-[#8fb4cc] font-mono">
+                            {cs?.iqr_ss_rmse
+                              ? `[${(cs.iqr_ss_rmse[0] * 100).toFixed(1)}, ${(cs.iqr_ss_rmse[1] * 100).toFixed(1)}]`
+                              : '--'}
+                          </td>
+                          <td className="px-5 py-3 text-right text-sm text-[#8fb4cc]">
+                            {cs?.sites_significant_001 ?? 0}/{cs?.n_sites ?? 0}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
             </div>
           </section>
         )}

@@ -38,6 +38,7 @@ export default function Navigation() {
     { href: '/model', label: 'Model' },
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/analysis', label: 'Analysis' },
+    { href: '/evaluation', label: 'Evaluation' },
   ];
 
   return (

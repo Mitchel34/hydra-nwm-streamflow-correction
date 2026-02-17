@@ -117,3 +117,135 @@ export interface VersionComparisonRow {
   v3_rmse: number;
   v3_improvement: number;
 }
+
+// --- Rigorous Evaluation Types ---
+
+export interface CIMetric {
+  value: number | null;
+  ci?: [number, number] | null;
+  se?: number | null;
+}
+
+export interface KGEComponents {
+  kge: number;
+  r: number;
+  alpha: number;
+  beta: number;
+}
+
+export interface HeadlineMetrics {
+  ss_rmse: CIMetric;
+  delta_nse: CIMetric;
+  delta_kge: CIMetric;
+  kge_components: {
+    nwm: KGEComponents;
+    hydra: KGEComponents;
+  };
+}
+
+export interface FlowRegimeSkill {
+  ss_rmse: CIMetric;
+  ss_mae?: CIMetric;
+  n_samples: number;
+}
+
+export interface ErrorStructure {
+  pbias_nwm: number;
+  pbias_hydra: number;
+  me_nwm: number;
+  me_hydra: number;
+  delta_abs_pbias: number;
+  delta_abs_me: number;
+  high_flow: FlowRegimeSkill;
+  low_flow: FlowRegimeSkill;
+}
+
+export interface PeakTiming {
+  n_peaks: number;
+  median_abs_timing_nwm_h?: number;
+  median_abs_timing_hydra_h?: number;
+  mean_abs_timing_nwm_h?: number;
+  mean_abs_timing_hydra_h?: number;
+  timing_improvement_h?: number;
+}
+
+export interface DMTest {
+  dm_statistic: number;
+  p_value: number;
+  mean_loss_diff: number;
+  significant_005: boolean;
+  significant_001: boolean;
+  hydra_better?: boolean;
+}
+
+export interface RegimeMetrics {
+  n_samples: number;
+  insufficient?: boolean;
+  rmse_nwm?: number;
+  rmse_hydra?: number;
+  ss_rmse?: number;
+  ss_mae?: number;
+  mae_nwm?: number;
+  mae_hydra?: number;
+  nse_nwm?: number;
+  nse_hydra?: number;
+  delta_nse?: number;
+  delta_kge?: number;
+  pbias_nwm?: number;
+  pbias_hydra?: number;
+  me_nwm?: number;
+  me_hydra?: number;
+}
+
+export type RegimeKey = 'low' | 'mid' | 'high' | 'rising' | 'falling'
+  | 'high_rising' | 'high_falling' | 'low_rising' | 'low_falling';
+
+export interface RawMetrics {
+  rmse_nwm: number;
+  rmse_hydra: number;
+  mae_nwm: number;
+  mae_hydra: number;
+  nse_nwm: number;
+  nse_hydra: number;
+}
+
+export interface WindowEval {
+  headline: HeadlineMetrics;
+  error_structure: ErrorStructure;
+  distribution: {
+    ss_var_err: CIMetric;
+    peak_timing: PeakTiming;
+  };
+  significance: { dm_test: DMTest };
+  regimes: Record<RegimeKey, RegimeMetrics>;
+  n_samples: number;
+  raw_metrics: RawMetrics;
+  insufficient?: boolean;
+}
+
+export type SeasonKey = 'DJF' | 'MAM' | 'JJA' | 'SON';
+
+export interface SiteEval {
+  full_period: WindowEval;
+  seasonal: Record<SeasonKey, WindowEval>;
+}
+
+export interface CrossSiteAgg {
+  n_sites: number;
+  median_ss_rmse: number | null;
+  iqr_ss_rmse: [number, number] | null;
+  median_delta_nse: number | null;
+  iqr_delta_nse: [number, number] | null;
+  median_delta_kge: number | null;
+  sites_significant_005: number;
+  sites_significant_001: number;
+}
+
+export interface RigorousEvalData {
+  generated_at: string;
+  bootstrap: { block_size: number; n_reps: number; ci_level: number };
+  sites: string[];
+  experiments: string[];
+  results: Record<string, Record<string, SiteEval>>;
+  cross_site: Record<string, CrossSiteAgg>;
+}

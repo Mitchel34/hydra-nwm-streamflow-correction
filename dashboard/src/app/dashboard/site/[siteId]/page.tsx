@@ -4,31 +4,55 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { fetchExperimentResults, fetchTimeSeries } from '@/lib/data';
-import { DashboardData, ExperimentResult, TimeSeriesPoint, getExperimentCategory } from '@/lib/types';
+import { fetchExperimentResults, fetchTimeSeries, fetchRigorousEval } from '@/lib/data';
+import {
+  DashboardData,
+  RigorousEvalData,
+  TimeSeriesPoint,
+  getExperimentCategory,
+} from '@/lib/types';
 import { getExperimentLabels } from '@/lib/experiment-context';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import MetricCard from '@/components/MetricCard';
+import SkillScoreCard from '@/components/SkillScoreCard';
+import SignificanceBadge from '@/components/SignificanceBadge';
+import JournalModeToggle from '@/components/JournalModeToggle';
 
 const Hydrograph = dynamic(() => import('@/components/charts/Hydrograph'), {
   ssr: false,
   loading: () => <div className="h-96 rounded-lg bg-[#0f202f] animate-pulse" />,
 });
 
+const RegimeBreakdownChart = dynamic(
+  () => import('@/components/charts/RegimeBreakdownChart'),
+  { ssr: false },
+);
+
+const SeasonalHeatmap = dynamic(
+  () => import('@/components/charts/SeasonalHeatmap'),
+  { ssr: false },
+);
+
 export default function SiteDeepDive() {
   const params = useParams<{ siteId: string }>();
   const siteId = params.siteId;
 
   const [data, setData] = useState<DashboardData | null>(null);
+  const [evalData, setEvalData] = useState<RigorousEvalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedExperiment, setSelectedExperiment] = useState<string>('');
   const [timeSeries, setTimeSeries] = useState<TimeSeriesPoint[]>([]);
+  const [journalMode, setJournalMode] = useState(false);
 
   useEffect(() => {
-    fetchExperimentResults()
-      .then(setData)
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetchExperimentResults(),
+      fetchRigorousEval(),
+    ]).then(([dashData, rigorousData]) => {
+      setData(dashData);
+      setEvalData(rigorousData);
+    }).finally(() => setLoading(false));
   }, []);
 
   const siteResults = useMemo(() => {
@@ -62,6 +86,10 @@ export default function SiteDeepDive() {
   const currentResult = siteResults.find((r) => r.experiment === selectedExperiment);
   const labels = getExperimentLabels(selectedExperiment);
 
+  // Rigorous eval for selected experiment+site
+  const siteEval = evalData?.results?.[selectedExperiment]?.[siteId];
+  const fullPeriod = siteEval?.full_period;
+
   if (loading) {
     return (
       <div className="min-h-screen text-white">
@@ -94,15 +122,22 @@ export default function SiteDeepDive() {
 
       <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-6 py-4">
         <div className="mx-auto max-w-7xl">
-          <div className="flex items-center gap-2 text-sm text-[#8fb4cc] mb-2">
-            <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
-            <span>/</span>
-            <span className="text-white">{siteId}</span>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm text-[#8fb4cc] mb-2">
+                <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+                <span>/</span>
+                <span className="text-white">{siteId}</span>
+              </div>
+              <h1 className="font-display text-2xl gradient-text">{siteMetadata.name}</h1>
+              <p className="text-sm text-[#8daec2] mt-1">
+                Gauge {siteId} | {siteMetadata.watershed} watershed | {siteMetadata.type}
+              </p>
+            </div>
+            {evalData && (
+              <JournalModeToggle enabled={journalMode} onToggle={() => setJournalMode((p) => !p)} />
+            )}
           </div>
-          <h1 className="font-display text-2xl gradient-text">{siteMetadata.name}</h1>
-          <p className="text-sm text-[#8daec2] mt-1">
-            Gauge {siteId} | {siteMetadata.watershed} watershed | {siteMetadata.type}
-          </p>
         </div>
       </header>
 
@@ -123,6 +158,9 @@ export default function SiteDeepDive() {
                   <th className="text-right px-5 py-3 text-sm font-display text-[#8fb4cc]">RMSE</th>
                   <th className="text-right px-5 py-3 text-sm font-display text-[#8fb4cc]">NSE</th>
                   <th className="text-right px-5 py-3 text-sm font-display text-[#8fb4cc]">RMSE Δ</th>
+                  {journalMode && (
+                    <th className="text-right px-5 py-3 text-sm font-display text-[#8fb4cc]">DM</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -131,6 +169,7 @@ export default function SiteDeepDive() {
                   const category = getExperimentCategory(result.experiment);
                   const improvement = result.rmse_improvement_pct ?? 0;
                   const isSelected = result.experiment === selectedExperiment;
+                  const expEval = evalData?.results?.[result.experiment]?.[siteId]?.full_period;
 
                   return (
                     <tr
@@ -166,6 +205,11 @@ export default function SiteDeepDive() {
                       }`}>
                         {improvement > 0 ? '+' : ''}{improvement.toFixed(1)}%
                       </td>
+                      {journalMode && (
+                        <td className="px-5 py-3 text-right">
+                          <SignificanceBadge pValue={expEval?.significance?.dm_test?.p_value} />
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -230,6 +274,144 @@ export default function SiteDeepDive() {
                 />
               )}
             </div>
+          </section>
+        )}
+
+        {/* Journal Mode: Skill Scores + Significance */}
+        {journalMode && fullPeriod && (
+          <section>
+            <h2 className="font-display text-lg mb-4">
+              Skill Scores
+              <SignificanceBadge
+                pValue={fullPeriod.significance?.dm_test?.p_value}
+                className="ml-2"
+              />
+            </h2>
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
+              <SkillScoreCard
+                label="SS_RMSE"
+                metric={fullPeriod.headline.ss_rmse}
+                pValue={fullPeriod.significance?.dm_test?.p_value}
+                description="RMSE skill score vs NWM"
+              />
+              <SkillScoreCard
+                label="ΔNSE"
+                metric={fullPeriod.headline.delta_nse}
+                description="NSE improvement over NWM"
+              />
+              <SkillScoreCard
+                label="ΔKGE"
+                metric={fullPeriod.headline.delta_kge}
+                description="KGE improvement over NWM"
+              />
+            </div>
+
+            {/* DM test details */}
+            {fullPeriod.significance?.dm_test && (
+              <div className="surface-panel rounded-lg p-4 mb-6">
+                <h3 className="text-sm text-[#91afc4] mb-2">Diebold-Mariano Test</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <div className="text-[#6f8da0] text-xs">DM Statistic</div>
+                    <div className="text-white font-mono">
+                      {fullPeriod.significance.dm_test.dm_statistic.toFixed(3)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#6f8da0] text-xs">p-value</div>
+                    <div className="text-white font-mono">
+                      {fullPeriod.significance.dm_test.p_value < 0.001
+                        ? fullPeriod.significance.dm_test.p_value.toExponential(2)
+                        : fullPeriod.significance.dm_test.p_value.toFixed(4)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#6f8da0] text-xs">Significance</div>
+                    <div>
+                      <SignificanceBadge pValue={fullPeriod.significance.dm_test.p_value} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#6f8da0] text-xs">Hydra Better</div>
+                    <div className={fullPeriod.significance.dm_test.hydra_better ? 'text-hydra-corrected' : 'text-hydra-alert'}>
+                      {fullPeriod.significance.dm_test.hydra_better ? 'Yes' : 'No'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bias structure */}
+            <div className="surface-panel rounded-lg p-4 mb-6">
+              <h3 className="text-sm text-[#91afc4] mb-2">Error Structure</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <div className="text-[#6f8da0] text-xs">PBIAS (NWM)</div>
+                  <div className="text-white font-mono">{fullPeriod.error_structure.pbias_nwm.toFixed(1)}%</div>
+                </div>
+                <div>
+                  <div className="text-[#6f8da0] text-xs">PBIAS (Hydra)</div>
+                  <div className="text-white font-mono">{fullPeriod.error_structure.pbias_hydra.toFixed(1)}%</div>
+                </div>
+                <div>
+                  <div className="text-[#6f8da0] text-xs">Δ|PBIAS|</div>
+                  <div className={`font-mono ${fullPeriod.error_structure.delta_abs_pbias > 0 ? 'text-hydra-corrected' : 'text-hydra-alert'}`}>
+                    {fullPeriod.error_structure.delta_abs_pbias > 0 ? '+' : ''}
+                    {fullPeriod.error_structure.delta_abs_pbias.toFixed(1)}%
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[#6f8da0] text-xs">Var. Reduction</div>
+                  <div className={`font-mono ${(fullPeriod.distribution.ss_var_err.value ?? 0) > 0 ? 'text-hydra-corrected' : 'text-hydra-alert'}`}>
+                    {((fullPeriod.distribution.ss_var_err.value ?? 0) * 100).toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Peak timing */}
+            {fullPeriod.distribution.peak_timing.n_peaks > 0 && (
+              <div className="surface-panel rounded-lg p-4 mb-6">
+                <h3 className="text-sm text-[#91afc4] mb-2">
+                  Peak Timing ({fullPeriod.distribution.peak_timing.n_peaks} events)
+                </h3>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <div className="text-[#6f8da0] text-xs">NWM Timing Error</div>
+                    <div className="text-white font-mono">
+                      {fullPeriod.distribution.peak_timing.median_abs_timing_nwm_h}h
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#6f8da0] text-xs">Hydra Timing Error</div>
+                    <div className="text-white font-mono">
+                      {fullPeriod.distribution.peak_timing.median_abs_timing_hydra_h}h
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#6f8da0] text-xs">Improvement</div>
+                    <div className={`font-mono ${(fullPeriod.distribution.peak_timing.timing_improvement_h ?? 0) > 0 ? 'text-hydra-corrected' : 'text-hydra-alert'}`}>
+                      {(fullPeriod.distribution.peak_timing.timing_improvement_h ?? 0) > 0 ? '+' : ''}
+                      {fullPeriod.distribution.peak_timing.timing_improvement_h}h
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Journal Mode: Regime Breakdown */}
+        {journalMode && fullPeriod?.regimes && (
+          <section>
+            <RegimeBreakdownChart regimes={fullPeriod.regimes} />
+          </section>
+        )}
+
+        {/* Journal Mode: Seasonal Heatmap */}
+        {journalMode && siteEval?.seasonal && (
+          <section>
+            <SeasonalHeatmap seasonal={siteEval.seasonal} />
           </section>
         )}
 

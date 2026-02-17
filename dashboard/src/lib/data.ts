@@ -6,6 +6,7 @@
 import {
   DashboardData,
   ExperimentResult,
+  RigorousEvalData,
   TimeSeriesPoint,
   VersionComparisonRow,
   getExperimentCategory,
@@ -167,6 +168,19 @@ export function buildVersionComparison(
   }
 
   return rows;
+}
+
+/**
+ * Fetch rigorous evaluation data (skill scores, CIs, significance tests)
+ */
+export async function fetchRigorousEval(): Promise<RigorousEvalData | null> {
+  try {
+    const response = await fetch('/data/rigorous_eval.json');
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
 
 /**
