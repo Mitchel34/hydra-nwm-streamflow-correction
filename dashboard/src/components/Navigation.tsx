@@ -36,8 +36,7 @@ export default function Navigation() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/model', label: 'Model' },
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/analysis', label: 'Analysis' },
+    { href: '/experiments', label: 'Experiments' },
     { href: '/evaluation', label: 'Evaluation' },
   ];
 
@@ -60,7 +59,7 @@ export default function Navigation() {
             {reduceMotion ? 'Motion: Reduced' : 'Motion: Full'}
           </button>
           {navLinks.slice(1).map((link) => {
-            const isActive = pathname === link.href;
+            const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}
@@ -100,7 +99,7 @@ export default function Navigation() {
       {menuOpen && (
         <div className="md:hidden border-t border-[#2a455c]/55 bg-[#06131f] px-6 py-4 space-y-3">
           {navLinks.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}

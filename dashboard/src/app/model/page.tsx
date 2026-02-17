@@ -1,9 +1,11 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
+import PipelineSchematic from '@/components/PipelineSchematic';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface StatCardProps {
   label: string;
@@ -136,6 +138,16 @@ export default function ModelPage() {
   const [selectedTab, setSelectedTab] = useState<'architecture' | 'deployment' | 'requirements'>(
     'architecture'
   );
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    const storedSetting = window.localStorage.getItem('hydra.reduceMotion');
+    if (storedSetting !== null) {
+      setReduceMotion(storedSetting === 'true');
+      return;
+    }
+    setReduceMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }, []);
 
   const components = [
     { name: 'Transformer Encoder (4 layers)', params: 529920, percentage: 53.1 },
@@ -211,10 +223,23 @@ export default function ModelPage() {
               <span className="gradient-text">Model Architecture</span>
             </h1>
             <p className="mt-4 max-w-3xl text-lg text-[#a9c2d3]">
-              Hydra v3 is a compact yet powerful hybrid model combining GRU encoding with
-              multi-scale transformer attention for streamflow error correction.
+              HYDRA is a hybrid GRU-Transformer designed to correct National Water Model errors
+              in real-time. Here&apos;s how the three-stage pipeline works.
             </p>
           </motion.div>
+
+          {/* Pipeline Schematic */}
+          <motion.section
+            className="mb-14"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <h2 className="mb-5 text-center font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc]">
+              Model Pipeline
+            </h2>
+            <PipelineSchematic reduceMotion={reduceMotion} />
+          </motion.section>
 
           {/* Key Stats */}
           <div className="grid gap-6 md:grid-cols-4 mb-16">
@@ -498,6 +523,27 @@ export default function ModelPage() {
               </div>
             </motion.div>
           )}
+
+          {/* CTA */}
+          <motion.div
+            className="mt-16 text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <p className="text-[#a9c2d3] mb-4">
+              Now that you understand the architecture, see how different configurations perform.
+            </p>
+            <Link
+              href="/experiments"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-hydra-accent to-hydra-corrected px-8 py-3 font-display font-medium text-[#022133] shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_10px_25px_rgba(43,227,214,0.26)]"
+            >
+              <span>Explore Experiments</span>
+              <svg className="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
+          </motion.div>
         </div>
       </main>
 

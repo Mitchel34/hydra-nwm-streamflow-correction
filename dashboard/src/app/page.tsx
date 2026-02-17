@@ -3,60 +3,40 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import PipelineSchematic from '@/components/PipelineSchematic';
+import StudyRegionMap from '@/components/StudyRegionMap';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-
-function FeatureCard({
-  icon,
-  title,
-  description,
-  eyebrow,
-  delay = 0,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  eyebrow: string;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay }}
-      className="surface-panel rounded-2xl p-6"
-    >
-      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-hydra-accent/30 bg-gradient-to-br from-hydra-accent/30 to-hydra-corrected/30 text-hydra-corrected">
-        {icon}
-      </div>
-      <p className="font-display text-[0.68rem] uppercase tracking-[0.22em] text-hydra-accent-soft/85">
-        {eyebrow}
-      </p>
-      <h3 className="mt-2 mb-2 font-display text-lg text-white">{title}</h3>
-      <p className="text-[0.95rem] leading-relaxed text-[#afc6d7]">{description}</p>
-    </motion.div>
-  );
-}
+import { fetchRigorousEval } from '@/lib/data';
+import { RigorousEvalData } from '@/lib/types';
 
 export default function HomePage() {
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const [evalData, setEvalData] = useState<RigorousEvalData | null>(null);
 
   useEffect(() => {
-    const shouldReduce =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const storedSetting =
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem('hydra.reduceMotion')
-        : null;
-
-    if (storedSetting !== null) {
-      setReduceMotion(storedSetting === 'true');
-      return;
-    }
-    setReduceMotion(shouldReduce);
+    fetchRigorousEval().then(setEvalData);
   }, []);
+
+  // Compute key results from rigorous eval
+  const keyResults = evalData
+    ? (() => {
+        const experiments = evalData.experiments;
+        let bestMedian = -Infinity;
+        let bestExp = '';
+        let totalSig = 0;
+        let totalPairs = 0;
+        for (const exp of experiments) {
+          const cs = evalData.cross_site[exp];
+          if (!cs) continue;
+          if ((cs.median_ss_rmse ?? -Infinity) > bestMedian) {
+            bestMedian = cs.median_ss_rmse ?? -Infinity;
+            bestExp = exp;
+          }
+          totalSig += cs.sites_significant_001 ?? 0;
+          totalPairs += cs.n_sites ?? 0;
+        }
+        return { bestMedian, bestExp, totalSig, totalPairs, nExperiments: experiments.length };
+      })()
+    : null;
 
   return (
     <div className="relative min-h-screen overflow-hidden text-white">
@@ -69,6 +49,7 @@ export default function HomePage() {
 
       <main className="relative z-10">
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-20">
+          {/* Hero */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -83,11 +64,12 @@ export default function HomePage() {
             </p>
             <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-[#a9c2d3]">
               A compact 1-million parameter hybrid GRU-Transformer model that improves
-              National Water Model streamflow predictions by up to 27% across unregulated
+              National Water Model streamflow predictions by up to 48% across unregulated
               Appalachian watersheds.
             </p>
           </motion.div>
 
+          {/* CTAs */}
           <motion.div
             className="mt-10 flex justify-center gap-4"
             initial={{ opacity: 0, y: 20 }}
@@ -95,23 +77,12 @@ export default function HomePage() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Link
-              href="/dashboard"
+              href="/experiments"
               className="group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-hydra-accent to-hydra-corrected px-8 py-4 font-display font-medium text-[#022133] shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_10px_25px_rgba(43,227,214,0.26)]"
             >
               <span>Explore Results</span>
-              <svg
-                className="h-5 w-5 transition-transform group-hover:translate-x-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
+              <svg className="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </Link>
             <Link
@@ -119,93 +90,196 @@ export default function HomePage() {
               className="group relative inline-flex items-center gap-2 rounded-full border-2 border-hydra-accent/50 bg-transparent px-8 py-4 font-display font-medium text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:border-hydra-corrected hover:bg-hydra-accent/10"
             >
               <span>Model Specs</span>
-              <svg
-                className="h-5 w-5 transition-transform group-hover:translate-x-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
-                />
+              <svg className="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
               </svg>
             </Link>
           </motion.div>
 
+          {/* The Problem */}
           <motion.section
-            className="mt-14"
+            className="mt-20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <h2 className="mb-5 text-center font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc]">
-              Model Pipeline
+              The Problem
             </h2>
-            <PipelineSchematic reduceMotion={reduceMotion} />
+            <div className="mx-auto max-w-3xl space-y-4 text-center text-[#a9c2d3] leading-relaxed">
+              <p>
+                NOAA&apos;s National Water Model (NWM) provides real-time streamflow forecasts across the continental
+                United States, but exhibits systematic errors in headwater catchments where complex terrain and
+                heterogeneous land cover challenge physics-based approaches.
+              </p>
+              <p>
+                Events like Hurricane Helene (September 2024) underscored the critical need for accurate
+                streamflow predictions in southern Appalachian watersheds, where NWM errors can exceed 50%
+                during peak flows &mdash; precisely when accuracy matters most.
+              </p>
+            </div>
           </motion.section>
 
-          <div className="mt-16 grid gap-6 md:grid-cols-4">
-            <FeatureCard
-              delay={0.4}
-              icon={
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                </svg>
-              }
-              eyebrow="Compact Architecture"
-              title="Edge-Ready Design"
-              description="Just 3.81 MB model size enables deployment on Raspberry Pi, Jetson Nano, and mobile devices for real-time monitoring."
-            />
-            <FeatureCard
-              delay={0.45}
-              icon={
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              }
-              eyebrow="Comparative Analysis"
-              title="Multi-Site Validation"
-              description="Tested across 3 unregulated watersheds in southern Appalachia with consistent performance improvements."
-            />
-            <FeatureCard
-              delay={0.5}
-              icon={
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              }
-              eyebrow="Ablation Studies"
-              title="15 Experiment Grid"
-              description="Systematic evaluation of architectural variants, physics constraints, and training strategies across all sites."
-            />
-            <FeatureCard
-              delay={0.55}
-              icon={
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                </svg>
-              }
-              eyebrow="Interactive Dashboard"
-              title="Visual Diagnostics"
-              description="Explore hydrographs, performance metrics, and error distributions with interactive charts and comparisons."
-            />
-          </div>
-
-          <motion.div
-            className="mt-[4.5rem] grid grid-cols-2 gap-4 md:grid-cols-4"
+          {/* Study Region */}
+          <motion.section
+            className="mt-16"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.65 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+          >
+            <h2 className="mb-5 text-center font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc]">
+              Study Region
+            </h2>
+            <div className="grid gap-8 md:grid-cols-2 items-center">
+              <div className="space-y-4 text-[#a9c2d3] leading-relaxed">
+                <p>
+                  Three unregulated USGS gauging stations in the southern Appalachian highlands,
+                  spanning the New River and Watauga River basins in Virginia and North Carolina.
+                </p>
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  {[
+                    { id: '03161000', name: 'Jefferson', river: 'S. Fork New River' },
+                    { id: '03164000', name: 'Galax', river: 'New River' },
+                    { id: '03479000', name: 'Sugar Grove', river: 'Watauga River' },
+                  ].map((site) => (
+                    <div key={site.id} className="surface-panel rounded-lg p-3 text-center">
+                      <div className="text-sm font-medium text-white">{site.name}</div>
+                      <div className="text-xs text-[#8fb4cc] mt-0.5">{site.river}</div>
+                      <div className="text-[0.65rem] text-[#6f8da0] mt-1 font-mono">{site.id}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-[#8fb4cc]">
+                  Mixed deciduous-coniferous forest at 500-1400m elevation. Humid subtropical climate
+                  with orographic precipitation enhancement. Study period: 2010-2020 (hourly).
+                </p>
+              </div>
+              <StudyRegionMap />
+            </div>
+          </motion.section>
+
+          {/* Key Results */}
+          {keyResults && (
+            <motion.section
+              className="mt-16"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <h2 className="mb-5 text-center font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc]">
+                Key Results
+              </h2>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="surface-panel rounded-xl p-5 text-center">
+                  <div className="font-display text-3xl font-semibold text-hydra-corrected">
+                    +{(keyResults.bestMedian * 100).toFixed(1)}%
+                  </div>
+                  <div className="mt-2 text-sm text-[#a9c2d3]">Best Median Skill Score</div>
+                  <div className="mt-1 text-xs text-[#6f8da0]">
+                    SS_RMSE across all sites ({keyResults.bestExp.replace(/_/g, ' ')})
+                  </div>
+                </div>
+                <div className="surface-panel rounded-xl p-5 text-center">
+                  <div className="font-display text-3xl font-semibold text-hydra-corrected">
+                    {keyResults.nExperiments}
+                  </div>
+                  <div className="mt-2 text-sm text-[#a9c2d3]">Experiment Configurations</div>
+                  <div className="mt-1 text-xs text-[#6f8da0]">
+                    Across v2, v3, ERA5-only, and USGS input variants
+                  </div>
+                </div>
+                <div className="surface-panel rounded-xl p-5 text-center">
+                  <div className="font-display text-3xl font-semibold text-hydra-corrected">
+                    {keyResults.totalSig}/{keyResults.totalPairs}
+                  </div>
+                  <div className="mt-2 text-sm text-[#a9c2d3]">Statistically Significant</div>
+                  <div className="mt-1 text-xs text-[#6f8da0]">
+                    Experiment-site pairs at p&lt;0.001 (Diebold-Mariano)
+                  </div>
+                </div>
+              </div>
+            </motion.section>
+          )}
+
+          {/* How to Use This Tool */}
+          <motion.section
+            className="mt-16"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.45 }}
+          >
+            <h2 className="mb-5 text-center font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc]">
+              How to Use This Tool
+            </h2>
+            <div className="grid gap-6 md:grid-cols-3">
+              {[
+                {
+                  step: 1,
+                  title: 'Understand the Model',
+                  description: 'Learn how HYDRA combines GRU temporal encoding with Transformer attention to correct NWM errors in real-time.',
+                  href: '/model',
+                  icon: (
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                  ),
+                },
+                {
+                  step: 2,
+                  title: 'Explore Experiments',
+                  description: 'Compare 19 configurations across 3 sites with interactive hydrographs, error distributions, and performance metrics.',
+                  href: '/experiments',
+                  icon: (
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  ),
+                },
+                {
+                  step: 3,
+                  title: 'Review Evaluation',
+                  description: 'Examine skill scores with bootstrap confidence intervals, significance tests, and flow regime analysis.',
+                  href: '/evaluation',
+                  icon: (
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ),
+                },
+              ].map((item) => (
+                <Link key={item.step} href={item.href} className="group">
+                  <div className="surface-panel rounded-2xl p-6 transition-all duration-300 group-hover:border-hydra-corrected/40 group-hover:bg-[#0d1f2e]">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-hydra-corrected/20 text-hydra-corrected font-display text-sm font-semibold">
+                        {item.step}
+                      </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-hydra-accent/30 bg-gradient-to-br from-hydra-accent/30 to-hydra-corrected/30 text-hydra-corrected">
+                        {item.icon}
+                      </div>
+                    </div>
+                    <h3 className="font-display text-lg text-white mb-2">{item.title}</h3>
+                    <p className="text-sm leading-relaxed text-[#afc6d7]">{item.description}</p>
+                    <div className="mt-3 text-xs text-hydra-corrected/70 group-hover:text-hydra-corrected transition-colors">
+                      Learn more →
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Stats bar */}
+          <motion.div
+            className="mt-16 grid grid-cols-2 gap-4 md:grid-cols-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
           >
             {[
               { value: '3', label: 'Unregulated Sites' },
-              { value: '27%', label: 'Best RMSE Reduction' },
-              { value: '15', label: 'Experiments (v2+v3)' },
-              { value: '2010–2020', label: 'Study Period' },
+              { value: '48%', label: 'Best Skill Score' },
+              { value: '19', label: 'Experiments Tested' },
+              { value: '2010-2020', label: 'Study Period' },
             ].map((stat, i) => (
               <div key={i} className="surface-panel rounded-xl p-4 text-center">
                 <div className="font-display text-2xl font-semibold gradient-text md:text-3xl">

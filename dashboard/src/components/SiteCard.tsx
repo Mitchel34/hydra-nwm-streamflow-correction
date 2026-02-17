@@ -87,7 +87,7 @@ export default function SiteCard({
       )}
       {!disabled && (
         <Link
-          href={`/dashboard/site/${siteId}`}
+          href={`/experiments/site/${siteId}`}
           onClick={(e) => e.stopPropagation()}
           className="mt-2 inline-flex items-center gap-1 text-[0.7rem] uppercase tracking-[0.09em] text-hydra-corrected/70 hover:text-hydra-corrected transition-colors"
         >

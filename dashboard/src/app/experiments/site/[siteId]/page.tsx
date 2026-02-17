@@ -107,8 +107,8 @@ export default function SiteDeepDive() {
         <Navigation />
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <p className="text-lg text-[#a9c2d3]">Site {siteId} not found</p>
-          <Link href="/dashboard" className="text-hydra-corrected hover:underline">
-            Back to Dashboard
+          <Link href="/experiments" className="text-hydra-corrected hover:underline">
+            Back to Experiments
           </Link>
         </div>
         <Footer />
@@ -125,9 +125,9 @@ export default function SiteDeepDive() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2 text-sm text-[#8fb4cc] mb-2">
-                <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+                <Link href="/experiments" className="hover:text-white transition-colors">Experiments</Link>
                 <span>/</span>
-                <span className="text-white">{siteId}</span>
+                <span className="text-white">{siteMetadata.name}</span>
               </div>
               <h1 className="font-display text-2xl gradient-text">{siteMetadata.name}</h1>
               <p className="text-sm text-[#8daec2] mt-1">
