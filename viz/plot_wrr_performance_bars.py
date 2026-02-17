@@ -34,10 +34,10 @@ def main() -> None:
     df = pd.read_csv(args.hydra_summary, dtype={"site_id": str})
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
-    _plot_metric(df, "rmse", "RMSE (cms)", args.out_dir / "wrr_rmse_bar.png")
-    _plot_metric(df, "nse", "NSE", args.out_dir / "wrr_nse_bar.png")
-    _plot_metric(df, "pbias", "PBIAS (%)", args.out_dir / "wrr_pbias_bar.png")
-    _plot_metric(df, "cc", "CC (Pearson r)", args.out_dir / "wrr_cc_bar.png")
+    _plot_metric(df, "rmse", "RMSE (cms)", args.out_dir / "wrr_rmse_bar.pdf")
+    _plot_metric(df, "nse", "NSE", args.out_dir / "wrr_nse_bar.pdf")
+    _plot_metric(df, "pbias", "PBIAS (%)", args.out_dir / "wrr_pbias_bar.pdf")
+    _plot_metric(df, "cc", "CC (Pearson r)", args.out_dir / "wrr_cc_bar.pdf")
 
 
 if __name__ == "__main__":

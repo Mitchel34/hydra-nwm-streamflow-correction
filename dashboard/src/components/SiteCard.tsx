@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { SiteMetadata } from '@/lib/types';
 
 interface SiteCardProps {
@@ -12,6 +13,7 @@ interface SiteCardProps {
     rmseImprovement: number;
     nseImprovement: number;
   };
+  comparisonLabel?: string;
 }
 
 export default function SiteCard({
@@ -21,12 +23,14 @@ export default function SiteCard({
   onClick,
   disabled = false,
   metrics,
+  comparisonLabel,
 }: SiteCardProps) {
+  const comparison = comparisonLabel ?? 'vs NWM baseline';
   const rmseText =
     metrics && Number.isFinite(metrics.rmseImprovement)
       ? `${metrics.rmseImprovement > 0 ? 'RMSE reduced' : 'RMSE increased'} by ${Math.abs(
           metrics.rmseImprovement
-        ).toFixed(1)}% vs NWM baseline`
+        ).toFixed(1)}% ${comparison}`
       : 'Awaiting experiment metrics';
 
   return (
@@ -80,6 +84,18 @@ export default function SiteCard({
         <div className="mt-2 text-[0.7rem] uppercase tracking-[0.09em] text-[#7e99ad]">
           Pending metrics
         </div>
+      )}
+      {!disabled && (
+        <Link
+          href={`/dashboard/site/${siteId}`}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-2 inline-flex items-center gap-1 text-[0.7rem] uppercase tracking-[0.09em] text-hydra-corrected/70 hover:text-hydra-corrected transition-colors"
+        >
+          Deep dive
+          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
       )}
     </button>
   );

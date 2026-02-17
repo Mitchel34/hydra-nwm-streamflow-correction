@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { TimeSeriesPoint } from '@/lib/types';
+import { ExperimentLabels } from '@/lib/experiment-context';
 
 interface HydrographProps {
   data: TimeSeriesPoint[];
@@ -10,6 +11,7 @@ interface HydrographProps {
   showConfidenceInterval?: boolean;
   experimentName?: string;
   siteName?: string;
+  labels?: ExperimentLabels;
 }
 
 const COLORS = {
@@ -27,6 +29,7 @@ export default function Hydrograph({
   showConfidenceInterval = true,
   experimentName,
   siteName,
+  labels,
 }: HydrographProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -223,9 +226,9 @@ export default function Hydrograph({
       .attr('d', line((d) => d.corrected));
 
     const legendItems = [
-      { label: 'Observed (USGS)', color: COLORS.observed, dashed: false },
-      { label: 'Raw NWM', color: COLORS.baseline, dashed: true },
-      { label: 'Hydra corrected', color: COLORS.corrected, dashed: false },
+      { label: labels?.observedName ?? 'Observed (USGS)', color: COLORS.observed, dashed: false },
+      { label: labels?.baselineName ?? 'Raw NWM', color: COLORS.baseline, dashed: true },
+      { label: labels?.correctedName ?? 'Hydra corrected', color: COLORS.corrected, dashed: false },
     ];
 
     const legendX = chartWidth < 700 ? 0 : innerWidth + 12;
@@ -339,9 +342,9 @@ export default function Hydrograph({
                 .timeFormat('%Y-%m-%d %H:%M')(point.date)}</div>`,
               experimentName ? `<div>Experiment: ${experimentName}</div>` : '',
               siteName ? `<div>Site: ${siteName}</div>` : '',
-              `<div style="margin-top:4px; color:${COLORS.observed};">Observed: ${point.usgs.toFixed(2)} m³/s</div>`,
-              `<div style="color:${COLORS.baseline};">NWM raw: ${point.nwm.toFixed(2)} m³/s</div>`,
-              `<div style="color:${COLORS.corrected};">Hydra corrected: ${point.corrected.toFixed(2)} m³/s</div>`,
+              `<div style="margin-top:4px; color:${COLORS.observed};">${labels?.observedName ?? 'Observed'}: ${point.usgs.toFixed(2)} m³/s</div>`,
+              `<div style="color:${COLORS.baseline};">${labels?.baselineName ?? 'NWM raw'}: ${point.nwm.toFixed(2)} m³/s</div>`,
+              `<div style="color:${COLORS.corrected};">${labels?.correctedName ?? 'Hydra corrected'}: ${point.corrected.toFixed(2)} m³/s</div>`,
               `<div style="margin-top:4px;">Baseline error: ${baselineErr.toFixed(2)} m³/s</div>`,
               `<div>Corrected error: ${correctedErr.toFixed(2)} m³/s</div>`,
             ]
@@ -358,7 +361,7 @@ export default function Hydrograph({
     return () => {
       tooltip.remove();
     };
-  }, [chartWidth, data, experimentName, height, showConfidenceInterval, siteName]);
+  }, [chartWidth, data, experimentName, height, labels, showConfidenceInterval, siteName]);
 
   return (
     <div className="rounded-xl border border-[#2a4558] bg-[#0a1a27] p-4">
@@ -374,7 +377,7 @@ export default function Hydrograph({
             height={height}
             className="w-full"
             role="img"
-            aria-label="Hydrograph comparing observed, NWM raw, and Hydra-corrected streamflow"
+            aria-label={labels?.hydrographAria ?? 'Hydrograph comparing observed, NWM raw, and Hydra-corrected streamflow'}
           />
         </div>
       )}

@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import StudyRegionMap from '@/components/StudyRegionMap';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 import { fetchExperimentResults, buildVersionComparison } from '@/lib/data';
-import { DashboardData, ExperimentResult, ModelVersion } from '@/lib/types';
+import { DashboardData, ExperimentResult, ExperimentCategory, getExperimentCategory } from '@/lib/types';
 
 interface FindingCardProps {
   icon: React.ReactNode;
@@ -63,7 +64,7 @@ function computeExperimentSummary(
       );
       const bestSiteName = best ? (sites[best.site_id]?.name ?? best.site_id) : 'N/A';
       const bestPct = best?.rmse_improvement_pct ?? 0;
-      const version: ModelVersion = experiment.startsWith('v3_') ? 'v3' : 'v2';
+      const version: ExperimentCategory = getExperimentCategory(experiment);
       return {
         experiment,
         version,
@@ -303,9 +304,11 @@ export default function AnalysisPage() {
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           row.version === 'v3'
                             ? 'bg-hydra-corrected/20 text-hydra-corrected'
-                            : 'bg-hydra-accent/20 text-hydra-accent'
+                            : row.version === 'era5_only'
+                              ? 'bg-hydra-era5/20 text-hydra-era5'
+                              : 'bg-hydra-accent/20 text-hydra-accent'
                         }`}>
-                          {row.version.toUpperCase()}
+                          {row.version === 'era5_only' ? 'ERA5' : row.version.toUpperCase()}
                         </span>
                       </td>
                       <td className={`px-5 py-3 font-medium ${
@@ -438,14 +441,7 @@ export default function AnalysisPage() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-[#2a455c]/55 bg-[#06131f]/75 py-8">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <p className="text-sm text-[#9fbacc]">
-            Master&apos;s Thesis Project | Appalachian State University | 2024–2025
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

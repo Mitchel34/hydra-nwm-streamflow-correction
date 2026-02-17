@@ -5,10 +5,13 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { fetchExperimentResults, fetchTimeSeries, buildVersionComparison } from '@/lib/data';
 import { DashboardData, MetricComparison, TimeSeriesPoint, VersionComparisonRow } from '@/lib/types';
+import { getExperimentLabels } from '@/lib/experiment-context';
 import SiteCard from '@/components/SiteCard';
 import ExperimentSelector from '@/components/ExperimentSelector';
 import MetricCard from '@/components/MetricCard';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
+import { DashboardSkeleton } from '@/components/SkeletonLoader';
 
 const Hydrograph = dynamic(() => import('@/components/charts/Hydrograph'), {
   ssr: false,
@@ -55,6 +58,8 @@ const preferredExperimentOrder = [
   'v3_physics',
   'v3_causal',
   'v3_baseline',
+  'usgs_only_v3',
+  'usgs_only_simple',
   'hydra_v2',
   'combined',
   'physics',
@@ -73,7 +78,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [controlsOpen, setControlsOpen] = useState(false);
-  const [versionFilter, setVersionFilter] = useState<'all' | 'v2' | 'v3'>('all');
+  const [versionFilter, setVersionFilter] = useState<'all' | 'v2' | 'v3' | 'era5_only'>('all');
+  const [timeSeriesLoading, setTimeSeriesLoading] = useState(false);
 
   useEffect(() => {
     fetchExperimentResults()
@@ -128,10 +134,12 @@ export default function Dashboard() {
     }
 
     let active = true;
+    setTimeSeriesLoading(true);
 
     fetchTimeSeries(selectedExperiment, selectedSite).then((series) => {
       if (active) {
-        setTimeSeries(series);
+        setTimeSeries(series ?? []);
+        setTimeSeriesLoading(false);
       }
     });
 
@@ -161,12 +169,10 @@ export default function Dashboard() {
     [data]
   );
 
+  const labels = getExperimentLabels(selectedExperiment);
+
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#07131f]">
-        <div className="text-xl text-white">Loading experiment data...</div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error || !data) {
@@ -261,12 +267,8 @@ export default function Dashboard() {
     .map((point) => point.corrected - point.usgs)
     .filter((value) => Number.isFinite(value));
 
-  const expectedCombinations =
-    Object.keys(data.experiments).length * Object.keys(data.sites).length;
-  const completionPct =
-    expectedCombinations > 0
-      ? Math.round((data.results.length / expectedCombinations) * 100)
-      : 0;
+  const uniqueExperiments = new Set(data.results.map((r) => r.experiment)).size;
+  const uniqueSites = new Set(data.results.map((r) => r.site_id)).size;
 
   const handleExperimentSelect = (experimentId: string) => {
     setSelectedExperiment(experimentId);
@@ -294,17 +296,13 @@ export default function Dashboard() {
       </header>
 
       <main className="mx-auto max-w-7xl px-6 py-8">
-        {data.results.length < expectedCombinations && (
-          <section className="mb-6 rounded-xl border border-hydra-accent/35 bg-[#0a1d2c] px-4 py-3 text-sm text-[#b5cede]">
-            Showing partial experiment outputs while upstream runs finish:
-            {' '}
-            <span className="font-semibold text-hydra-corrected">
-              {data.results.length}/{expectedCombinations} combinations ({completionPct}%)
-            </span>
-            {' '}
-            are currently available.
-          </section>
-        )}
+        <section className="mb-6 rounded-xl border border-hydra-accent/35 bg-[#0a1d2c] px-4 py-3 text-sm text-[#b5cede]">
+          Showing{' '}
+          <span className="font-semibold text-hydra-corrected">
+            {data.results.length} results
+          </span>
+          {' '}across {uniqueExperiments} experiments and {uniqueSites} sites.
+        </section>
 
         <section className="mb-8">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -356,6 +354,7 @@ export default function Dashboard() {
                     isSelected={selectedSite === siteId}
                     onClick={() => setSelectedSite(siteId)}
                     disabled={!hasMetrics}
+                    comparisonLabel={labels.comparisonLabel}
                     metrics={
                       siteResult
                         ? {
@@ -431,6 +430,7 @@ export default function Dashboard() {
                     corrected={currentResult.corrected.rmse || 0}
                     unit="m³/s"
                     higherIsBetter={false}
+                    comparisonLabel={labels.comparisonLabel}
                   />
                   <MetricCard
                     label="MAE"
@@ -438,18 +438,21 @@ export default function Dashboard() {
                     corrected={currentResult.corrected.mae || 0}
                     unit="m³/s"
                     higherIsBetter={false}
+                    comparisonLabel={labels.comparisonLabel}
                   />
                   <MetricCard
                     label="NSE"
                     baseline={currentResult.baseline.nse || 0}
                     corrected={currentResult.corrected.nse || 0}
                     higherIsBetter={true}
+                    comparisonLabel={labels.comparisonLabel}
                   />
                   <MetricCard
                     label="KGE"
                     baseline={currentResult.baseline.kge || 0}
                     corrected={currentResult.corrected.kge || 0}
                     higherIsBetter={true}
+                    comparisonLabel={labels.comparisonLabel}
                   />
                   {(currentResult.corrected.pearson_r != null) && (
                     <MetricCard
@@ -457,6 +460,7 @@ export default function Dashboard() {
                       baseline={currentResult.baseline.pearson_r || 0}
                       corrected={currentResult.corrected.pearson_r || 0}
                       higherIsBetter={true}
+                      comparisonLabel={labels.comparisonLabel}
                     />
                   )}
                   {(currentResult.corrected.spearman_r != null) && (
@@ -465,6 +469,7 @@ export default function Dashboard() {
                       baseline={currentResult.baseline.spearman_r || 0}
                       corrected={currentResult.corrected.spearman_r || 0}
                       higherIsBetter={true}
+                      comparisonLabel={labels.comparisonLabel}
                     />
                   )}
                 </div>
@@ -527,12 +532,19 @@ export default function Dashboard() {
 
             <section>
               <h2 className="mb-4 font-display text-lg">Hydrograph</h2>
-              <Hydrograph
-                data={timeSeries}
-                height={420}
-                experimentName={selectedExperimentName}
-                siteName={selectedSiteMetadata?.name || selectedSite}
-              />
+              {timeSeriesLoading ? (
+                <div className="h-[420px] rounded-xl border border-[#2a4558] bg-[#0a1a27] p-4">
+                  <div className="h-full w-full animate-pulse rounded-lg bg-[#1a2d3f]" />
+                </div>
+              ) : (
+                <Hydrograph
+                  data={timeSeries}
+                  height={420}
+                  experimentName={selectedExperimentName}
+                  siteName={selectedSiteMetadata?.name || selectedSite}
+                  labels={labels}
+                />
+              )}
             </section>
 
             <div className="grid gap-6 lg:grid-cols-2">
@@ -546,6 +558,7 @@ export default function Dashboard() {
                 <ErrorDistribution
                   nwmErrors={nwmErrors}
                   correctedErrors={correctedErrors}
+                  baselineLabel={labels.baselineName}
                 />
               </section>
             </div>
@@ -564,11 +577,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      <footer className="mt-8 border-t border-[#2a445b] bg-[#071420]/80 px-6 py-4">
-        <div className="mx-auto max-w-7xl text-center text-sm text-[#8daec2]">
-          Hydra Transformer Streamflow Error Correction | Thesis Project 2024–2025
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

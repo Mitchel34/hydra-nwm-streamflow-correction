@@ -8,6 +8,8 @@ import {
   ExperimentResult,
   TimeSeriesPoint,
   VersionComparisonRow,
+  getExperimentCategory,
+  isEra5Only,
 } from './types';
 
 const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === 'true';
@@ -39,7 +41,7 @@ async function fetchFromLocalJSON(): Promise<DashboardData> {
   // Infer model_version where missing (backward compat)
   for (const r of data.results) {
     if (!r.model_version) {
-      r.model_version = r.experiment.startsWith('v3_') ? 'v3' : 'v2';
+      r.model_version = getExperimentCategory(r.experiment);
     }
   }
 
@@ -86,7 +88,7 @@ async function fetchFromSupabase(): Promise<DashboardData> {
     .filter((r) => !EXCLUDED_SITES.includes(r.site_id))
     .map((r) => ({
       ...r,
-      model_version: r.model_version || (r.experiment?.startsWith('v3_') ? 'v3' : 'v2'),
+      model_version: r.model_version || getExperimentCategory(r.experiment),
     }));
 
   return {
@@ -103,8 +105,7 @@ async function fetchFromSupabase(): Promise<DashboardData> {
 export async function fetchTimeSeries(
   experimentId: string,
   siteId: string
-): Promise<TimeSeriesPoint[]> {
-  // First try to load precomputed time series emitted by external experiment workflows.
+): Promise<TimeSeriesPoint[] | null> {
   try {
     const path = `/data/timeseries/${experimentId}_${siteId}.json`;
     const response = await fetch(path);
@@ -115,48 +116,9 @@ export async function fetchTimeSeries(
       }
     }
   } catch {
-    // Fall through to synthetic data generation.
+    // No timeseries available for this combination.
   }
-
-  // Fallback synthetic series for UI development when experiment exports are incomplete.
-  const seed = `${experimentId}:${siteId}`;
-  let state = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    state = (state * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-  const seededRandom = () => {
-    state = (1664525 * state + 1013904223) >>> 0;
-    return state / 4294967296;
-  };
-
-  const points: TimeSeriesPoint[] = [];
-  const startDate = new Date('2019-01-01');
-
-  for (let i = 0; i < 168; i += 1) {
-    // 1 week of hourly data
-    const date = new Date(startDate.getTime() + i * 3600000);
-    const diurnal = 18 * Math.sin((i / 24) * Math.PI);
-    const eventPulse = 22 * Math.exp(-Math.pow((i - 86) / 28, 2));
-    const baseFlow = 42 + diurnal + eventPulse;
-    const noise = (seededRandom() - 0.5) * 10;
-    const nwmBias = 2.4 + (seededRandom() - 0.5) * 2;
-    const correction = 0.72 + seededRandom() * 0.18;
-    const nwm = Math.max(0, baseFlow + nwmBias + noise * 1.1);
-    const usgs = Math.max(0, baseFlow + noise * 0.45);
-    const corrected = Math.max(0, usgs + (nwm - usgs) * (1 - correction));
-
-    points.push({
-      timestamp: date.toISOString(),
-      nwm,
-      usgs,
-      corrected,
-      residual: nwm - usgs,
-      lower_ci: Math.max(0, corrected - 3.5),
-      upper_ci: corrected + 3.5,
-    });
-  }
-
-  return points;
+  return null;
 }
 
 /**
@@ -171,7 +133,9 @@ export function buildVersionComparison(
   const rows: VersionComparisonRow[] = [];
 
   for (const siteId of siteIds) {
-    const siteResults = results.filter((r) => r.site_id === siteId);
+    const siteResults = results
+      .filter((r) => r.site_id === siteId)
+      .filter((r) => !isEra5Only(r.experiment));
     const v2 = siteResults.filter((r) => r.model_version === 'v2');
     const v3 = siteResults.filter((r) => r.model_version === 'v3');
 

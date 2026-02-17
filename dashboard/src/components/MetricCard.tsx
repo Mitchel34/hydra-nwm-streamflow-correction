@@ -4,6 +4,7 @@ interface MetricCardProps {
   corrected: number;
   unit?: string;
   higherIsBetter?: boolean;
+  comparisonLabel?: string;
 }
 
 export default function MetricCard({
@@ -12,6 +13,7 @@ export default function MetricCard({
   corrected,
   unit = '',
   higherIsBetter = false,
+  comparisonLabel,
 }: MetricCardProps) {
   const improvement = higherIsBetter
     ? corrected - baseline
@@ -39,7 +41,7 @@ export default function MetricCard({
         Baseline: {baseline.toFixed(3)} {unit}
       </div>
       <div className="text-[#6f8da0] text-[0.68rem] mt-1 uppercase tracking-[0.07em]">
-        vs NWM baseline
+        {comparisonLabel ?? 'vs NWM baseline'}
       </div>
     </div>
   );

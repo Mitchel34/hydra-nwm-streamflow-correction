@@ -1,14 +1,17 @@
 'use client';
 
 import { useMemo } from 'react';
+import { getExperimentCategory } from '@/lib/types';
+
+type VersionFilter = 'all' | 'v2' | 'v3' | 'era5_only';
 
 interface ExperimentSelectorProps {
   experiments: Record<string, { name: string; description: string }>;
   selected: string;
   onSelect: (experimentId: string) => void;
   availableExperiments?: Set<string>;
-  versionFilter?: 'all' | 'v2' | 'v3';
-  onVersionFilterChange?: (filter: 'all' | 'v2' | 'v3') => void;
+  versionFilter?: VersionFilter;
+  onVersionFilterChange?: (filter: VersionFilter) => void;
 }
 
 export default function ExperimentSelector({
@@ -19,38 +22,48 @@ export default function ExperimentSelector({
   versionFilter = 'all',
   onVersionFilterChange,
 }: ExperimentSelectorProps) {
-  const { v3Experiments, v2Experiments } = useMemo(() => {
+  const { v3Experiments, v2Experiments, era5Experiments } = useMemo(() => {
     const v3: [string, { name: string; description: string }][] = [];
     const v2: [string, { name: string; description: string }][] = [];
+    const era5: [string, { name: string; description: string }][] = [];
     for (const [id, exp] of Object.entries(experiments)) {
-      if (id.startsWith('v3_')) {
-        v3.push([id, exp]);
-      } else {
-        v2.push([id, exp]);
-      }
+      const category = getExperimentCategory(id);
+      if (category === 'era5_only') era5.push([id, exp]);
+      else if (category === 'v3') v3.push([id, exp]);
+      else v2.push([id, exp]);
     }
-    return { v3Experiments: v3, v2Experiments: v2 };
+    return { v3Experiments: v3, v2Experiments: v2, era5Experiments: era5 };
   }, [experiments]);
 
   const showV3 = versionFilter === 'all' || versionFilter === 'v3';
   const showV2 = versionFilter === 'all' || versionFilter === 'v2';
+  const showEra5 = versionFilter === 'all' || versionFilter === 'era5_only';
+
+  const filterTabs: { id: VersionFilter; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'v3', label: 'Hydra v3' },
+    { id: 'v2', label: 'Hydra v2' },
+    { id: 'era5_only', label: 'ERA5-Only' },
+  ];
 
   return (
     <div className="space-y-4">
       {/* Version filter tabs */}
       {onVersionFilterChange && (
-        <div className="flex gap-2">
-          {(['all', 'v3', 'v2'] as const).map((f) => (
+        <div className="flex gap-2 flex-wrap">
+          {filterTabs.map((tab) => (
             <button
-              key={f}
-              onClick={() => onVersionFilterChange(f)}
+              key={tab.id}
+              onClick={() => onVersionFilterChange(tab.id)}
               className={`rounded-full px-3 py-1 text-xs font-display uppercase tracking-[0.1em] transition-all ${
-                versionFilter === f
-                  ? 'bg-hydra-corrected/20 text-hydra-corrected border border-hydra-corrected/40'
+                versionFilter === tab.id
+                  ? tab.id === 'era5_only'
+                    ? 'bg-hydra-era5/20 text-hydra-era5 border border-hydra-era5/40'
+                    : 'bg-hydra-corrected/20 text-hydra-corrected border border-hydra-corrected/40'
                   : 'bg-[#0c1a26] text-[#7f9db2] border border-[#264257] hover:border-[#3b5f79]'
               }`}
             >
-              {f === 'all' ? 'All' : f === 'v3' ? 'Hydra v3' : 'Hydra v2'}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -68,6 +81,22 @@ export default function ExperimentSelector({
             onSelect={onSelect}
             availableExperiments={availableExperiments}
             accentClass="border-hydra-corrected/55 bg-hydra-corrected/[0.14]"
+          />
+        </div>
+      )}
+
+      {/* ERA5-only experiments */}
+      {showEra5 && era5Experiments.length > 0 && (
+        <div>
+          <p className="text-[0.68rem] uppercase tracking-[0.18em] text-hydra-era5/70 mb-2 font-display">
+            ERA5-Only — No NWM Input
+          </p>
+          <ExperimentGrid
+            entries={era5Experiments}
+            selected={selected}
+            onSelect={onSelect}
+            availableExperiments={availableExperiments}
+            accentClass="border-hydra-era5/55 bg-hydra-era5/[0.10]"
           />
         </div>
       )}

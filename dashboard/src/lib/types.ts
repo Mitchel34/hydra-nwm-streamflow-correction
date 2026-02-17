@@ -2,7 +2,21 @@
  * Type definitions for the Hydra Dashboard
  */
 
-export type ModelVersion = 'v2' | 'v3';
+export type ModelVersion = 'v2' | 'v3' | 'era5_only';
+
+export type ExperimentCategory = 'v3' | 'v2' | 'era5_only';
+
+export const ERA5_ONLY_EXPERIMENTS = ['usgs_only_v3', 'usgs_only_simple'] as const;
+
+export function getExperimentCategory(experimentId: string): ExperimentCategory {
+  if ((ERA5_ONLY_EXPERIMENTS as readonly string[]).includes(experimentId)) return 'era5_only';
+  if (experimentId.startsWith('v3_')) return 'v3';
+  return 'v2';
+}
+
+export function isEra5Only(experimentId: string): boolean {
+  return (ERA5_ONLY_EXPERIMENTS as readonly string[]).includes(experimentId);
+}
 
 export interface SiteMetadata {
   name: string;

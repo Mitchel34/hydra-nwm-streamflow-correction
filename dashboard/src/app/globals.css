@@ -22,6 +22,8 @@
   --hydra-accent: #4da0ff;
   --hydra-accent-soft: #79b8ff;
   --hydra-alert: #f97373;
+  --hydra-era5: #f59e0b;
+  --hydra-era5-soft: #fbbf24;
 
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, #6ca6ff 0%, #2be3d6 100%);
@@ -46,6 +48,8 @@
   --color-hydra-accent: var(--hydra-accent);
   --color-hydra-accent-soft: var(--hydra-accent-soft);
   --color-hydra-alert: var(--hydra-alert);
+  --color-hydra-era5: var(--hydra-era5);
+  --color-hydra-era5-soft: var(--hydra-era5-soft);
   --color-hydra-panel: var(--panel);
   --color-hydra-panel-elevated: var(--panel-elevated);
 }

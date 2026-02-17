@@ -54,7 +54,7 @@ def main() -> None:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     _plot(
         high_df,
-        args.out_dir / f"wrr_hydrograph_highflow_{args.site_id}.png",
+        args.out_dir / f"wrr_hydrograph_highflow_{args.site_id}.pdf",
         f"High-Flow Event: {args.site_name} ({args.site_id})",
     )
 
@@ -64,7 +64,7 @@ def main() -> None:
     typical_df = _window_around(df, mid_idx, args.hours)
     _plot(
         typical_df,
-        args.out_dir / f"wrr_hydrograph_typical_{args.site_id}.png",
+        args.out_dir / f"wrr_hydrograph_typical_{args.site_id}.pdf",
         f"Typical Period: {args.site_name} ({args.site_id})",
     )
 

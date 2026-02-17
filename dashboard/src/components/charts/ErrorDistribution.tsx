@@ -7,6 +7,7 @@ interface ErrorDistributionProps {
   nwmErrors: number[];
   correctedErrors: number[];
   height?: number;
+  baselineLabel?: string;
 }
 
 const COLORS = {
@@ -21,6 +22,7 @@ export default function ErrorDistribution({
   nwmErrors,
   correctedErrors,
   height = 300,
+  baselineLabel = 'NWM baseline',
 }: ErrorDistributionProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -165,7 +167,7 @@ export default function ErrorDistribution({
       .attr('opacity', 0.45)
       .on('mousemove', function (event: MouseEvent, bin) {
         d3.select(this).attr('opacity', 0.65);
-        showTooltip(event, 'NWM baseline error', bin);
+        showTooltip(event, `${baselineLabel} error`, bin);
       })
       .on('mouseleave', function () {
         d3.select(this).attr('opacity', 0.45);
@@ -220,7 +222,7 @@ export default function ErrorDistribution({
     const legend = g.append('g').attr('transform', `translate(${innerWidth - 140}, 8)`);
 
     [
-      { label: 'NWM baseline', color: COLORS.baseline },
+      { label: baselineLabel, color: COLORS.baseline },
       { label: 'Hydra corrected', color: COLORS.corrected },
     ].forEach((item, i) => {
       const row = legend.append('g').attr('transform', `translate(0, ${i * 20})`);
@@ -242,7 +244,7 @@ export default function ErrorDistribution({
     return () => {
       tooltip.remove();
     };
-  }, [chartWidth, correctedErrors, height, nwmErrors]);
+  }, [baselineLabel, chartWidth, correctedErrors, height, nwmErrors]);
 
   const hasData = nwmErrors.length > 0 && correctedErrors.length > 0;
 

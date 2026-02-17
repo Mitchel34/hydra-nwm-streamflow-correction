@@ -36,6 +36,7 @@ except ImportError:  # pragma: no cover - optional dependency
 from modeling.models.hydra_temporal import HydraTemporalModel as HydraTemporalV2
 from modeling.models.hydra_temporal_v1 import HydraTemporalModel as HydraTemporalV1
 from modeling.models.hydra_temporal_v3 import HydraTemporalV3
+from modeling.models.gru_simple import SimpleGRUModel
 
 # Optional TensorBoard for gradient tracking
 try:
@@ -383,6 +384,7 @@ def train_eval(
     track_gradients: bool = False,
     event_oversample_factor: float = 0.0,
     loss_auto_norm: bool = False,
+    no_nwm: bool = False,
 ) -> None:
     torch.set_float32_matmul_precision("medium")
     if seed is not None:
@@ -449,14 +451,24 @@ def train_eval(
     if test_mask.sum() == 0:
         raise ValueError("No evaluation rows available after split")
 
-    dynamic_cols = ["nwm_cms"] + [c for c in ERA5_CANDIDATES if c in df.columns]
-    if not dynamic_cols or dynamic_cols[0] != "nwm_cms":
-        raise ValueError("First dynamic feature must be 'nwm_cms'")
-    if len(dynamic_cols) <= 1:
-        raise ValueError(
-            "Dynamic feature set contains only 'nwm_cms'. "
-            "Ensure ERA5/meteorological columns are present in the parquet."
-        )
+    era5_cols = [c for c in ERA5_CANDIDATES if c in df.columns]
+    if no_nwm:
+        dynamic_cols = era5_cols
+        if len(dynamic_cols) == 0:
+            raise ValueError(
+                "No ERA5 columns found in the dataset. "
+                "Cannot run --no-nwm without meteorological features."
+            )
+        print(f"[INFO] --no-nwm mode: {len(dynamic_cols)} ERA5-only features (NWM excluded)")
+    else:
+        dynamic_cols = ["nwm_cms"] + era5_cols
+        if not dynamic_cols or dynamic_cols[0] != "nwm_cms":
+            raise ValueError("First dynamic feature must be 'nwm_cms'")
+        if len(dynamic_cols) <= 1:
+            raise ValueError(
+                "Dynamic feature set contains only 'nwm_cms'. "
+                "Ensure ERA5/meteorological columns are present in the parquet."
+            )
 
     static_cols = add_static_columns(df)
     if not static_cols:
@@ -652,8 +664,18 @@ def train_eval(
             nwm_index=0,
             patch_size=max(1, patch_size),
         )
+    elif arch == "gru_simple":
+        model = SimpleGRUModel(
+            input_dim=len(dynamic_cols),
+            static_dim=len(static_cols),
+            hidden_size=d_model,
+            num_layers=num_layers,
+            dropout=dropout,
+            quantiles=quantiles if quantiles else None,
+            nwm_index=0 if not no_nwm else -1,
+        )
     else:
-        raise ValueError(f"Unsupported model_arch '{model_arch}'. Choose 'hydra_v3', 'hydra_v2', or 'hydra_v1'.")
+        raise ValueError(f"Unsupported model_arch '{model_arch}'. Choose 'hydra_v3', 'hydra_v2', 'hydra_v1', or 'gru_simple'.")
 
     if use_compile:
         try:
@@ -1290,9 +1312,10 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument(
         "--model-arch",
-        choices=["hydra_v3", "hydra_v2", "hydra_v1"],
+        choices=["hydra_v3", "hydra_v2", "hydra_v1", "gru_simple"],
         default="hydra_v2",
-        help="Selects the Hydra architecture: v3 (feature gate + multi-scale + regime bias), v2 (GRU-Transformer), v1 (Transformer-only).",
+        help="Selects the model architecture: v3 (feature gate + multi-scale + regime bias), "
+             "v2 (GRU-Transformer), v1 (Transformer-only), gru_simple (GRU-only for ERA5 experiments).",
     )
     parser.add_argument(
         "--patch-size",
@@ -1334,7 +1357,21 @@ if __name__ == "__main__":
         help="Enable automatic loss normalization: each component is divided by its running EMA "
              "so user-specified weights act as pure priority signals independent of loss scale.",
     )
+    parser.add_argument(
+        "--no-nwm",
+        action="store_true",
+        help="Exclude NWM from dynamic features. Uses only ERA5 meteorological inputs. "
+             "Forces --target-mode direct since no NWM residual is available.",
+    )
     args = parser.parse_args()
+
+    # --no-nwm forces direct mode and is incompatible with hydra_v1
+    if args.no_nwm:
+        if args.model_arch == "hydra_v1":
+            raise ValueError("--no-nwm is incompatible with hydra_v1 (v1 hardcodes nwm_index in forward pass)")
+        if args.target_mode == "residual":
+            print("[INFO] --no-nwm forces --target-mode direct (no NWM for residual computation)")
+        args.target_mode = "direct"
     quantiles = [float(x) for x in args.quantiles.split(",") if x.strip()]
     quantile_weights = [float(x) for x in args.quantile_weights.split(",") if x.strip()]
     if not quantiles:
@@ -1392,6 +1429,7 @@ if __name__ == "__main__":
             track_gradients=args.track_gradients,
             event_oversample_factor=args.event_oversample_factor,
             loss_auto_norm=args.loss_auto_norm,
+            no_nwm=args.no_nwm,
         )
 
     if args.rolling_config:

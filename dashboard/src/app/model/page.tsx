@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 import { useState } from 'react';
 
 interface StatCardProps {
@@ -500,13 +501,7 @@ export default function ModelPage() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-[#2a455c]/55 bg-[#06131f]/75 py-8">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <p className="text-sm text-[#9fbacc]">
-            Master&apos;s Thesis Project | Appalachian State University | 2024–2025
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

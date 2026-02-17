@@ -138,12 +138,23 @@ EXPERIMENTS: Dict[str, Dict[str, str]] = {
         "name": "v3 AutoNorm",
         "description": "v3 full + automatic loss normalisation",
     },
+    # ── ERA5-only experiments ──
+    "usgs_only_v3": {
+        "name": "ERA5-Only (Hydra v3)",
+        "description": "Hydra v3 trained on ERA5 meteorological data only (no NWM input)",
+    },
+    "usgs_only_simple": {
+        "name": "ERA5-Only (Simple GRU)",
+        "description": "Simple GRU model trained on ERA5 meteorological data only (no NWM input)",
+    },
 }
 
 
 def _model_version(experiment_id: str) -> str:
     """Infer model version from experiment ID."""
-    return "v3" if experiment_id.startswith("v3_") else "v2"
+    if experiment_id.startswith("v3_") or experiment_id == "usgs_only_v3":
+        return "v3"
+    return "v2"
 
 
 # ---------------------------------------------------------------------------
