@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import type { FeatureCollection, Feature, Geometry } from 'geojson';
 
+/* ---------- Types ---------- */
 interface SiteMarker {
   id: string;
   name: string;
@@ -12,6 +15,13 @@ interface SiteMarker {
   watershed: string;
 }
 
+interface GeoData {
+  states: FeatureCollection | null;
+  rivers: FeatureCollection | null;
+  watersheds: FeatureCollection | null;
+}
+
+/* ---------- Constants ---------- */
 const STUDY_SITES: SiteMarker[] = [
   {
     id: '03161000',
@@ -42,7 +52,6 @@ const STUDY_SITES: SiteMarker[] = [
   },
 ];
 
-// Map bounds for the study region (Appalachian NC/VA/TN border region)
 const MAP_BOUNDS = {
   minLat: 35.8,
   maxLat: 37.0,
@@ -50,13 +59,136 @@ const MAP_BOUNDS = {
   maxLon: -80.5,
 };
 
-function latLonToSvg(lat: number, lon: number): { x: number; y: number } {
-  const x = ((lon - MAP_BOUNDS.minLon) / (MAP_BOUNDS.maxLon - MAP_BOUNDS.minLon)) * 100;
-  const y = ((MAP_BOUNDS.maxLat - lat) / (MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat)) * 100;
-  return { x, y };
+const STATE_FILLS: Record<string, string> = {
+  VA: '#112538',
+  NC: '#0f2233',
+  TN: '#0d1f2e',
+};
+
+const STATE_LABELS = [
+  { name: 'Virginia', lon: -81.0, lat: 36.85 },
+  { name: 'North Carolina', lon: -81.4, lat: 36.05 },
+  { name: 'Tennessee', lon: -82.35, lat: 36.30 },
+];
+
+const RIVER_LABELS = [
+  { name: 'New River', lon: -80.85, lat: 36.75, rotation: -25 },
+  { name: 'Watauga R.', lon: -82.10, lat: 36.18, rotation: 8 },
+];
+
+/* ---------- Custom Hooks ---------- */
+function useGeoData(): GeoData & { loading: boolean } {
+  const [data, setData] = useState<GeoData>({
+    states: null,
+    rivers: null,
+    watersheds: null,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/data/geo/states.geojson').then((r) => r.json()),
+      fetch('/data/geo/rivers.geojson').then((r) => r.json()),
+      fetch('/data/geo/watersheds.geojson').then((r) => r.json()),
+    ])
+      .then(([states, rivers, watersheds]) => {
+        setData({ states, rivers, watersheds });
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  return { ...data, loading };
 }
 
+/* ---------- Mercator Projection (no d3-geo dependency) ---------- */
+function mercatorY(lat: number): number {
+  const rad = (lat * Math.PI) / 180;
+  return Math.log(Math.tan(Math.PI / 4 + rad / 2));
+}
+
+interface Projection {
+  (coords: [number, number]): [number, number];
+}
+
+function createProjection(width: number, height: number, padding: number): Projection {
+  const minX = MAP_BOUNDS.minLon;
+  const maxX = MAP_BOUNDS.maxLon;
+  const minY = mercatorY(MAP_BOUNDS.minLat);
+  const maxY = mercatorY(MAP_BOUNDS.maxLat);
+
+  const drawW = width - padding * 2;
+  const drawH = height - padding * 2;
+  const scaleX = drawW / (maxX - minX);
+  const scaleY = drawH / (maxY - minY);
+  const scale = Math.min(scaleX, scaleY);
+
+  const offsetX = padding + (drawW - (maxX - minX) * scale) / 2;
+  const offsetY = padding + (drawH - (maxY - minY) * scale) / 2;
+
+  return ([lon, lat]: [number, number]) => {
+    const x = offsetX + (lon - minX) * scale;
+    const y = offsetY + (maxY - mercatorY(lat)) * scale;
+    return [x, y];
+  };
+}
+
+function coordsToSvgPath(coords: number[][], proj: Projection): string {
+  return coords
+    .map(([lon, lat], i) => {
+      const [x, y] = proj([lon, lat]);
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join('');
+}
+
+function featureToPath(feature: Feature<Geometry>, proj: Projection): string {
+  const geom = feature.geometry;
+  if (geom.type === 'Polygon') {
+    return geom.coordinates
+      .map((ring) => coordsToSvgPath(ring, proj) + 'Z')
+      .join('');
+  }
+  if (geom.type === 'MultiPolygon') {
+    return geom.coordinates
+      .map((polygon) => polygon.map((ring) => coordsToSvgPath(ring, proj) + 'Z').join(''))
+      .join('');
+  }
+  if (geom.type === 'LineString') {
+    return coordsToSvgPath(geom.coordinates, proj);
+  }
+  if (geom.type === 'MultiLineString') {
+    return geom.coordinates.map((line) => coordsToSvgPath(line, proj)).join('');
+  }
+  return '';
+}
+
+function useProjection(width: number, height: number) {
+  return useMemo(() => {
+    if (width === 0 || height === 0) return { projection: null, pathGenerator: null };
+    const projection = createProjection(width, height, 12);
+    const pathGenerator = (feature: Feature<Geometry>) => featureToPath(feature, projection);
+    return { projection, pathGenerator };
+  }, [width, height]);
+}
+
+/* ---------- Component ---------- */
 export default function StudyRegionMap() {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 500, height: 370 });
+  const { states, rivers, watersheds, loading } = useGeoData();
+  const { projection, pathGenerator } = useProjection(dimensions.width, dimensions.height);
+
+  useEffect(() => {
+    if (!wrapperRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width || 500;
+      setDimensions({ width: w, height: Math.min(w * 0.7, 380) });
+    });
+    observer.observe(wrapperRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="surface-panel rounded-2xl overflow-hidden">
       <div className="p-6 border-b border-[#22384b]">
@@ -68,143 +200,218 @@ export default function StudyRegionMap() {
 
       <div className="grid lg:grid-cols-2 gap-0">
         {/* Map Section */}
-        <div className="p-6 bg-[#0a1a26]">
-          <svg
-            viewBox="0 0 100 100"
-            className="w-full h-auto rounded-lg border border-[#2f465a]"
-            style={{ maxHeight: '320px' }}
-            role="img"
-            aria-label="Map of study sites in the Southern Appalachian region"
-          >
-            {/* Background */}
-            <rect x="0" y="0" width="100" height="100" fill="#0c1b2a" />
-
-            {/* Simplified state boundaries */}
-            <path
-              d="M 5 45 Q 25 35, 50 40 T 95 50"
-              stroke="#2f465a"
-              strokeWidth="0.5"
-              fill="none"
-              strokeDasharray="2,2"
-            />
-            <path
-              d="M 0 65 Q 40 55, 70 60 T 100 55"
-              stroke="#2f465a"
-              strokeWidth="0.5"
-              fill="none"
-              strokeDasharray="2,2"
-            />
-
-            {/* State labels */}
-            <text x="75" y="25" fill="#4a6a80" fontSize="5" fontFamily="system-ui">
-              VA
-            </text>
-            <text x="40" y="55" fill="#4a6a80" fontSize="5" fontFamily="system-ui">
-              NC
-            </text>
-            <text x="10" y="75" fill="#4a6a80" fontSize="5" fontFamily="system-ui">
-              TN
-            </text>
-
-            {/* Rivers - New River and Watauga */}
-            <path
-              d="M 35 85 Q 45 70, 55 55 Q 65 40, 85 20"
-              stroke="#3b82f6"
-              strokeWidth="1.5"
-              fill="none"
-              opacity="0.6"
-            />
-            <path
-              d="M 10 60 Q 25 55, 40 65"
-              stroke="#3b82f6"
-              strokeWidth="1"
-              fill="none"
-              opacity="0.5"
-            />
-
-            {/* River labels */}
-            <text x="70" y="35" fill="#3b82f6" fontSize="3.5" fontFamily="system-ui" opacity="0.8">
-              New River
-            </text>
-            <text x="15" y="52" fill="#3b82f6" fontSize="3" fontFamily="system-ui" opacity="0.7">
-              Watauga R.
-            </text>
-
-            {/* Blue Ridge annotation */}
-            <text
-              x="50"
-              y="92"
-              fill="#6b8a9e"
-              fontSize="3"
-              fontFamily="system-ui"
-              textAnchor="middle"
+        <div className="p-6 bg-[#0a1a26]" ref={wrapperRef}>
+          {loading || !projection || !pathGenerator ? (
+            <div
+              className="w-full rounded-lg border border-[#2f465a] bg-[#0c1b2a] animate-pulse flex items-center justify-center"
+              style={{ height: dimensions.height }}
             >
-              Blue Ridge Mountains
-            </text>
+              <span className="text-[#4a6a80] text-sm">Loading map data...</span>
+            </div>
+          ) : (
+            <svg
+              width={dimensions.width}
+              height={dimensions.height}
+              className="rounded-lg border border-[#2f465a]"
+              role="img"
+              aria-label="Map of study sites in the Southern Appalachian region"
+            >
+              {/* Background */}
+              <rect width="100%" height="100%" fill="#0c1b2a" />
 
-            {/* Site markers */}
-            {STUDY_SITES.map((site, index) => {
-              const pos = latLonToSvg(site.lat, site.lon);
-              return (
-                <motion.g
-                  key={site.id}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 + index * 0.15, duration: 0.4 }}
-                >
-                  {/* Pulse ring */}
-                  <circle
-                    cx={pos.x}
-                    cy={pos.y}
-                    r="4"
+              {/* Layer 1: State fills */}
+              {states?.features.map((feature: Feature<Geometry>, i: number) => (
+                <path
+                  key={`state-fill-${i}`}
+                  d={pathGenerator(feature) || ''}
+                  fill={STATE_FILLS[feature.properties?.name] || '#0f2233'}
+                  stroke="none"
+                />
+              ))}
+
+              {/* Layer 2: Watershed boundaries */}
+              {watersheds?.features.map((feature: Feature<Geometry>, i: number) => (
+                <path
+                  key={`ws-${i}`}
+                  d={pathGenerator(feature) || ''}
+                  fill="#2be3d6"
+                  fillOpacity={0.05}
+                  stroke="#2be3d6"
+                  strokeWidth={0.8}
+                  strokeOpacity={0.25}
+                  strokeDasharray="4,3"
+                />
+              ))}
+
+              {/* Layer 3: Rivers */}
+              {rivers?.features.map((feature: Feature<Geometry>, i: number) => {
+                const order = feature.properties?.order ?? 3;
+                return (
+                  <path
+                    key={`river-${i}`}
+                    d={pathGenerator(feature) || ''}
                     fill="none"
-                    stroke="#2be3d6"
-                    strokeWidth="0.5"
-                    opacity="0.4"
-                  >
-                    <animate
-                      attributeName="r"
-                      values="3;6;3"
-                      dur="3s"
-                      repeatCount="indefinite"
-                    />
-                    <animate
-                      attributeName="opacity"
-                      values="0.4;0.1;0.4"
-                      dur="3s"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
+                    stroke="#3b82f6"
+                    strokeWidth={order >= 4 ? 2 : 1.2}
+                    strokeOpacity={order >= 4 ? 0.65 : 0.45}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                );
+              })}
 
-                  {/* Main marker */}
-                  <circle cx={pos.x} cy={pos.y} r="3" fill="#2be3d6" />
-                  <circle cx={pos.x} cy={pos.y} r="1.5" fill="#0c1b2a" />
+              {/* Layer 4: State boundary strokes */}
+              {states?.features.map((feature: Feature<Geometry>, i: number) => (
+                <path
+                  key={`state-stroke-${i}`}
+                  d={pathGenerator(feature) || ''}
+                  fill="none"
+                  stroke="#2f465a"
+                  strokeWidth={1}
+                />
+              ))}
 
-                  {/* Label */}
+              {/* Layer 5: State labels */}
+              {STATE_LABELS.map((label) => {
+                const pt = projection([label.lon, label.lat]);
+                if (!pt) return null;
+                return (
                   <text
-                    x={pos.x + (pos.x > 50 ? -2 : 5)}
-                    y={pos.y + (pos.y > 50 ? -4 : 1)}
-                    fill="#e0f0f8"
-                    fontSize="3.5"
+                    key={label.name}
+                    x={pt[0]}
+                    y={pt[1]}
+                    fill="#4a6a80"
+                    fontSize={label.name.length > 5 ? 10 : 13}
                     fontFamily="system-ui"
-                    textAnchor={pos.x > 50 ? 'end' : 'start'}
+                    textAnchor="middle"
+                    style={{ fontStyle: 'italic' }}
                   >
-                    {site.shortName}
+                    {label.name}
                   </text>
+                );
+              })}
+
+              {/* Layer 6: River labels */}
+              {RIVER_LABELS.map((label) => {
+                const pt = projection([label.lon, label.lat]);
+                if (!pt) return null;
+                return (
                   <text
-                    x={pos.x + (pos.x > 50 ? -2 : 5)}
-                    y={pos.y + (pos.y > 50 ? -1 : 4)}
-                    fill="#8fb4cc"
-                    fontSize="2.5"
+                    key={label.name}
+                    x={pt[0]}
+                    y={pt[1]}
+                    fill="#3b82f6"
+                    fontSize={9}
                     fontFamily="system-ui"
-                    textAnchor={pos.x > 50 ? 'end' : 'start'}
+                    textAnchor="middle"
+                    opacity={0.7}
+                    transform={`rotate(${label.rotation}, ${pt[0]}, ${pt[1]})`}
                   >
-                    {site.type}
+                    {label.name}
                   </text>
-                </motion.g>
-              );
-            })}
-          </svg>
+                );
+              })}
+
+              {/* Layer 7: Blue Ridge annotation */}
+              {(() => {
+                const pt = projection([-81.5, 35.88]);
+                if (!pt) return null;
+                return (
+                  <text
+                    x={pt[0]}
+                    y={pt[1]}
+                    fill="#6b8a9e"
+                    fontSize={9}
+                    fontFamily="system-ui"
+                    textAnchor="middle"
+                  >
+                    Blue Ridge Mountains
+                  </text>
+                );
+              })()}
+
+              {/* Layer 8: Site markers */}
+              {STUDY_SITES.map((site, index) => {
+                const pt = projection([site.lon, site.lat]);
+                if (!pt) return null;
+                const [x, y] = pt;
+                const labelRight = x < dimensions.width * 0.6;
+                const labelX = labelRight ? x + 10 : x - 10;
+                const anchor = labelRight ? 'start' : 'end';
+
+                return (
+                  <motion.g
+                    key={site.id}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 + index * 0.15, duration: 0.4 }}
+                  >
+                    {/* Pulse ring */}
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r="8"
+                      fill="none"
+                      stroke="#2be3d6"
+                      strokeWidth="0.8"
+                      opacity="0.4"
+                    >
+                      <animate
+                        attributeName="r"
+                        values="6;12;6"
+                        dur="3s"
+                        repeatCount="indefinite"
+                      />
+                      <animate
+                        attributeName="opacity"
+                        values="0.4;0.1;0.4"
+                        dur="3s"
+                        repeatCount="indefinite"
+                      />
+                    </circle>
+
+                    {/* Main marker */}
+                    <circle cx={x} cy={y} r="5" fill="#2be3d6" />
+                    <circle cx={x} cy={y} r="2.5" fill="#0c1b2a" />
+
+                    {/* Label background */}
+                    <rect
+                      x={labelRight ? labelX - 2 : labelX - 68}
+                      y={y - 14}
+                      width={70}
+                      height={22}
+                      fill="#0c1b2a"
+                      fillOpacity={0.7}
+                      rx={3}
+                    />
+
+                    {/* Label text */}
+                    <text
+                      x={labelX}
+                      y={y - 3}
+                      fill="#e0f0f8"
+                      fontSize={11}
+                      fontFamily="system-ui"
+                      fontWeight="500"
+                      textAnchor={anchor}
+                    >
+                      {site.shortName}
+                    </text>
+                    <text
+                      x={labelX}
+                      y={y + 8}
+                      fill="#8fb4cc"
+                      fontSize={8}
+                      fontFamily="system-ui"
+                      textAnchor={anchor}
+                    >
+                      {site.type}
+                    </text>
+                  </motion.g>
+                );
+              })}
+            </svg>
+          )}
 
           {/* Legend */}
           <div className="mt-4 flex flex-wrap gap-4 text-xs">
@@ -221,6 +428,34 @@ export default function StudyRegionMap() {
 
         {/* Context Section */}
         <div className="p-6 space-y-5">
+          {/* Study Sites Overview */}
+          <div>
+            <p className="text-sm text-[#a9c2d3] leading-relaxed">
+              Three unregulated USGS gauging stations in the southern Appalachian highlands,
+              spanning the New River and Watauga River basins in Virginia and North Carolina.
+            </p>
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              {[
+                { id: '03161000', name: 'Jefferson', river: 'S. Fork New River' },
+                { id: '03164000', name: 'Galax', river: 'New River' },
+                { id: '03479000', name: 'Sugar Grove', river: 'Watauga River' },
+              ].map((site) => (
+                <div
+                  key={site.id}
+                  className="rounded-lg bg-[#0c1a26] border border-[#264257] p-2.5 text-center"
+                >
+                  <div className="text-sm font-medium text-white">{site.name}</div>
+                  <div className="text-xs text-[#8fb4cc] mt-0.5">{site.river}</div>
+                  <div className="text-[0.65rem] text-[#6f8da0] mt-1 font-mono">{site.id}</div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-[#8fb4cc] mt-3">
+              Mixed deciduous-coniferous forest at 500–1400 m elevation. Humid subtropical climate
+              with orographic precipitation enhancement. Study period: 2010–2020 (hourly).
+            </p>
+          </div>
+
           {/* Biome & Climate */}
           <div>
             <h3 className="font-display text-sm uppercase tracking-[0.14em] text-hydra-accent mb-2">
@@ -229,8 +464,8 @@ export default function StudyRegionMap() {
             <p className="text-sm text-[#a9c2d3] leading-relaxed">
               The study region spans the Blue Ridge physiographic province, characterized by
               temperate deciduous forests, steep terrain, and high annual precipitation
-              (1,200-2,000 mm). This creates flashy, responsive watersheds where streamflow
-              can change rapidly during storm events.
+              (1,200-2,000 mm). This creates flashy, responsive watersheds where streamflow can
+              change rapidly during storm events.
             </p>
           </div>
 
@@ -240,10 +475,9 @@ export default function StudyRegionMap() {
               Hydrometeorological Regime
             </h3>
             <p className="text-sm text-[#a9c2d3] leading-relaxed">
-              The region experiences orographic enhancement of precipitation, with the
-              Blue Ridge escarpment forcing moist air upward. Tropical remnants and
-              atmospheric rivers can produce extreme rainfall, while baseflow is sustained
-              by fractured bedrock aquifers.
+              The region experiences orographic enhancement of precipitation, with the Blue Ridge
+              escarpment forcing moist air upward. Tropical remnants and atmospheric rivers can
+              produce extreme rainfall, while baseflow is sustained by fractured bedrock aquifers.
             </p>
           </div>
 
@@ -261,12 +495,12 @@ export default function StudyRegionMap() {
               Research Motivation: Hurricane Helene
             </h3>
             <p className="text-sm text-[#a9c2d3] leading-relaxed">
-              Hurricane Helene (September 2024) devastated this region, with catastrophic
-              flooding in western North Carolina causing over 200 deaths and billions in
-              damages. NWM forecasts significantly underestimated peak flows during this
-              event. This research aims to improve streamflow predictions in mountainous
-              terrain where operational models struggle most, potentially enabling better
-              early warnings for future extreme events.
+              Hurricane Helene (September 2024) devastated this region, with catastrophic flooding
+              in western North Carolina causing over 200 deaths and billions in damages. NWM
+              forecasts significantly underestimated peak flows during this event. This research
+              aims to improve streamflow predictions in mountainous terrain where operational
+              models struggle most, potentially enabling better early warnings for future extreme
+              events.
             </p>
           </div>
         </div>

@@ -130,32 +130,7 @@ export default function HomePage() {
             <h2 className="mb-5 text-center font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc]">
               Study Region
             </h2>
-            <div className="grid gap-8 md:grid-cols-2 items-center">
-              <div className="space-y-4 text-[#a9c2d3] leading-relaxed">
-                <p>
-                  Three unregulated USGS gauging stations in the southern Appalachian highlands,
-                  spanning the New River and Watauga River basins in Virginia and North Carolina.
-                </p>
-                <div className="grid grid-cols-3 gap-3 mt-4">
-                  {[
-                    { id: '03161000', name: 'Jefferson', river: 'S. Fork New River' },
-                    { id: '03164000', name: 'Galax', river: 'New River' },
-                    { id: '03479000', name: 'Sugar Grove', river: 'Watauga River' },
-                  ].map((site) => (
-                    <div key={site.id} className="surface-panel rounded-lg p-3 text-center">
-                      <div className="text-sm font-medium text-white">{site.name}</div>
-                      <div className="text-xs text-[#8fb4cc] mt-0.5">{site.river}</div>
-                      <div className="text-[0.65rem] text-[#6f8da0] mt-1 font-mono">{site.id}</div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-sm text-[#8fb4cc]">
-                  Mixed deciduous-coniferous forest at 500-1400m elevation. Humid subtropical climate
-                  with orographic precipitation enhancement. Study period: 2010-2020 (hourly).
-                </p>
-              </div>
-              <StudyRegionMap />
-            </div>
+            <StudyRegionMap />
           </motion.section>
 
           {/* Key Results */}
