@@ -385,6 +385,7 @@ def train_eval(
     event_oversample_factor: float = 0.0,
     loss_auto_norm: bool = False,
     no_nwm: bool = False,
+    include_usgs: bool = False,
 ) -> None:
     torch.set_float32_matmul_precision("medium")
     if seed is not None:
@@ -453,18 +454,27 @@ def train_eval(
 
     era5_cols = [c for c in ERA5_CANDIDATES if c in df.columns]
     if no_nwm:
-        dynamic_cols = era5_cols
-        if len(dynamic_cols) == 0:
+        if include_usgs:
+            dynamic_cols = ["usgs_cms"] + era5_cols
+            print(f"[INFO] --no-nwm --include-usgs: {len(dynamic_cols)} features (lagged USGS + ERA5)")
+        else:
+            dynamic_cols = era5_cols
+        if len(era5_cols) == 0:
             raise ValueError(
                 "No ERA5 columns found in the dataset. "
                 "Cannot run --no-nwm without meteorological features."
             )
-        print(f"[INFO] --no-nwm mode: {len(dynamic_cols)} ERA5-only features (NWM excluded)")
+        if not include_usgs:
+            print(f"[INFO] --no-nwm mode: {len(dynamic_cols)} ERA5-only features (NWM excluded)")
     else:
-        dynamic_cols = ["nwm_cms"] + era5_cols
+        if include_usgs:
+            dynamic_cols = ["nwm_cms", "usgs_cms"] + era5_cols
+            print(f"[INFO] --include-usgs: {len(dynamic_cols)} features (NWM + lagged USGS + ERA5)")
+        else:
+            dynamic_cols = ["nwm_cms"] + era5_cols
         if not dynamic_cols or dynamic_cols[0] != "nwm_cms":
             raise ValueError("First dynamic feature must be 'nwm_cms'")
-        if len(dynamic_cols) <= 1:
+        if len(era5_cols) == 0:
             raise ValueError(
                 "Dynamic feature set contains only 'nwm_cms'. "
                 "Ensure ERA5/meteorological columns are present in the parquet."
@@ -1363,6 +1373,12 @@ if __name__ == "__main__":
         help="Exclude NWM from dynamic features. Uses only ERA5 meteorological inputs. "
              "Forces --target-mode direct since no NWM residual is available.",
     )
+    parser.add_argument(
+        "--include-usgs",
+        action="store_true",
+        help="Include lagged USGS observations as a dynamic input feature. "
+             "With --no-nwm: uses USGS + ERA5 inputs. Without: uses NWM + USGS + ERA5 inputs.",
+    )
     args = parser.parse_args()
 
     # --no-nwm forces direct mode and is incompatible with hydra_v1
@@ -1430,6 +1446,7 @@ if __name__ == "__main__":
             event_oversample_factor=args.event_oversample_factor,
             loss_auto_norm=args.loss_auto_norm,
             no_nwm=args.no_nwm,
+            include_usgs=args.include_usgs,
         )
 
     if args.rolling_config:

@@ -10,7 +10,7 @@ export const ERA5_ONLY_EXPERIMENTS = ['usgs_only_v3', 'usgs_only_simple'] as con
 
 export function getExperimentCategory(experimentId: string): ExperimentCategory {
   if ((ERA5_ONLY_EXPERIMENTS as readonly string[]).includes(experimentId)) return 'era5_only';
-  if (experimentId.startsWith('v3_')) return 'v3';
+  if (experimentId.startsWith('v3_') || experimentId.startsWith('usgs_')) return 'v3';
   return 'v2';
 }
 

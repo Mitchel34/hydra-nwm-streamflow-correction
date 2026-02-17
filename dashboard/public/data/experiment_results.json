@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-17T00:48:16.504922",
+  "generated_at": "2026-02-17T06:16:50.094836",
   "sites": {
     "03161000": {
       "name": "South Fork New River near Jefferson, NC",
@@ -98,6 +98,14 @@
     "usgs_only_simple": {
       "name": "ERA5-Only (Simple GRU)",
       "description": "Simple GRU model trained on ERA5 meteorological data only (no NWM input)"
+    },
+    "usgs_nwm_era5_v3": {
+      "name": "USGS+NWM+ERA5 (Hydra v3)",
+      "description": "Hydra v3 with lagged USGS observations added as input alongside NWM and ERA5"
+    },
+    "usgs_era5_v3": {
+      "name": "USGS+ERA5 (Hydra v3)",
+      "description": "Hydra v3 with lagged USGS + ERA5 inputs only (no NWM), predicting USGS directly"
     }
   },
   "results": [
@@ -1541,6 +1549,324 @@
         "0.90": {
           "coverage": 0.7938238483931731,
           "bias": 40.53492736816406
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_era5_v3",
+      "site_id": "03161000",
+      "file": "exp_usgs_era5_v3_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 10.450599884091458,
+        "mae": 4.893374058813651,
+        "nse": 0.7473802244172038,
+        "kge": 0.7066279475881914,
+        "pbias": -14.757484759446418,
+        "pearson_r": 0.8850559104635726,
+        "spearman_r": 0.8667091687512997
+      },
+      "rmse_improvement_pct": 33.35812614031762,
+      "rmse_residual": 10.450600624084473,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -11.922751426696777
+        },
+        "0.50": {
+          "coverage": 0.10331639933786176,
+          "bias": -5.485030651092529
+        },
+        "0.90": {
+          "coverage": 0.6324561904218278,
+          "bias": 4.668473243713379
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_era5_v3",
+      "site_id": "03164000",
+      "file": "exp_usgs_era5_v3_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 57.5288129266597,
+        "mae": 22.172280653628984,
+        "nse": 0.5971551437965268,
+        "kge": 0.6451648396298738,
+        "pbias": -11.046321465210863,
+        "pearson_r": 0.7820657914280007,
+        "spearman_r": 0.8303674681763566
+      },
+      "rmse_improvement_pct": 25.81874654582904,
+      "rmse_residual": 57.528812408447266,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -54.77892303466797
+        },
+        "0.50": {
+          "coverage": 0.00022833656810138144,
+          "bias": -39.02861404418945
+        },
+        "0.90": {
+          "coverage": 0.4040415572553945,
+          "bias": 1.143852710723877
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_era5_v3",
+      "site_id": "03479000",
+      "file": "exp_usgs_era5_v3_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 6.9958019604228445,
+        "mae": 1.9701359261188367,
+        "nse": 0.7015036458299185,
+        "kge": 0.7341468866402994,
+        "pbias": 0.4553704707108877,
+        "pearson_r": 0.8390939435931472,
+        "spearman_r": 0.9132577888452624
+      },
+      "rmse_improvement_pct": 11.707267441059335,
+      "rmse_residual": 6.99580192565918,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0005167661920073496,
+          "bias": -4.236080169677734
+        },
+        "0.50": {
+          "coverage": 0.04846118511713367,
+          "bias": -2.7953906059265137
+        },
+        "0.90": {
+          "coverage": 0.6182246210381258,
+          "bias": 0.6743465662002563
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_nwm_era5_v3",
+      "site_id": "03161000",
+      "file": "exp_usgs_nwm_era5_v3_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 8.570808448304012,
+        "mae": 1.5418909572222657,
+        "nse": 0.8300862667451445,
+        "kge": 0.6758428698914802,
+        "pbias": -5.755061778364508,
+        "pearson_r": 0.9511165147354398,
+        "spearman_r": 0.9953204915033554
+      },
+      "rmse_improvement_pct": 45.34526803988993,
+      "rmse_residual": 8.570808410644531,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0030252868314401505,
+          "bias": -8.791419982910156
+        },
+        "0.50": {
+          "coverage": 0.061818596951880814,
+          "bias": -3.4710590839385986
+        },
+        "0.90": {
+          "coverage": 0.9177464467149952,
+          "bias": 6.064661502838135
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_nwm_era5_v3",
+      "site_id": "03164000",
+      "file": "exp_usgs_nwm_era5_v3_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 40.146417151442385,
+        "mae": 9.005920108451543,
+        "nse": 0.8038173561016075,
+        "kge": 0.7406012763989851,
+        "pbias": -6.675952553064632,
+        "pearson_r": 0.9108143107911625,
+        "spearman_r": 0.9926944425950394
+      },
+      "rmse_improvement_pct": 48.23269602686477,
+      "rmse_residual": 40.146419525146484,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.00011416828405069072,
+          "bias": -52.3865966796875
+        },
+        "0.50": {
+          "coverage": 0.08534079232789131,
+          "bias": -18.21425437927246
+        },
+        "0.90": {
+          "coverage": 0.8800662176047493,
+          "bias": 31.912939071655273
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_nwm_era5_v3",
+      "site_id": "03479000",
+      "file": "exp_usgs_nwm_era5_v3_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 3.4824505566552566,
+        "mae": 0.602544722069854,
+        "nse": 0.9260336930283555,
+        "kge": 0.8960933885875305,
+        "pbias": 0.1614218160270595,
+        "pearson_r": 0.9642930243807838,
+        "spearman_r": 0.9882886522429749
+      },
+      "rmse_improvement_pct": 56.04863068051858,
+      "rmse_residual": 3.482450485229492,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0075218190169958656,
+          "bias": -2.9970703125
+        },
+        "0.50": {
+          "coverage": 0.16134588883785025,
+          "bias": -1.0854052305221558
+        },
+        "0.90": {
+          "coverage": 0.723242994947175,
+          "bias": 1.420685052871704
         }
       },
       "bias_shift": {
