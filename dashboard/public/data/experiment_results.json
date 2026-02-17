@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-09T13:23:10.879689",
+  "generated_at": "2026-02-17T00:48:16.504922",
   "sites": {
     "03161000": {
       "name": "South Fork New River near Jefferson, NC",
@@ -90,6 +90,14 @@
     "v3_autonorm": {
       "name": "v3 AutoNorm",
       "description": "v3 full + automatic loss normalisation"
+    },
+    "usgs_only_v3": {
+      "name": "ERA5-Only (Hydra v3)",
+      "description": "Hydra v3 trained on ERA5 meteorological data only (no NWM input)"
+    },
+    "usgs_only_simple": {
+      "name": "ERA5-Only (Simple GRU)",
+      "description": "Simple GRU model trained on ERA5 meteorological data only (no NWM input)"
     }
   },
   "results": [
@@ -519,6 +527,59 @@
     },
     {
       "experiment": "combined",
+      "site_id": "03161000",
+      "file": "exp_combined_03161000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 12.634746092935426,
+        "mae": 4.673753144881369,
+        "nse": 0.6307521786032988,
+        "kge": 0.5445991360879308,
+        "pbias": -15.872993935624883,
+        "pearson_r": 0.8479045094012763,
+        "spearman_r": 0.8949187847871195
+      },
+      "rmse_improvement_pct": 19.430160496693965,
+      "rmse_residual": 12.634746551513672,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -13.868027687072754
+        },
+        "0.50": {
+          "coverage": 0.00508019864147497,
+          "bias": -11.433991432189941
+        },
+        "0.90": {
+          "coverage": 0.40738626633940295,
+          "bias": -1.3748632669448853
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "combined",
       "site_id": "03164000",
       "file": "exp_combined_03164000_metrics.json",
       "model_version": "v2",
@@ -889,6 +950,402 @@
       }
     },
     {
+      "experiment": "hydra_v1",
+      "site_id": "03161000",
+      "file": "exp_hydra_v1_03161000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 17.777060963428863,
+        "mae": 12.488112309288098,
+        "nse": 0.2690211227343049,
+        "kge": 0.3155822121581624,
+        "pbias": -55.65144761061089,
+        "pearson_r": 0.787601930529083,
+        "spearman_r": 0.5756583215247256
+      },
+      "rmse_improvement_pct": -13.361593349691589,
+      "rmse_residual": 11.071829795837402,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.008276728123751355,
+          "bias": -8.553970336914062
+        },
+        "0.50": {
+          "coverage": 0.13071522347165934,
+          "bias": -5.021271705627441
+        },
+        "0.90": {
+          "coverage": 0.6431303156572864,
+          "bias": -0.0011316117597743869
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "hydra_v1",
+      "site_id": "03164000",
+      "file": "exp_hydra_v1_03164000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 102.91482196365934,
+        "mae": 66.78832906486646,
+        "nse": -0.2892075832048311,
+        "kge": -0.05025953061054267,
+        "pbias": -69.03988474822746,
+        "pearson_r": 0.46719867172406815,
+        "spearman_r": 0.4073300984486359
+      },
+      "rmse_improvement_pct": -32.70481527247407,
+      "rmse_residual": 65.29178619384766,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.047208585454960615,
+          "bias": -43.78846740722656
+        },
+        "0.50": {
+          "coverage": 0.20219203105377326,
+          "bias": -22.503467559814453
+        },
+        "0.90": {
+          "coverage": 0.7845073638543213,
+          "bias": 27.21877670288086
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "hydra_v1",
+      "site_id": "03479000",
+      "file": "exp_hydra_v1_03479000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 12.490224574821603,
+        "mae": 4.940902082933148,
+        "nse": 0.04850937940836053,
+        "kge": -0.08809965272046516,
+        "pbias": -63.71674095144,
+        "pearson_r": 0.46101508161439536,
+        "spearman_r": 0.7355800004887189
+      },
+      "rmse_improvement_pct": -57.6368319493104,
+      "rmse_residual": 8.253046989440918,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.10817638952687184,
+          "bias": -2.9972450733184814
+        },
+        "0.50": {
+          "coverage": 0.3319935691318328,
+          "bias": -1.4504222869873047
+        },
+        "0.90": {
+          "coverage": 0.5483463481855765,
+          "bias": 0.1476273089647293
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "hydra_v2",
+      "site_id": "03161000",
+      "file": "exp_hydra_v2_03161000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 13.267387487151378,
+        "mae": 5.587577018055159,
+        "nse": 0.5928487891780959,
+        "kge": 0.48721047880790824,
+        "pbias": -22.81130896369831,
+        "pearson_r": 0.857974696920745,
+        "spearman_r": 0.8873336586824634
+      },
+      "rmse_improvement_pct": 15.395903280901768,
+      "rmse_residual": 13.267387390136719,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -14.126193046569824
+        },
+        "0.50": {
+          "coverage": 0.08219647240139277,
+          "bias": -8.855048179626465
+        },
+        "0.90": {
+          "coverage": 0.5333637764712598,
+          "bias": 0.8531464338302612
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "hydra_v2",
+      "site_id": "03164000",
+      "file": "exp_hydra_v2_03164000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 61.28519467116226,
+        "mae": 25.288712353014432,
+        "nse": 0.5428295648365067,
+        "kge": 0.6476382815377822,
+        "pbias": -6.5471663209022255,
+        "pearson_r": 0.7404668150773518,
+        "spearman_r": 0.8494796031595114
+      },
+      "rmse_improvement_pct": 20.97503272515965,
+      "rmse_residual": 61.285194396972656,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.015469802488868593,
+          "bias": -61.0697135925293
+        },
+        "0.50": {
+          "coverage": 0.1562963808653956,
+          "bias": -29.583213806152344
+        },
+        "0.90": {
+          "coverage": 0.4251056056627469,
+          "bias": 36.636749267578125
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "hydra_v2",
+      "site_id": "03479000",
+      "file": "exp_hydra_v2_03479000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.705979910584749,
+        "mae": 2.024180251897942,
+        "nse": 0.6378239212582582,
+        "kge": 0.6764347262818793,
+        "pbias": -5.413168873784081,
+        "pearson_r": 0.8008286948388104,
+        "spearman_r": 0.9017418414698412
+      },
+      "rmse_improvement_pct": 2.7442418754940445,
+      "rmse_residual": 7.705979824066162,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.00011483693155718879,
+          "bias": -4.910001754760742
+        },
+        "0.50": {
+          "coverage": 0.06637574644005512,
+          "bias": -3.4324421882629395
+        },
+        "0.90": {
+          "coverage": 0.6355075792374828,
+          "bias": 0.07255631685256958
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "lstm",
+      "site_id": "03161000",
+      "file": "exp_lstm_03161000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 11.849248903951862,
+        "mae": 4.867728498987877,
+        "nse": 0.6752369969327832,
+        "kge": 0.6903615773607823,
+        "pbias": -12.271246082482948,
+        "pearson_r": 0.8341404020456683,
+        "spearman_r": 0.884254687558525
+      },
+      "rmse_improvement_pct": 24.439155689885084,
+      "rmse_residual": 11.881216049194336
+    },
+    {
+      "experiment": "lstm",
+      "site_id": "03164000",
+      "file": "exp_lstm_03164000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 63.765981554659604,
+        "mae": 25.717927056804804,
+        "nse": 0.505068499766425,
+        "kge": 0.5294541852233565,
+        "pbias": -14.139478027202973,
+        "pearson_r": 0.7310197904806729,
+        "spearman_r": 0.8290673608243462
+      },
+      "rmse_improvement_pct": 17.776150787423397,
+      "rmse_residual": 63.07179260253906
+    },
+    {
+      "experiment": "lstm",
+      "site_id": "03479000",
+      "file": "exp_lstm_03479000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 8.039835506964797,
+        "mae": 2.0698012461219295,
+        "nse": 0.6057621261733577,
+        "kge": 0.5391591740613719,
+        "pbias": -14.128629790085922,
+        "pearson_r": 0.8086718423268412,
+        "spearman_r": 0.9092396457922092
+      },
+      "rmse_improvement_pct": -1.4692883318000984,
+      "rmse_residual": 7.70089864730835
+    },
+    {
       "experiment": "physics",
       "site_id": "03161000",
       "file": "exp_physics_03161000_metrics.json",
@@ -1084,6 +1541,324 @@
         "0.90": {
           "coverage": 0.7938238483931731,
           "bias": 40.53492736816406
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_only_simple",
+      "site_id": "03161000",
+      "file": "exp_usgs_only_simple_03161000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 14.243864211622718,
+        "mae": 5.085650839512462,
+        "nse": 0.530710806445781,
+        "kge": 0.46091742044353545,
+        "pbias": -15.72438470895129,
+        "pearson_r": 0.7918257804984628,
+        "spearman_r": 0.8786866115316254
+      },
+      "rmse_improvement_pct": 9.169060858373006,
+      "rmse_residual": 14.243865013122559,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -15.734113693237305
+        },
+        "0.50": {
+          "coverage": 0.04206861122210172,
+          "bias": -12.036654472351074
+        },
+        "0.90": {
+          "coverage": 0.531308864661225,
+          "bias": 0.5428500771522522
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_only_simple",
+      "site_id": "03164000",
+      "file": "exp_usgs_only_simple_03164000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 67.40100934001524,
+        "mae": 27.574106444315166,
+        "nse": 0.44703225714733563,
+        "kge": 0.6244109238705924,
+        "pbias": -3.5273057774001155,
+        "pearson_r": 0.680970848591147,
+        "spearman_r": 0.8468913189719189
+      },
+      "rmse_improvement_pct": 13.088918360045087,
+      "rmse_residual": 67.40100860595703,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.00034250485215207214,
+          "bias": -64.87141418457031
+        },
+        "0.50": {
+          "coverage": 0.11005822582486585,
+          "bias": -37.83072280883789
+        },
+        "0.90": {
+          "coverage": 0.6120561707957529,
+          "bias": 33.499942779541016
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_only_simple",
+      "site_id": "03479000",
+      "file": "exp_usgs_only_simple_03479000_metrics.json",
+      "model_version": "v2",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.846526586778094,
+        "mae": 2.2104484816935286,
+        "nse": 0.6244922379594918,
+        "kge": 0.6919310486751571,
+        "pbias": -5.058948844840939,
+        "pearson_r": 0.790882973252848,
+        "spearman_r": 0.8784502812137418
+      },
+      "rmse_improvement_pct": 0.9704280706737389,
+      "rmse_residual": 7.846526622772217,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.02922599908130455,
+          "bias": -5.520230293273926
+        },
+        "0.50": {
+          "coverage": 0.23013321084060634,
+          "bias": -3.6470065116882324
+        },
+        "0.90": {
+          "coverage": 0.8168925126320624,
+          "bias": 2.3150296211242676
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_only_v3",
+      "site_id": "03161000",
+      "file": "exp_usgs_only_v3_03161000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 15.681731738359716,
+        "mae": 6.32205181651494,
+        "nse": 0.4311825061382557,
+        "kge": 0.3685654246706028,
+        "pbias": -24.736287455544595,
+        "pearson_r": 0.7651407410294324,
+        "spearman_r": 0.8173095371324274
+      },
+      "corrected": {
+        "rmse": 13.164289214057428,
+        "mae": 4.620898947431873,
+        "nse": 0.5991519880319602,
+        "kge": 0.5169265415867894,
+        "pbias": -14.279702150334321,
+        "pearson_r": 0.8294191316630352,
+        "spearman_r": 0.898970207201489
+      },
+      "rmse_improvement_pct": 16.053345168150468,
+      "rmse_residual": 13.164289474487305,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -16.966842651367188
+        },
+        "0.50": {
+          "coverage": 0.016439294480278553,
+          "bias": -13.221383094787598
+        },
+        "0.90": {
+          "coverage": 0.3995091044009361,
+          "bias": -2.240222215652466
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_only_v3",
+      "site_id": "03164000",
+      "file": "exp_usgs_only_v3_03164000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 77.55168623862751,
+        "mae": 31.678292203921274,
+        "nse": 0.26793526281438174,
+        "kge": 0.472687147870145,
+        "pbias": -13.984678114530478,
+        "pearson_r": 0.56447854551384,
+        "spearman_r": 0.7355444503240803
+      },
+      "corrected": {
+        "rmse": 73.02285677260697,
+        "mae": 28.940922774140564,
+        "nse": 0.35094031339616116,
+        "kge": 0.5386723885387995,
+        "pbias": -9.576900412163997,
+        "pearson_r": 0.617400986423383,
+        "spearman_r": 0.7942477187366398
+      },
+      "rmse_improvement_pct": 5.839756278264891,
+      "rmse_residual": 73.02285766601562,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.0,
+          "bias": -78.56200408935547
+        },
+        "0.50": {
+          "coverage": 0.004909236214179701,
+          "bias": -64.4751968383789
+        },
+        "0.90": {
+          "coverage": 0.2523119077520265,
+          "bias": -30.915876388549805
+        }
+      },
+      "bias_shift": {
+        "strategy": "scaled",
+        "alpha": 0.0,
+        "qmin": 0.0,
+        "qmax": 1.0,
+        "weight_power": 0.0,
+        "applied": 0.0,
+        "mean_bias": null,
+        "pbias_percent": null,
+        "scale": null,
+        "samples": 0,
+        "status": "not_applied"
+      }
+    },
+    {
+      "experiment": "usgs_only_v3",
+      "site_id": "03479000",
+      "file": "exp_usgs_only_v3_03479000_metrics.json",
+      "model_version": "v3",
+      "baseline": {
+        "rmse": 7.9234176558673495,
+        "mae": 2.350053778168911,
+        "nse": 0.6170966948230197,
+        "kge": 0.6824295367669914,
+        "pbias": 0.5829215135687795,
+        "pearson_r": 0.7858227629453111,
+        "spearman_r": 0.8489248516606775
+      },
+      "corrected": {
+        "rmse": 7.852062762752108,
+        "mae": 2.249448954703121,
+        "nse": 0.6239621663638754,
+        "kge": 0.6909367787984524,
+        "pbias": -5.2058708580765005,
+        "pearson_r": 0.7905872998276459,
+        "spearman_r": 0.8628706098472084
+      },
+      "rmse_improvement_pct": 0.9005570097949191,
+      "rmse_residual": 7.852062702178955,
+      "quantiles": {
+        "0.10": {
+          "coverage": 0.00011483693155718879,
+          "bias": -6.089298248291016
+        },
+        "0.50": {
+          "coverage": 0.0809026182820395,
+          "bias": -4.556692600250244
+        },
+        "0.90": {
+          "coverage": 0.6016306844281121,
+          "bias": 0.4218234121799469
         }
       },
       "bias_shift": {
