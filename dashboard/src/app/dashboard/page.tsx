@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { fetchExperimentResults, fetchTimeSeries, fetchRigorousEval, buildVersionComparison } from '@/lib/data';
-import { DashboardData, RigorousEvalData, MetricComparison, TimeSeriesPoint, VersionComparisonRow } from '@/lib/types';
+import { fetchExperimentResults, fetchTimeSeries, buildVersionComparison } from '@/lib/data';
+import { DashboardData, MetricComparison, TimeSeriesPoint, VersionComparisonRow } from '@/lib/types';
 import { getExperimentLabels } from '@/lib/experiment-context';
 import SiteCard from '@/components/SiteCard';
 import ExperimentSelector from '@/components/ExperimentSelector';
@@ -82,11 +82,10 @@ export default function Dashboard() {
   const [controlsOpen, setControlsOpen] = useState(false);
   const [versionFilter, setVersionFilter] = useState<'all' | 'v2' | 'v3' | 'era5_only' | 'usgs'>('all');
   const [timeSeriesLoading, setTimeSeriesLoading] = useState(false);
-  const [evalData, setEvalData] = useState<RigorousEvalData | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchExperimentResults(), fetchRigorousEval()])
-      .then(([d, e]) => { setData(d); setEvalData(e); })
+    fetchExperimentResults()
+      .then(setData)
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
@@ -289,8 +288,8 @@ export default function Dashboard() {
       <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-6 py-4">
         <div className="mx-auto max-w-7xl flex items-center justify-between">
           <div>
-            <h1 className="font-display text-2xl gradient-text">Experiments</h1>
-            <p className="text-sm text-[#8daec2] mt-1">Select an experiment to explore site-specific metrics, or visit the <Link href="/evaluation" className="text-hydra-corrected hover:underline">Evaluation</Link> page for cross-site statistical comparisons.</p>
+            <h1 className="font-display text-2xl gradient-text">Experiment Dashboard</h1>
+            <p className="text-sm text-[#8daec2] mt-1">Interactive exploration of model performance across sites and configurations</p>
           </div>
           <span className="text-sm text-[#8daec2]">
             Updated: {new Date(data.generated_at).toLocaleDateString()}
@@ -312,7 +311,7 @@ export default function Dashboard() {
             <div>
               <h2 className="font-display text-lg">Experiment Configurations</h2>
               <p className="text-sm text-[#8daec2]">
-                {uniqueExperiments} configurations across {uniqueSites} sites. Skill score badges show median SS_RMSE.
+                Select an experiment with available metrics; pending runs are disabled.
               </p>
             </div>
             <div className="rounded-full border border-[#304a60] px-3 py-1 text-xs uppercase tracking-[0.11em] text-[#95b0c4]">
@@ -326,7 +325,6 @@ export default function Dashboard() {
             availableExperiments={availableExperiments}
             versionFilter={versionFilter}
             onVersionFilterChange={setVersionFilter}
-            evalData={evalData}
           />
         </section>
 

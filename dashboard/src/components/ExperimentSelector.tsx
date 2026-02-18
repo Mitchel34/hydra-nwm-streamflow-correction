@@ -15,7 +15,7 @@ interface ExperimentSelectorProps {
   evalData?: RigorousEvalData | null;
 }
 
-const USGS_EXPERIMENTS = new Set(['usgs_nwm_era5_v3', 'usgs_era5_v3', 'usgs_only_v3', 'usgs_only_simple']);
+const USGS_EXPERIMENTS = new Set(['hydra_v3_usgs_nwm_era5', 'hydra_v3_usgs_era5', 'hydra_v3_era5_only', 'gru_era5_only']);
 
 function getExtendedCategory(id: string): 'v3' | 'v2' | 'era5_only' | 'usgs' {
   if (USGS_EXPERIMENTS.has(id)) return 'usgs';
