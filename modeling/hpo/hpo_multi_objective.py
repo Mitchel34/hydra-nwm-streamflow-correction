@@ -5,7 +5,7 @@ This runner minimises corrected RMSE and absolute percent bias while
 simultaneously maximising NSE and KGE. Trials are pruned with ASHA to keep the
 runtime manageable on a single M1/M2 laptop. Example call:
 
-    PYTHONPATH=. python modeling/hpo_multi_objective.py \
+    PYTHONPATH=. python modeling/hpo/hpo_multi_objective.py \
         --data data/clean/modeling/hourly_training_03479000_20100101_20201231.parquet \
         --study-name watauga_multiobj \
         --storage sqlite:///local_only/hpo/watauga_multiobj.db \

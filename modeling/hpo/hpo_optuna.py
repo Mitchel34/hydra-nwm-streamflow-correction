@@ -3,7 +3,7 @@
 
 Example usage (M1/M2 Mac, MPS backend):
 
-    PYTHONPATH=. python3.11 modeling/hpo_optuna.py \
+    PYTHONPATH=. python3.11 modeling/hpo/hpo_optuna.py \
         --data data/clean/modeling/hourly_training_03479000_20100101_20201231.parquet \
         --study-name hydra_full_opt \
         --n-trials 20 \
