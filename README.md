@@ -27,7 +27,7 @@ This repository holds the data acquisition scripts, modeling code, and thesis do
 2. **Initialize the local-only storage tree.** This keeps raw data, logs, checkpoints, and plots off of version control.
 
    ```bash
-   bash scripts/setup_local_storage.sh
+   bash scripts/ops/setup_local_storage.sh
    ```
 
    The script creates `local_only/{archive,artifacts,results,figs,logs,experiments,data/...}` and you can symlink or copy any long-lived artefacts there.
@@ -50,7 +50,7 @@ This repository holds the data acquisition scripts, modeling code, and thesis do
 | Source | Requirements |
 | --- | --- |
 | **ERA5 / ERA5-Land** | Create `~/.cdsapirc` with a Copernicus Climate Data Store API key. Example:<br>`url: https://cds.climate.copernicus.eu/api/v2`<br>`key: <uid>:<api-key>`<br>`verify: 1` |
-| **NWM Retrospective / Operational** | Public NOAA S3 buckets (`noaa-nwm-retrospective-3-0-pds`, `noaa-nwm-pds`) can be accessed anonymously. If you rely on a mirrored archive, set `NWM_ARCHIVE_BASE_URL` before running `scripts/run_acquisition_pipeline.sh`. Optional AWS credentials (`AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc.) are only needed for private mirrors. |
+| **NWM Retrospective / Operational** | Public NOAA S3 buckets (`noaa-nwm-retrospective-3-0-pds`, `noaa-nwm-pds`) can be accessed anonymously. If you rely on a mirrored archive, set `NWM_ARCHIVE_BASE_URL` before running `scripts/acquisition/run_acquisition_pipeline.sh`. Optional AWS credentials (`AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc.) are only needed for private mirrors. |
 | **USGS NWIS** | HTTPS requests only; be mindful of rate limits. No API key required. |
 
 ## Data Acquisition
@@ -58,7 +58,7 @@ This repository holds the data acquisition scripts, modeling code, and thesis do
 You can run each collector individually or use the orchestration script that sequences USGS → NWM → ERA5:
 
 ```bash
-bash scripts/run_acquisition_pipeline.sh
+bash scripts/acquisition/run_acquisition_pipeline.sh
 ```
 
 Each script exposes CLI arguments so you can narrow the time range or site list. Common examples:
@@ -110,7 +110,7 @@ The short-range workflow writes two artefacts for each run:
 1. **Assemble the modeling parquet** (creates residual targets and splits):
 
    ```bash
-   python modeling/build_training_dataset.py \
+   python modeling/dataset/build_training_dataset.py \
      --raw-dir data/raw \
      --out-dir data/clean/modeling \
      --start 2010-01-01 \
@@ -132,18 +132,18 @@ Static land-use descriptors from NLCD are no longer merged into the parquet; run
 3. **Full site pipeline (data → train → plots → optional HPO):**
 
    ```bash
-   python scripts/run_site_pipeline.py 03479000 "Watauga River, NC" watauga_hydra \
+   python scripts/archive/run_site_pipeline.py 03479000 "Watauga River, NC" watauga_hydra \
      --hpo-trials 10
    ```
 
-   This command reuses the acquisition outputs already stored under `data/` and kicks off Optuna-based hyperparameter search when the baseline improvement is <5 %. To process the four study gauges sequentially, run `python scripts/run_multi_site_pipeline.py` (Watauga Sugar Grove, Watauga Elizabethton, South Fork New River, New River Galax).
+   This command reuses the acquisition outputs already stored under `data/` and kicks off Optuna-based hyperparameter search when the baseline improvement is <5 %. To process the four study gauges sequentially, run `python scripts/archive/run_multi_site_pipeline.py` (Watauga Sugar Grove, Watauga Elizabethton, South Fork New River, New River Galax).
 
 ### Rolling-Origin Cross-Validation
 
 To evaluate multiple chronological folds, point the transformer trainer at a JSON definition such as `configs/rolling_windows.json`:
 
 ```bash
-python modeling/train_quick_transformer_torch.py \
+python modeling/training/train_quick_transformer_torch.py \
   --data data/clean/modeling/hourly_training_03479000_2010-01-01_2020-12-31.parquet \
   --rolling-config configs/rolling_windows.json \
   --output-prefix watauga_cv

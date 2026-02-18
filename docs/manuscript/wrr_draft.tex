@@ -65,8 +65,8 @@ This study focuses on two adjacent watershed systems in the southern Appalachian
 
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]{wrr_site_map.png}
-    \caption{Study sites in the southern Appalachian Mountains showing two watershed systems (New River Basin and Watauga River Basin) with four USGS gauging stations. Circles denote unregulated gauges; the square marks the regulated gauge downstream of Watauga Dam (TVA). Arrows indicate upstream-to-downstream flow relationships.}
+    \includegraphics[width=\linewidth]{../figures/wrr_site_map.pdf}
+    \caption{Study sites in the southern Appalachian Mountains with terrain shading and major river networks. Two watershed systems (New River Basin and Watauga River Basin) contain four USGS gauging stations. Circles denote unregulated gauges; the square marks the regulated gauge downstream of Watauga Dam (TVA). Arrows indicate upstream-to-downstream flow relationships.}
     \label{fig:site_map}
 \end{figure}
 
@@ -227,39 +227,30 @@ Figure~\ref{fig:rmse_bar} compares the RMSE of the NWM baseline against the best
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\linewidth]{wrr_rmse_bar.png}
+    \includegraphics[width=0.8\linewidth]{../figures/wrr_rmse_bar.pdf}
     \caption{Root mean square error (RMSE) comparison: NWM baseline (gray) vs.\ best Hydra v3 configuration (red) for each site on the 2019--2020 test period. Lower values indicate better performance.}
     \label{fig:rmse_bar}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\linewidth]{wrr_nse_bar.png}
+    \includegraphics[width=0.8\linewidth]{../figures/wrr_nse_bar.pdf}
     \caption{Nash--Sutcliffe efficiency (NSE) comparison: NWM baseline vs.\ best Hydra v3 configuration per site. Higher values indicate better performance (1.0 is perfect).}
     \label{fig:nse_bar}
 \end{figure}
 
 \subsection{Hydrograph Analysis}
 
-To illustrate the character of Hydra's corrections, Figures~\ref{fig:hydro_highflow} and \ref{fig:hydro_typical} show hydrograph overlays for representative high-flow and typical-flow periods at Jefferson, NC (03161000), the site with the largest improvement.
+To illustrate the character of Hydra's corrections, Figure~\ref{fig:hydrograph_panel} shows hydrograph overlays with empirical P10--P90 prediction intervals for representative high-flow and typical-flow periods at all three unregulated sites.
 
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]{wrr_hydrograph_highflow_03161000.png}
-    \caption{High-flow event hydrograph at Jefferson, NC (03161000) during the 2019--2020 test period. Black: USGS observed; blue: raw NWM; red: Hydra v3 corrected (v3\_combined). Hydra substantially reduces peak underprediction while tracking the recession limb.}
-    \label{fig:hydro_highflow}
+    \includegraphics[width=\linewidth]{../figures/wrr_hydrograph_panel.pdf}
+    \caption{Hydrograph comparisons for all three unregulated sites during the 2019--2020 test period. Left column: high-flow event (7-day window centered on annual peak). Right column: typical-flow period (7-day window at median discharge). Shaded bands show empirical P10--P90 prediction intervals. Rows: (a--b) Jefferson, NC; (c--d) Galax, VA; (e--f) Sugar Grove, NC.}
+    \label{fig:hydrograph_panel}
 \end{figure}
 
-\begin{figure}
-    \centering
-    \includegraphics[width=\linewidth]{wrr_hydrograph_typical_03161000.png}
-    \caption{Typical-flow period hydrograph at Jefferson, NC (03161000). During lower-flow conditions, Hydra produces modest corrections and does not introduce unnecessary noise, preserving the NWM baseline trajectory when errors are small.}
-    \label{fig:hydro_typical}
-\end{figure}
-
-During high-flow events (Figure~\ref{fig:hydro_highflow}), Hydra corrects the NWM's systematic underprediction of peak flows, adding the missing volume and better matching the observed flood peak. During typical-flow periods (Figure~\ref{fig:hydro_typical}), the corrections are small and stable, demonstrating that the model intervenes primarily when there is a large systematic error to correct. This behavior---large corrections during storms, minimal intervention during baseflow---is operationally desirable.
-
-Hydrographs for the remaining sites (Galax and Sugar Grove) show similar patterns, with the magnitude of correction scaling with the NWM's baseline error at each location.
+During high-flow events (Figure~\ref{fig:hydrograph_panel}, left column), Hydra corrects the NWM's systematic underprediction of peak flows, adding the missing volume and better matching the observed flood peak. During typical-flow periods (Figure~\ref{fig:hydrograph_panel}, right column), the corrections are small and stable, demonstrating that the model intervenes primarily when there is a large systematic error to correct. This behavior---large corrections during storms, minimal intervention during baseflow---is operationally desirable. The pattern is consistent across all three sites, with the magnitude of correction scaling with the NWM's baseline error at each location.
 
 \subsection{Error Decomposition by Flow Regime}
 
@@ -267,7 +258,7 @@ Figure~\ref{fig:error_regime} decomposes model errors into five flow-magnitude b
 
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]{wrr_error_regime_03161000.png}
+    \includegraphics[width=\linewidth]{../figures/wrr_error_regime_03161000.pdf}
     \caption{Error decomposition by flow regime at Jefferson, NC (03161000). Four panels show (a) RMSE, (b) MAE, (c) PBIAS, and (d) NSE for NWM (blue) and Hydra v3 (red/orange) within five flow-magnitude bins from low ($<$Q25) to flood ($>$Q90). Hydra consistently improves upon NWM across all regimes, with the largest gains in the high-flow and flood bins.}
     \label{fig:error_regime}
 \end{figure}

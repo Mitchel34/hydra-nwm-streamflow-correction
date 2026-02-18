@@ -1,0 +1,35 @@
+sites:
+  - usgs_id: "03479000"
+    comid: 19743430
+    name: "Watauga River near Sugar Grove, NC"
+    lat: 36.239167
+    lon: -81.822222
+    watershed: "Watauga River (HUC 06010103)"
+    regulated_flag: false
+    upstream_of:
+      - "03486000"
+  - usgs_id: "03486000"
+    comid: 19745222
+    name: "Watauga River at Elizabethton, TN"
+    lat: 36.355919
+    lon: -82.223547
+    watershed: "Watauga River (downstream, regulated)"
+    regulated_flag: true
+    upstream_of: []
+  - usgs_id: "03161000"
+    comid: 6892192
+    name: "South Fork New River near Jefferson, NC"
+    lat: 36.393333
+    lon: -81.406944
+    watershed: "South Fork New River (HUC 05050001)"
+    regulated_flag: false
+    upstream_of:
+      - "03164000"
+  - usgs_id: "03164000"
+    comid: 6887572
+    name: "New River near Galax, VA"
+    lat: 36.64735
+    lon: -80.978969
+    watershed: "New River mainstem (downstream integrator)"
+    regulated_flag: false
+    upstream_of: []
