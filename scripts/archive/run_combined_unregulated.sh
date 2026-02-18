@@ -54,7 +54,7 @@ COMMON_ARGS="--epochs 50 --batch-size 64 --no-compile --track-gradients"
 TRAIN_ARGS="--train-start 2010-01-01 --train-end 2017-12-31"
 VAL_ARGS="--val-start 2018-01-01 --val-end 2018-12-31"
 TEST_ARGS="--test-start 2019-01-01 --test-end 2020-12-31"
-SCRIPT="$WORKDIR/modeling/train_quick_transformer_torch.py"
+SCRIPT="$WORKDIR/modeling/training/train_quick_transformer_torch.py"
 
 # Step 2: Run experiments
 echo ""
@@ -107,5 +107,5 @@ echo "========================================"
 # Export results
 echo ""
 echo "Exporting results..."
-$PYTHON "$WORKDIR/scripts/export_results_to_json.py" 2>&1
+$PYTHON "$WORKDIR/scripts/export/export_results_to_json.py" 2>&1
 echo "Done!"

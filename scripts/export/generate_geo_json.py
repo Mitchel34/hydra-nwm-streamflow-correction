@@ -5,7 +5,7 @@ Downloads Natural Earth state boundaries, clips to study region bbox,
 and creates states.geojson + manually-traced rivers.geojson + watersheds.geojson.
 
 Usage:
-    python scripts/generate_geo_json.py
+    python scripts/export/generate_geo_json.py
 """
 
 import json

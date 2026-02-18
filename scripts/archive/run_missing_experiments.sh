@@ -2,7 +2,7 @@
 # Missing Experiments Suite
 # Runs: hydra_v1, hydra_v2, lstm, combined (03161000), usgs_only_v3, usgs_only_simple
 #
-# Run with: nohup bash scripts/run_missing_experiments.sh > logs/missing_experiments.log 2>&1 &
+# Run with: nohup bash scripts/archive/run_missing_experiments.sh > logs/missing_experiments.log 2>&1 &
 
 set -eo pipefail
 
@@ -39,7 +39,7 @@ for site in "${SITES[@]}"; do
     echo ""
     echo "[${current}/${total}] hydra_v1 @ ${site} -- $(date)"
 
-    .venv/bin/python modeling/train_quick_transformer_torch.py \
+    .venv/bin/python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA" --output-prefix "$PREFIX" \
         --model-arch hydra_v1 $COMMON_ARGS \
         $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
@@ -58,7 +58,7 @@ for site in "${SITES[@]}"; do
     echo ""
     echo "[${current}/${total}] hydra_v2 @ ${site} -- $(date)"
 
-    .venv/bin/python modeling/train_quick_transformer_torch.py \
+    .venv/bin/python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA" --output-prefix "$PREFIX" \
         --model-arch hydra_v2 $COMMON_ARGS \
         $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
@@ -77,7 +77,7 @@ for site in "${SITES[@]}"; do
     echo ""
     echo "[${current}/${total}] lstm @ ${site} -- $(date)"
 
-    .venv/bin/python modeling/train_quick_lstm_torch.py \
+    .venv/bin/python modeling/training/train_quick_lstm_torch.py \
         --data "$DATA" --output-prefix "$PREFIX" \
         --epochs 40 --batch-size 64 --no-ranger \
         --train-days 2922 --val-days 365 \
@@ -95,7 +95,7 @@ current=$((current + 1))
 echo ""
 echo "[${current}/${total}] combined @ 03161000 -- $(date)"
 
-.venv/bin/python modeling/train_quick_transformer_torch.py \
+.venv/bin/python modeling/training/train_quick_transformer_torch.py \
     --data "$DATA" --output-prefix "$PREFIX" \
     --model-arch hydra_v2 $COMMON_ARGS \
     --use-causal-mask --weight-nonneg 0.1 \
@@ -114,7 +114,7 @@ for site in "${SITES[@]}"; do
     echo ""
     echo "[${current}/${total}] usgs_only_v3 @ ${site} -- $(date)"
 
-    .venv/bin/python modeling/train_quick_transformer_torch.py \
+    .venv/bin/python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA" --output-prefix "$PREFIX" \
         --model-arch hydra_v3 --no-nwm $COMMON_ARGS \
         $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
@@ -133,7 +133,7 @@ for site in "${SITES[@]}"; do
     echo ""
     echo "[${current}/${total}] usgs_only_simple @ ${site} -- $(date)"
 
-    .venv/bin/python modeling/train_quick_transformer_torch.py \
+    .venv/bin/python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA" --output-prefix "$PREFIX" \
         --model-arch gru_simple --no-nwm $COMMON_ARGS \
         $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
@@ -151,5 +151,5 @@ echo "=========================================="
 # Export results to JSON for dashboard
 echo ""
 echo "Exporting results to JSON..."
-.venv/bin/python scripts/export_results_to_json.py
+.venv/bin/python scripts/export/export_results_to_json.py
 echo "Done!"

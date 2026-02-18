@@ -21,7 +21,7 @@ for pidfile in "${PID_FILES[@]}"; do
 
 echo "NWM reruns complete. Rebuilding datasets..."
 
-.venv/bin/python modeling/build_training_dataset.py \
+.venv/bin/python modeling/dataset/build_training_dataset.py \
   --raw-dir data/raw \
   --out-dir data/clean/modeling \
   --start 2010-01-01 \
@@ -29,11 +29,11 @@ echo "NWM reruns complete. Rebuilding datasets..."
   --sites 03479000 03486000 03161000 03164000 \
   --nwm-version v2
 
-.venv/bin/python scripts/build_processed_parquets.py \
+.venv/bin/python scripts/preprocessing/build_processed_parquets.py \
   --data data/clean/modeling/hourly_training_03161000_03164000_03479000_03486000_2010-01-01_2020-12-31.parquet \
   --output-prefix watauga_cluster_2010_2020
 
-.venv/bin/python scripts/baseline_eval.py \
+.venv/bin/python scripts/evaluation/baseline_eval.py \
   --data data/clean/modeling/hourly_training_03161000_03164000_03479000_03486000_2010-01-01_2020-12-31.parquet \
   --output-prefix watauga_cluster_2010_2020
 

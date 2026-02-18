@@ -1,6 +1,6 @@
 #!/bin/bash
 # Full Experiment Suite - All 5 configurations × 4 sites
-# Run with: nohup bash scripts/run_full_experiment_suite.sh > logs/experiment_suite.log 2>&1 &
+# Run with: nohup bash scripts/experiments/run_full_experiment_suite.sh > logs/experiment_suite.log 2>&1 &
 
 set -e
 
@@ -9,11 +9,11 @@ export PYTHONPATH="$(pwd)"
 
 SITES=("03161000" "03164000" "03479000" "03486000")
 EXPERIMENTS=(
-    "baseline|"
-    "causal|--use-causal-mask"
-    "direct|--target-mode direct"
-    "physics|--weight-nonneg 0.1"
-    "combined|--use-causal-mask --weight-nonneg 0.1"
+    "gru_transformer_v2_nwm_era5_tuned|"
+    "gru_transformer_v2_causal|--use-causal-mask"
+    "gru_transformer_v2_direct|--target-mode direct"
+    "gru_transformer_v2_nonneg|--weight-nonneg 0.1"
+    "gru_transformer_v2_causal_nonneg|--use-causal-mask --weight-nonneg 0.1"
 )
 
 # Common training parameters
@@ -30,7 +30,7 @@ echo "=========================================="
 echo "FULL EXPERIMENT SUITE"
 echo "Started: $(date)"
 echo "Sites: ${SITES[*]}"
-echo "Experiments: baseline, causal, direct, physics, combined"
+echo "Experiments: gru_transformer_v2_nwm_era5_tuned, gru_transformer_v2_causal, gru_transformer_v2_direct, gru_transformer_v2_nonneg, gru_transformer_v2_causal_nonneg"
 echo "=========================================="
 
 total_experiments=$((${#SITES[@]} * ${#EXPERIMENTS[@]}))
@@ -57,7 +57,7 @@ for site in "${SITES[@]}"; do
         echo "  Log: ${LOG_FILE}"
         echo "  Started: $(date)"
         
-        .venv/bin/python modeling/train_quick_transformer_torch.py \
+        .venv/bin/python modeling/training/train_quick_transformer_torch.py \
             --data "$DATA_FILE" \
             --output-prefix "$OUTPUT_PREFIX" \
             $COMMON_ARGS \
@@ -81,6 +81,6 @@ echo "=========================================="
 # Export results to JSON for dashboard
 echo ""
 echo "Exporting results to JSON..."
-.venv/bin/python scripts/export_results_to_json.py
+.venv/bin/python scripts/export/export_results_to_json.py
 
 echo "Done!"

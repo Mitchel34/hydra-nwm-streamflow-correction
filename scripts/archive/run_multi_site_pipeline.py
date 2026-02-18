@@ -50,7 +50,7 @@ def main() -> None:
         output_prefix = f"{site_id}_{args.prefix_suffix}"
         cmd = [
             PYTHON,
-            "scripts/run_site_pipeline.py",
+            "scripts/archive/run_site_pipeline.py",
             site_id,
             name,
             output_prefix,

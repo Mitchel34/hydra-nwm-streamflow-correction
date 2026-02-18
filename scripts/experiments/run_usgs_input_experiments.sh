@@ -1,9 +1,9 @@
 #!/bin/bash
 # USGS Input Experiments
-# Exp A: usgs_nwm_era5_v3 — NWM + lagged USGS + ERA5 → predict residual
-# Exp B: usgs_era5_v3     — lagged USGS + ERA5 → predict USGS directly (no NWM)
+# Exp A: hydra_v3_usgs_nwm_era5 — NWM + lagged USGS + ERA5 → predict residual
+# Exp B: hydra_v3_usgs_era5     — lagged USGS + ERA5 → predict USGS directly (no NWM)
 #
-# Run with: nohup bash scripts/run_usgs_input_experiments.sh > logs/usgs_input_experiments.log 2>&1 &
+# Run with: nohup bash scripts/experiments/run_usgs_input_experiments.sh > logs/usgs_input_experiments.log 2>&1 &
 
 set -eo pipefail
 
@@ -35,12 +35,12 @@ echo ""
 echo "=== USGS + NWM + ERA5 (Hydra v3) ==="
 for site in "${SITES[@]}"; do
     DATA="data/clean/modeling/hourly_training_2010_2020_${site}.parquet"
-    PREFIX="exp_usgs_nwm_era5_v3_${site}"
+    PREFIX="exp_hydra_v3_usgs_nwm_era5_${site}"
     current=$((current + 1))
     echo ""
-    echo "[${current}/${total}] usgs_nwm_era5_v3 @ ${site} -- $(date)"
+    echo "[${current}/${total}] hydra_v3_usgs_nwm_era5 @ ${site} -- $(date)"
 
-    .venv/bin/python modeling/train_quick_transformer_torch.py \
+    .venv/bin/python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA" --output-prefix "$PREFIX" \
         --model-arch hydra_v3 --include-usgs $COMMON_ARGS \
         $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
@@ -54,12 +54,12 @@ echo ""
 echo "=== USGS + ERA5 (Hydra v3, no NWM) ==="
 for site in "${SITES[@]}"; do
     DATA="data/clean/modeling/hourly_training_2010_2020_${site}.parquet"
-    PREFIX="exp_usgs_era5_v3_${site}"
+    PREFIX="exp_hydra_v3_usgs_era5_${site}"
     current=$((current + 1))
     echo ""
-    echo "[${current}/${total}] usgs_era5_v3 @ ${site} -- $(date)"
+    echo "[${current}/${total}] hydra_v3_usgs_era5 @ ${site} -- $(date)"
 
-    .venv/bin/python modeling/train_quick_transformer_torch.py \
+    .venv/bin/python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA" --output-prefix "$PREFIX" \
         --model-arch hydra_v3 --include-usgs --no-nwm $COMMON_ARGS \
         $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
@@ -76,5 +76,5 @@ echo "=========================================="
 # Export results to JSON for dashboard
 echo ""
 echo "Exporting results..."
-.venv/bin/python scripts/export_results_to_json.py
+.venv/bin/python scripts/export/export_results_to_json.py
 echo "Export complete."

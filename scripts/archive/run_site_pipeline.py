@@ -55,7 +55,7 @@ def main() -> None:
     if not args.skip_build:
         run_cmd([
             PYTHON,
-            "modeling/build_training_dataset.py",
+            "modeling/dataset/build_training_dataset.py",
             "--raw-dir",
             "data/raw",
             "--out-dir",

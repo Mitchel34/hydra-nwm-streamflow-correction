@@ -75,84 +75,122 @@ SITES: Dict[str, Dict[str, Any]] = {
     },
 }
 
+# ---------------------------------------------------------------------------
+# Legacy -> canonical experiment ID mapping
+# ---------------------------------------------------------------------------
+# Data files on disk may use old experiment names in their filenames.
+# This mapping translates them to the new canonical IDs during export.
+LEGACY_ID_MAP: Dict[str, str] = {
+    # v2 architecture ablation
+    "lstm": "lstm_nwm_era5",
+    "hydra_v1": "transformer_nwm_era5",
+    "hydra_v2": "gru_transformer_v2_nwm_era5",
+    "baseline": "gru_transformer_v2_nwm_era5_tuned",
+    # v2 training ablation
+    "causal": "gru_transformer_v2_causal",
+    "direct": "gru_transformer_v2_direct",
+    "physics": "gru_transformer_v2_nonneg",
+    "combined": "gru_transformer_v2_causal_nonneg",
+    # v3 experiments
+    "v3_baseline": "hydra_v3_nwm_era5",
+    "v3_causal": "hydra_v3_causal",
+    "v3_physics": "hydra_v3_nonneg",
+    "v3_combined": "hydra_v3_causal_nonneg",
+    "v3_eventsample": "hydra_v3_event_oversample",
+    "v3_full": "hydra_v3_causal_nonneg_event",
+    "v3_autonorm": "hydra_v3_full_autonorm",
+    # Input ablation
+    "usgs_only_v3": "hydra_v3_era5_only",
+    "usgs_only_simple": "gru_era5_only",
+    "usgs_nwm_era5_v3": "hydra_v3_usgs_nwm_era5",
+    "usgs_era5_v3": "hydra_v3_usgs_era5",
+}
+
+
+def _canonicalize_id(raw_id: str) -> str:
+    """Map a legacy experiment ID to its canonical name."""
+    return LEGACY_ID_MAP.get(raw_id, raw_id)
+
+
 EXPERIMENTS: Dict[str, Dict[str, str]] = {
-    # ── v2 experiments ──
-    "baseline": {
-        "name": "Baseline (Hydra v2)",
-        "description": "Current best model without new features",
+    # -- v2 architecture ablation --
+    "lstm_nwm_era5": {
+        "name": "LSTM (NWM+ERA5)",
+        "description": "LSTM encoder baseline; NWM+ERA5 inputs, residual correction",
     },
-    "causal": {
-        "name": "Causal Mask",
-        "description": "Transformer with causal attention masking",
+    "transformer_nwm_era5": {
+        "name": "Transformer (NWM+ERA5)",
+        "description": "Transformer-only encoder (no GRU); NWM+ERA5 inputs",
     },
-    "direct": {
-        "name": "Direct Mode",
-        "description": "Predict USGS directly (no NWM residual)",
+    "gru_transformer_v2_nwm_era5": {
+        "name": "GRU-Transformer v2 (NWM+ERA5)",
+        "description": "GRU-Transformer hybrid (Hydra v2); NWM+ERA5 inputs",
     },
-    "physics": {
-        "name": "Physics Constraint",
-        "description": "Non-negativity penalty on streamflow",
+    "gru_transformer_v2_nwm_era5_tuned": {
+        "name": "GRU-Transformer v2 Tuned",
+        "description": "Hydra v2 with HPO-tuned hyperparameters",
     },
-    "combined": {
-        "name": "Combined",
-        "description": "Causal mask + physics constraint",
+    # -- v2 training ablation --
+    "gru_transformer_v2_causal": {
+        "name": "GRU-Transformer v2 + Causal",
+        "description": "Hydra v2 with causal attention masking",
     },
-    "hydra_v1": {
-        "name": "Hydra v1 (Ablation)",
-        "description": "Transformer-only (no GRU)",
+    "gru_transformer_v2_direct": {
+        "name": "GRU-Transformer v2 Direct",
+        "description": "Hydra v2 predicting discharge directly (no residual)",
     },
-    "hydra_v2": {
-        "name": "Hydra v2",
-        "description": "GRU-Transformer hybrid",
+    "gru_transformer_v2_nonneg": {
+        "name": "GRU-Transformer v2 + NonNeg",
+        "description": "Hydra v2 with non-negativity physics constraint",
     },
-    "lstm": {
-        "name": "LSTM Baseline",
-        "description": "Simple LSTM encoder",
+    "gru_transformer_v2_causal_nonneg": {
+        "name": "GRU-Transformer v2 + Causal + NonNeg",
+        "description": "Hydra v2 with causal masking and non-negativity constraint",
     },
-    # ── v3 experiments ──
-    "v3_baseline": {
-        "name": "Hydra v3 Baseline",
-        "description": "v3 architecture with feature gate, multi-scale conv, regime bias",
+    # -- Hydra v3 experiments --
+    "hydra_v3_nwm_era5": {
+        "name": "Hydra v3 (NWM+ERA5)",
+        "description": "v3 with feature gate, multi-scale conv, regime bias; NWM+ERA5",
     },
-    "v3_causal": {
-        "name": "v3 + Causal Mask",
+    "hydra_v3_causal": {
+        "name": "Hydra v3 + Causal",
         "description": "Hydra v3 with causal attention masking",
     },
-    "v3_physics": {
-        "name": "v3 + Physics",
-        "description": "Hydra v3 with non-negativity constraint (\u03bb=0.1)",
+    "hydra_v3_nonneg": {
+        "name": "Hydra v3 + NonNeg",
+        "description": "Hydra v3 with non-negativity constraint",
     },
-    "v3_combined": {
-        "name": "v3 + Causal + Physics",
-        "description": "Hydra v3 with causal mask and physics constraint",
+    "hydra_v3_causal_nonneg": {
+        "name": "Hydra v3 + Causal + NonNeg",
+        "description": "Hydra v3 with causal masking and non-negativity constraint",
     },
-    "v3_eventsample": {
-        "name": "v3 + Event Sampling",
-        "description": "Hydra v3 with 3\u00d7 oversampling on Q90+ events",
+    "hydra_v3_event_oversample": {
+        "name": "Hydra v3 + Event Oversampling",
+        "description": "Hydra v3 with 3x oversampling on Q90+ events",
     },
-    "v3_full": {
-        "name": "v3 Full",
-        "description": "Hydra v3 with causal + physics + event oversampling",
+    "hydra_v3_causal_nonneg_event": {
+        "name": "Hydra v3 + Causal + NonNeg + Event",
+        "description": "Hydra v3 with causal, non-negativity, and event oversampling",
     },
-    "v3_autonorm": {
-        "name": "v3 AutoNorm",
-        "description": "v3 full + automatic loss normalisation",
+    "hydra_v3_full_autonorm": {
+        "name": "Hydra v3 Full + AutoNorm",
+        "description": "Hydra v3 full config with automatic loss normalization",
     },
-    # ── ERA5-only experiments ──
-    "usgs_only_v3": {
+    # -- ERA5-only (input ablation) --
+    "hydra_v3_era5_only": {
         "name": "ERA5-Only (Hydra v3)",
         "description": "Hydra v3 trained on ERA5 meteorological data only (no NWM input)",
     },
-    "usgs_only_simple": {
+    "gru_era5_only": {
         "name": "ERA5-Only (Simple GRU)",
         "description": "Simple GRU model trained on ERA5 meteorological data only (no NWM input)",
     },
-    # ── USGS input experiments ──
-    "usgs_nwm_era5_v3": {
+    # -- USGS input experiments --
+    "hydra_v3_usgs_nwm_era5": {
         "name": "USGS+NWM+ERA5 (Hydra v3)",
         "description": "Hydra v3 with lagged USGS observations added as input alongside NWM and ERA5",
     },
-    "usgs_era5_v3": {
+    "hydra_v3_usgs_era5": {
         "name": "USGS+ERA5 (Hydra v3)",
         "description": "Hydra v3 with lagged USGS + ERA5 inputs only (no NWM), predicting USGS directly",
     },
@@ -160,8 +198,8 @@ EXPERIMENTS: Dict[str, Dict[str, str]] = {
 
 
 def _model_version(experiment_id: str) -> str:
-    """Infer model version from experiment ID."""
-    if experiment_id.startswith("v3_") or experiment_id in ("usgs_only_v3", "usgs_nwm_era5_v3", "usgs_era5_v3"):
+    """Infer model version from canonical experiment ID."""
+    if experiment_id.startswith("hydra_v3"):
         return "v3"
     return "v2"
 
@@ -201,7 +239,8 @@ def collect_results(modeling_dir: Path) -> List[Dict[str, Any]]:
                     print(f"  Skipped (unrecognised format): {filepath.name}")
                     continue
 
-            experiment_id = info["experiment"]
+            # Translate legacy IDs to canonical names
+            experiment_id = _canonicalize_id(info["experiment"])
             site_id = info["site_id"]
 
             result: Dict[str, Any] = {
@@ -222,7 +261,7 @@ def collect_results(modeling_dir: Path) -> List[Dict[str, Any]]:
                 result["bias_shift"] = metrics["bias_shift"]
 
             results.append(result)
-            print(f"  Loaded: {filepath.name} \u2192 {experiment_id} @ {site_id}")
+            print(f"  Loaded: {filepath.name} -> {experiment_id} @ {site_id}")
         except Exception as e:
             print(f"  Error loading {filepath.name}: {e}")
 
@@ -230,7 +269,7 @@ def collect_results(modeling_dir: Path) -> List[Dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Time-series export  (eval CSV → JSON for hydrograph component)
+# Time-series export  (eval CSV -> JSON for hydrograph component)
 # ---------------------------------------------------------------------------
 
 def export_timeseries(
@@ -257,7 +296,8 @@ def export_timeseries(
             print(f"  Skipped timeseries (unrecognised): {csv_path.name}")
             continue
 
-        experiment_id = m.group(1)
+        # Translate legacy IDs to canonical names
+        experiment_id = _canonicalize_id(m.group(1))
         site_id = m.group(2)
 
         try:
@@ -281,11 +321,12 @@ def export_timeseries(
                 }
                 points.append(point)
 
+            # Use canonical ID for output filename
             out_path = ts_dir / f"{experiment_id}_{site_id}.json"
             with open(out_path, "w") as f:
                 json.dump(points, f, separators=(",", ":"))
             written += 1
-            print(f"  Timeseries: {csv_path.name} \u2192 {out_path.name}  ({len(points)} points)")
+            print(f"  Timeseries: {csv_path.name} -> {out_path.name}  ({len(points)} points)")
         except Exception as e:
             print(f"  Error exporting timeseries {csv_path.name}: {e}")
 

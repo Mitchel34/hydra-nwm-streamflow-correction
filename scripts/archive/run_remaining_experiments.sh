@@ -29,7 +29,7 @@ for site in "${SITES[@]}"; do
     
     # Baseline
     echo "[$(date)] Running: baseline on site ${site}" >> $LOG_MAIN
-    python modeling/train_quick_transformer_torch.py \
+    python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA_FILE" --output-prefix "exp_baseline_${site}" \
         $COMMON_ARGS $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
         > "logs/experiments/exp_baseline_${site}.log" 2>&1
@@ -37,7 +37,7 @@ for site in "${SITES[@]}"; do
     
     # Causal
     echo "[$(date)] Running: causal on site ${site}" >> $LOG_MAIN
-    python modeling/train_quick_transformer_torch.py \
+    python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA_FILE" --output-prefix "exp_causal_${site}" \
         $COMMON_ARGS $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
         --use-causal-mask \
@@ -46,7 +46,7 @@ for site in "${SITES[@]}"; do
     
     # Direct
     echo "[$(date)] Running: direct on site ${site}" >> $LOG_MAIN
-    python modeling/train_quick_transformer_torch.py \
+    python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA_FILE" --output-prefix "exp_direct_${site}" \
         $COMMON_ARGS $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
         --target-mode direct \
@@ -55,7 +55,7 @@ for site in "${SITES[@]}"; do
     
     # Physics
     echo "[$(date)] Running: physics on site ${site}" >> $LOG_MAIN
-    python modeling/train_quick_transformer_torch.py \
+    python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA_FILE" --output-prefix "exp_physics_${site}" \
         $COMMON_ARGS $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
         --weight-nonneg 0.1 \
@@ -64,7 +64,7 @@ for site in "${SITES[@]}"; do
     
     # Combined
     echo "[$(date)] Running: combined on site ${site}" >> $LOG_MAIN
-    python modeling/train_quick_transformer_torch.py \
+    python modeling/training/train_quick_transformer_torch.py \
         --data "$DATA_FILE" --output-prefix "exp_combined_${site}" \
         $COMMON_ARGS $TRAIN_ARGS $VAL_ARGS $TEST_ARGS \
         --use-causal-mask --weight-nonneg 0.1 \
@@ -78,5 +78,5 @@ echo "========================================" >> $LOG_MAIN
 
 # Export results
 echo "Exporting results..." >> $LOG_MAIN
-python scripts/export_results_to_json.py >> $LOG_MAIN 2>&1
+python scripts/export/export_results_to_json.py >> $LOG_MAIN 2>&1
 echo "Done!" >> $LOG_MAIN

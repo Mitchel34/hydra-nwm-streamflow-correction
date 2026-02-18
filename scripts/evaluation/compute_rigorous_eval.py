@@ -6,9 +6,9 @@ Computes skill scores, regime-stratified metrics, bootstrap CIs,
 and Diebold-Mariano significance tests from eval CSVs.
 
 Usage:
-    python scripts/compute_rigorous_eval.py                     # full run
-    python scripts/compute_rigorous_eval.py --skip-bootstrap    # fast dev
-    python scripts/compute_rigorous_eval.py --parallel 4        # parallel
+    python scripts/evaluation/compute_rigorous_eval.py                     # full run
+    python scripts/evaluation/compute_rigorous_eval.py --skip-bootstrap    # fast dev
+    python scripts/evaluation/compute_rigorous_eval.py --parallel 4        # parallel
 """
 from __future__ import annotations
 
@@ -47,6 +47,29 @@ MIN_SAMPLES_FOR_CI = 100
 
 FILENAME_RE = re.compile(r"^exp_(.+?)_(\d{8})_eval\.csv$")
 
+# Legacy -> canonical experiment ID mapping (mirrors export_results_to_json.py)
+LEGACY_ID_MAP: dict[str, str] = {
+    "lstm": "lstm_nwm_era5",
+    "hydra_v1": "transformer_nwm_era5",
+    "hydra_v2": "gru_transformer_v2_nwm_era5",
+    "baseline": "gru_transformer_v2_nwm_era5_tuned",
+    "causal": "gru_transformer_v2_causal",
+    "direct": "gru_transformer_v2_direct",
+    "physics": "gru_transformer_v2_nonneg",
+    "combined": "gru_transformer_v2_causal_nonneg",
+    "v3_baseline": "hydra_v3_nwm_era5",
+    "v3_causal": "hydra_v3_causal",
+    "v3_physics": "hydra_v3_nonneg",
+    "v3_combined": "hydra_v3_causal_nonneg",
+    "v3_eventsample": "hydra_v3_event_oversample",
+    "v3_full": "hydra_v3_causal_nonneg_event",
+    "v3_autonorm": "hydra_v3_full_autonorm",
+    "usgs_only_v3": "hydra_v3_era5_only",
+    "usgs_only_simple": "gru_era5_only",
+    "usgs_nwm_era5_v3": "hydra_v3_usgs_nwm_era5",
+    "usgs_era5_v3": "hydra_v3_usgs_era5",
+}
+
 
 # ---------------------------------------------------------------------------
 # Data loading
@@ -59,7 +82,8 @@ def discover_eval_files() -> list[tuple[str, str, str]]:
         m = FILENAME_RE.match(basename)
         if not m:
             continue
-        experiment, site_id = m.group(1), m.group(2)
+        raw_experiment, site_id = m.group(1), m.group(2)
+        experiment = LEGACY_ID_MAP.get(raw_experiment, raw_experiment)
         if site_id not in UNREGULATED_SITES:
             continue
         results.append((experiment, site_id, path))

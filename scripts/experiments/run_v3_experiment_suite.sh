@@ -22,16 +22,16 @@ SITES=("03161000" "03164000" "03479000")
 # v3_causal       — v3 + causal masking
 # v3_physics      — v3 + non-negativity constraint
 # v3_combined     — v3 + causal + physics
-# v3_eventsample  — v3 + event oversampling (3x boost on Q90+)
-# v3_full         — v3 + causal + physics + event oversampling (best expected)
+# hydra_v3_event_oversample  — v3 + event oversampling (3x boost on Q90+)
+# hydra_v3_causal_nonneg_event — v3 + causal + nonneg + event oversampling (best expected)
 EXPERIMENTS=(
-    "v3_baseline|"
-    "v3_causal|--use-causal-mask"
-    "v3_physics|--weight-nonneg 0.1"
-    "v3_combined|--use-causal-mask --weight-nonneg 0.1"
-    "v3_eventsample|--event-oversample-factor 3.0"
-    "v3_full|--use-causal-mask --weight-nonneg 0.1 --event-oversample-factor 3.0"
-    "v3_autonorm|--loss-auto-norm --use-causal-mask --weight-nonneg 0.1 --event-oversample-factor 3.0"
+    "hydra_v3_nwm_era5|"
+    "hydra_v3_causal|--use-causal-mask"
+    "hydra_v3_nonneg|--weight-nonneg 0.1"
+    "hydra_v3_causal_nonneg|--use-causal-mask --weight-nonneg 0.1"
+    "hydra_v3_event_oversample|--event-oversample-factor 3.0"
+    "hydra_v3_causal_nonneg_event|--use-causal-mask --weight-nonneg 0.1 --event-oversample-factor 3.0"
+    "hydra_v3_full_autonorm|--loss-auto-norm --use-causal-mask --weight-nonneg 0.1 --event-oversample-factor 3.0"
 )
 
 # Common training parameters (matching v2 experiments for fair comparison)
@@ -48,7 +48,7 @@ echo "=========================================="
 echo "HYDRA v3 EXPERIMENT SUITE"
 echo "Started: $(date)"
 echo "Sites: ${SITES[*]}"
-echo "Experiments: v3_baseline, v3_causal, v3_physics, v3_combined, v3_eventsample, v3_full, v3_autonorm"
+echo "Experiments: hydra_v3_nwm_era5, hydra_v3_causal, hydra_v3_nonneg, hydra_v3_causal_nonneg, hydra_v3_event_oversample, hydra_v3_causal_nonneg_event, hydra_v3_full_autonorm"
 echo "=========================================="
 
 total_experiments=$((${#SITES[@]} * ${#EXPERIMENTS[@]}))
@@ -81,7 +81,7 @@ for site in "${SITES[@]}"; do
         echo "  Log: ${LOG_FILE}"
         echo "  Started: $(date)"
 
-        .venv/bin/python modeling/train_quick_transformer_torch.py \
+        .venv/bin/python modeling/training/train_quick_transformer_torch.py \
             --data "$DATA_FILE" \
             --output-prefix "$OUTPUT_PREFIX" \
             $COMMON_ARGS \
@@ -105,6 +105,6 @@ echo "=========================================="
 # Export results to JSON for dashboard
 echo ""
 echo "Exporting results to JSON..."
-.venv/bin/python scripts/export_results_to_json.py
+.venv/bin/python scripts/export/export_results_to_json.py
 
 echo "Done!"

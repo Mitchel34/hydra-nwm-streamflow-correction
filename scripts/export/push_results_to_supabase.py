@@ -3,7 +3,7 @@
 Push experiment results from the exported JSON to Supabase.
 
 Usage:
-    python scripts/push_results_to_supabase.py [--dry-run]
+    python scripts/export/push_results_to_supabase.py [--dry-run]
 
 Requires environment variables:
     SUPABASE_URL       – project URL (e.g. https://xxx.supabase.co)
