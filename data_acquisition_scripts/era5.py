@@ -36,7 +36,7 @@ except ImportError:
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
-from config.master_study_sites import MASTER_STUDY_SITES
+from configs.master_study_sites import MASTER_STUDY_SITES
 
 # Prepare site list from master configuration
 STUDY_SITES = []

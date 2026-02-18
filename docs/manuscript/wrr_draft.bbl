@@ -1,0 +1,180 @@
+\begin{thebibliography}{}
+
+\bibitem [\protect \citeauthoryear {%
+Demiray%
+, Sit%
+, Mermer%
+\BCBL {}\ \BBA {} Demir%
+}{%
+Demiray%
+\ \protect \BOthers {.}}{%
+{\protect \APACyear {2024}}%
+}]{%
+demiray2024}
+\APACinsertmetastar {%
+demiray2024}%
+\begin{APACrefauthors}%
+Demiray, B\BPBI Z.%
+, Sit, M.%
+, Mermer, O.%
+\BCBL {}\ \BBA {} Demir, I.%
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{2024}{}{}.
+\newblock
+{\BBOQ}\APACrefatitle {Enhancing hydrological modeling with transformers: a case study for 24-h streamflow prediction} {Enhancing hydrological modeling with transformers: a case study for 24-h streamflow prediction}.{\BBCQ}
+\newblock
+\APACjournalVolNumPages{Water Science \& Technology}{89}{9}{2326--2341}.
+\PrintBackRefs{\CurrentBib}
+
+\bibitem [\protect \citeauthoryear {%
+Frame%
+\ \protect \BOthers {.}}{%
+Frame%
+\ \protect \BOthers {.}}{%
+{\protect \APACyear {2021}}%
+}]{%
+frame2021}
+\APACinsertmetastar {%
+frame2021}%
+\begin{APACrefauthors}%
+Frame, J\BPBI M.%
+, Kratzert, F.%
+, Raney, A.%
+, Rahman, M.%
+, Salas, F\BPBI R.%
+\BCBL {}\ \BBA {} Nearing, G\BPBI S.%
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{2021}{}{}.
+\newblock
+{\BBOQ}\APACrefatitle {Post-Processing the {National Water Model} with Long Short-Term Memory Networks for Streamflow Predictions and Model Diagnostics} {Post-processing the {National Water Model} with long short-term memory networks for streamflow predictions and model diagnostics}.{\BBCQ}
+\newblock
+\APACjournalVolNumPages{Journal of the American Water Resources Association}{57}{6}{885--905}.
+\PrintBackRefs{\CurrentBib}
+
+\bibitem [\protect \citeauthoryear {%
+Han%
+\ \BBA {} Morrison%
+}{%
+Han%
+\ \BBA {} Morrison%
+}{%
+{\protect \APACyear {2022}}%
+}]{%
+han2022}
+\APACinsertmetastar {%
+han2022}%
+\begin{APACrefauthors}%
+Han, H.%
+\BCBT {}\ \BBA {} Morrison, R\BPBI R.%
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{2022}{}{}.
+\newblock
+{\BBOQ}\APACrefatitle {Improved runoff forecasting performance through error predictions using a deep-learning approach} {Improved runoff forecasting performance through error predictions using a deep-learning approach}.{\BBCQ}
+\newblock
+\APACjournalVolNumPages{Journal of Hydrology}{608}{}{127653}.
+\PrintBackRefs{\CurrentBib}
+
+\bibitem [\protect \citeauthoryear {%
+Naser~Neisary%
+, Johnson%
+\BCBL {}\ \BBA {} Burian%
+}{%
+Naser~Neisary%
+\ \protect \BOthers {.}}{%
+{\protect \APACyear {2025}}%
+}]{%
+neisary2025}
+\APACinsertmetastar {%
+neisary2025}%
+\begin{APACrefauthors}%
+Naser~Neisary, S.%
+, Johnson, R\BPBI C.%
+\BCBL {}\ \BBA {} Burian, S\BPBI J.%
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{2025}{}{}.
+\newblock
+{\BBOQ}\APACrefatitle {A post-processing machine learning framework for bias-correcting {National Water Model} outputs by accounting for dominant streamflow drivers} {A post-processing machine learning framework for bias-correcting {National Water Model} outputs by accounting for dominant streamflow drivers}.{\BBCQ}
+\newblock
+\APACjournalVolNumPages{Environmental Modelling \& Software}{190}{}{106459}.
+\PrintBackRefs{\CurrentBib}
+
+\bibitem [\protect \citeauthoryear {%
+{National Weather Service Southeast River Forecast Center}%
+}{%
+{National Weather Service Southeast River Forecast Center}%
+}{%
+{\protect \APACyear {2024}}%
+}]{%
+nwsRFCHelene2024}
+\APACinsertmetastar {%
+nwsRFCHelene2024}%
+\begin{APACrefauthors}%
+{National Weather Service Southeast River Forecast Center}.%
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{2024}{}{}.
+\newblock
+\APACrefbtitle {Post-Event Report: {Hurricane Helene} Hydrologic Verification} {Post-event report: {Hurricane Helene} hydrologic verification}\ \APACbVolEdTR {}{Internal Technical Summary}.
+\newblock
+\APACaddressInstitution{}{National Weather Service}.
+\PrintBackRefs{\CurrentBib}
+
+\bibitem [\protect \citeauthoryear {%
+Rasiya~Koya%
+\ \BBA {} Roy%
+}{%
+Rasiya~Koya%
+\ \BBA {} Roy%
+}{%
+{\protect \APACyear {2023}}%
+}]{%
+rasiya2023}
+\APACinsertmetastar {%
+rasiya2023}%
+\begin{APACrefauthors}%
+Rasiya~Koya, S.%
+\BCBT {}\ \BBA {} Roy, T.%
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{2023}{}{}.
+\newblock
+{\BBOQ}\APACrefatitle {Temporal Fusion Transformers for streamflow prediction: Value of combining attention with recurrence} {Temporal fusion transformers for streamflow prediction: Value of combining attention with recurrence}.{\BBCQ}
+\newblock
+\APACjournalVolNumPages{arXiv preprint arXiv:2305.12335}{}{}{1--11}.
+\PrintBackRefs{\CurrentBib}
+
+\bibitem [\protect \citeauthoryear {%
+{U.S. Geological Survey}%
+}{%
+{U.S. Geological Survey}%
+}{%
+{\protect \APACyear {2024}}%
+}]{%
+usgsHelene2024}
+\APACinsertmetastar {%
+usgsHelene2024}%
+\begin{APACrefauthors}%
+{U.S. Geological Survey}.%
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{2024}{}{}.
+\newblock
+\APACrefbtitle {Peak Streamflow Data for {Hurricane Helene} Flooding in the {Southern Appalachians}} {Peak streamflow data for {Hurricane Helene} flooding in the {Southern Appalachians}}\ \APACbVolEdTR {}{Open-File Report\ \BNUM\ 2024-1152}.
+\newblock
+\APACaddressInstitution{}{U.S. Geological Survey}.
+\newblock
+\begin{APACrefDOI} \doi{10.3133/ofr20241152} \end{APACrefDOI}
+\PrintBackRefs{\CurrentBib}
+
+\end{thebibliography}

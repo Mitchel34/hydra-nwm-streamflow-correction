@@ -107,4 +107,4 @@ python -m viz.render_pipeline_diagram --out figs/pipeline.pdf
 ### README Guidance
 - Installation requirements: matplotlib, seaborn, numpy, pandas, scipy, geopandas, shapely, contextily, graphviz.
 - Usage instructions for each script.
-- Single regeneration script: `scripts/build_all_figs.sh`.
+- Single regeneration script: `scripts/ops/build_all_figs.sh`.

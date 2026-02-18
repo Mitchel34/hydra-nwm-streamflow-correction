@@ -269,15 +269,15 @@ vm_stat  # macOS
 ### Estimate Model Size
 ```bash
 # Run parameter counting script
-python scripts/count_model_params.py
+python scripts/evaluation/count_model_params.py
 ```
 
 ### Test Inference Performance
 ```bash
 # Benchmark inference speed on your hardware
 # (script to be created)
-python scripts/benchmark_inference.py --device cpu
-python scripts/benchmark_inference.py --device cuda
+python scripts/evaluation/benchmark_inference.py --device cpu
+python scripts/evaluation/benchmark_inference.py --device cuda
 ```
 
 ---

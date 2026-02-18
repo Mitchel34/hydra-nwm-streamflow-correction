@@ -10,4 +10,4 @@ This directory is intentionally ignored by Git. Move any large or sensitive arte
 - `experiments/`: hyperparameter sweeps (Optuna / Hydra exports)
 - data snapshots under `local_only/data/` if you prefer keeping the canonical `data/` path empty
 
-Recreate the expected structure by running `scripts/setup_local_storage.sh` (added in this overhaul) or by manually creating the folders above. All scripts should treat `local_only` as the canonical sink for heavy products that should remain on your workstation.
+Recreate the expected structure by running `scripts/ops/setup_local_storage.sh` (added in this overhaul) or by manually creating the folders above. All scripts should treat `local_only` as the canonical sink for heavy products that should remain on your workstation.

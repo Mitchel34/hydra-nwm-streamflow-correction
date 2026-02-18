@@ -11,28 +11,28 @@
     "03479000"
   ],
   "experiments": [
-    "baseline",
-    "causal",
-    "combined",
-    "direct",
-    "hydra_v1",
-    "hydra_v2",
-    "lstm",
-    "physics",
-    "usgs_era5_v3",
-    "usgs_nwm_era5_v3",
-    "usgs_only_simple",
-    "usgs_only_v3",
-    "v3_autonorm",
-    "v3_baseline",
-    "v3_causal",
-    "v3_combined",
-    "v3_eventsample",
-    "v3_full",
-    "v3_physics"
+    "gru_transformer_v2_nwm_era5_tuned",
+    "gru_transformer_v2_causal",
+    "gru_transformer_v2_causal_nonneg",
+    "gru_transformer_v2_direct",
+    "transformer_nwm_era5",
+    "gru_transformer_v2_nwm_era5",
+    "lstm_nwm_era5",
+    "gru_transformer_v2_nonneg",
+    "hydra_v3_usgs_era5",
+    "hydra_v3_usgs_nwm_era5",
+    "gru_era5_only",
+    "hydra_v3_era5_only",
+    "hydra_v3_full_autonorm",
+    "hydra_v3_nwm_era5",
+    "hydra_v3_causal",
+    "hydra_v3_causal_nonneg",
+    "hydra_v3_event_oversample",
+    "hydra_v3_causal_nonneg_event",
+    "hydra_v3_nonneg"
   ],
   "results": {
-    "baseline": {
+    "gru_transformer_v2_nwm_era5_tuned": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -6121,7 +6121,7 @@
         }
       }
     },
-    "causal": {
+    "gru_transformer_v2_causal": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -12210,7 +12210,7 @@
         }
       }
     },
-    "combined": {
+    "gru_transformer_v2_causal_nonneg": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -18299,7 +18299,7 @@
         }
       }
     },
-    "direct": {
+    "gru_transformer_v2_direct": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -24388,7 +24388,7 @@
         }
       }
     },
-    "hydra_v1": {
+    "transformer_nwm_era5": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -30477,7 +30477,7 @@
         }
       }
     },
-    "hydra_v2": {
+    "gru_transformer_v2_nwm_era5": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -36566,7 +36566,7 @@
         }
       }
     },
-    "lstm": {
+    "lstm_nwm_era5": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -42655,7 +42655,7 @@
         }
       }
     },
-    "physics": {
+    "gru_transformer_v2_nonneg": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -48744,7 +48744,7 @@
         }
       }
     },
-    "usgs_era5_v3": {
+    "hydra_v3_usgs_era5": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -54833,7 +54833,7 @@
         }
       }
     },
-    "usgs_nwm_era5_v3": {
+    "hydra_v3_usgs_nwm_era5": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -60922,7 +60922,7 @@
         }
       }
     },
-    "usgs_only_simple": {
+    "gru_era5_only": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -67011,7 +67011,7 @@
         }
       }
     },
-    "usgs_only_v3": {
+    "hydra_v3_era5_only": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -73100,7 +73100,7 @@
         }
       }
     },
-    "v3_autonorm": {
+    "hydra_v3_full_autonorm": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -79189,7 +79189,7 @@
         }
       }
     },
-    "v3_baseline": {
+    "hydra_v3_nwm_era5": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -85278,7 +85278,7 @@
         }
       }
     },
-    "v3_causal": {
+    "hydra_v3_causal": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -91367,7 +91367,7 @@
         }
       }
     },
-    "v3_combined": {
+    "hydra_v3_causal_nonneg": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -97456,7 +97456,7 @@
         }
       }
     },
-    "v3_eventsample": {
+    "hydra_v3_event_oversample": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -103545,7 +103545,7 @@
         }
       }
     },
-    "v3_full": {
+    "hydra_v3_causal_nonneg_event": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -109634,7 +109634,7 @@
         }
       }
     },
-    "v3_physics": {
+    "hydra_v3_nonneg": {
       "03161000": {
         "full_period": {
           "headline": {
@@ -115725,7 +115725,7 @@
     }
   },
   "cross_site": {
-    "baseline": {
+    "gru_transformer_v2_nwm_era5_tuned": {
       "n_sites": 3,
       "median_ss_rmse": 0.0777,
       "iqr_ss_rmse": [
@@ -115741,7 +115741,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "causal": {
+    "gru_transformer_v2_causal": {
       "n_sites": 3,
       "median_ss_rmse": 0.1468,
       "iqr_ss_rmse": [
@@ -115757,7 +115757,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "combined": {
+    "gru_transformer_v2_causal_nonneg": {
       "n_sites": 3,
       "median_ss_rmse": 0.1943,
       "iqr_ss_rmse": [
@@ -115773,7 +115773,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "direct": {
+    "gru_transformer_v2_direct": {
       "n_sites": 3,
       "median_ss_rmse": 0.1196,
       "iqr_ss_rmse": [
@@ -115789,7 +115789,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "hydra_v1": {
+    "transformer_nwm_era5": {
       "n_sites": 3,
       "median_ss_rmse": -0.327,
       "iqr_ss_rmse": [
@@ -115805,7 +115805,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 2
     },
-    "hydra_v2": {
+    "gru_transformer_v2_nwm_era5": {
       "n_sites": 3,
       "median_ss_rmse": 0.154,
       "iqr_ss_rmse": [
@@ -115821,7 +115821,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "lstm": {
+    "lstm_nwm_era5": {
       "n_sites": 3,
       "median_ss_rmse": 0.1778,
       "iqr_ss_rmse": [
@@ -115837,7 +115837,7 @@
       "sites_significant_005": 2,
       "sites_significant_001": 2
     },
-    "physics": {
+    "gru_transformer_v2_nonneg": {
       "n_sites": 3,
       "median_ss_rmse": 0.1263,
       "iqr_ss_rmse": [
@@ -115853,7 +115853,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "usgs_era5_v3": {
+    "hydra_v3_usgs_era5": {
       "n_sites": 3,
       "median_ss_rmse": 0.2582,
       "iqr_ss_rmse": [
@@ -115869,7 +115869,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "usgs_nwm_era5_v3": {
+    "hydra_v3_usgs_nwm_era5": {
       "n_sites": 3,
       "median_ss_rmse": 0.4823,
       "iqr_ss_rmse": [
@@ -115885,7 +115885,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "usgs_only_simple": {
+    "gru_era5_only": {
       "n_sites": 3,
       "median_ss_rmse": 0.0917,
       "iqr_ss_rmse": [
@@ -115901,7 +115901,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "usgs_only_v3": {
+    "hydra_v3_era5_only": {
       "n_sites": 3,
       "median_ss_rmse": 0.0584,
       "iqr_ss_rmse": [
@@ -115917,7 +115917,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "v3_autonorm": {
+    "hydra_v3_full_autonorm": {
       "n_sites": 3,
       "median_ss_rmse": 0.1365,
       "iqr_ss_rmse": [
@@ -115933,7 +115933,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 2
     },
-    "v3_baseline": {
+    "hydra_v3_nwm_era5": {
       "n_sites": 3,
       "median_ss_rmse": 0.0853,
       "iqr_ss_rmse": [
@@ -115949,7 +115949,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 3
     },
-    "v3_causal": {
+    "hydra_v3_causal": {
       "n_sites": 3,
       "median_ss_rmse": 0.1841,
       "iqr_ss_rmse": [
@@ -115965,7 +115965,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 2
     },
-    "v3_combined": {
+    "hydra_v3_causal_nonneg": {
       "n_sites": 3,
       "median_ss_rmse": 0.1379,
       "iqr_ss_rmse": [
@@ -115981,7 +115981,7 @@
       "sites_significant_005": 3,
       "sites_significant_001": 2
     },
-    "v3_eventsample": {
+    "hydra_v3_event_oversample": {
       "n_sites": 3,
       "median_ss_rmse": 0.183,
       "iqr_ss_rmse": [
@@ -115997,7 +115997,7 @@
       "sites_significant_005": 2,
       "sites_significant_001": 2
     },
-    "v3_full": {
+    "hydra_v3_causal_nonneg_event": {
       "n_sites": 3,
       "median_ss_rmse": 0.1793,
       "iqr_ss_rmse": [
@@ -116013,7 +116013,7 @@
       "sites_significant_005": 2,
       "sites_significant_001": 2
     },
-    "v3_physics": {
+    "hydra_v3_nonneg": {
       "n_sites": 3,
       "median_ss_rmse": 0.1142,
       "iqr_ss_rmse": [

@@ -1,0 +1,22 @@
+\contentsline {section}{\numberline {1}Introduction}{5}{}%
+\contentsline {section}{\numberline {2}Data and Methods}{6}{}%
+\contentsline {subsection}{\numberline {2.1}Study Area}{6}{}%
+\contentsline {subsection}{\numberline {2.2}Data Sources and Preprocessing}{8}{}%
+\contentsline {subsection}{\numberline {2.3}Model Architecture: Hydra v3}{9}{}%
+\contentsline {paragraph}{Feature Importance Gate (A2).}{9}{}%
+\contentsline {paragraph}{Gated Multi-Scale Temporal Convolutions (A1).}{9}{}%
+\contentsline {paragraph}{Regime-Conditioned Bias (A4).}{10}{}%
+\contentsline {subsection}{\numberline {2.4}Experimental Configurations}{10}{}%
+\contentsline {subsection}{\numberline {2.5}Evaluation Metrics}{11}{}%
+\contentsline {section}{\numberline {3}Results}{11}{}%
+\contentsline {subsection}{\numberline {3.1}Overall Performance}{11}{}%
+\contentsline {subsection}{\numberline {3.2}Performance Comparison}{13}{}%
+\contentsline {subsection}{\numberline {3.3}Hydrograph Analysis}{14}{}%
+\contentsline {subsection}{\numberline {3.4}Error Decomposition by Flow Regime}{16}{}%
+\contentsline {subsection}{\numberline {3.5}Regulated Site}{18}{}%
+\contentsline {section}{\numberline {4}Discussion}{18}{}%
+\contentsline {subsection}{\numberline {4.1}Scale and Baseline Effects}{18}{}%
+\contentsline {subsection}{\numberline {4.2}Regulation Effects}{19}{}%
+\contentsline {subsection}{\numberline {4.3}What Improves and What Does Not}{19}{}%
+\contentsline {subsection}{\numberline {4.4}Comparison to Prior Work}{20}{}%
+\contentsline {section}{\numberline {5}Conclusion}{20}{}%

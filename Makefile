@@ -57,7 +57,7 @@ train_full: $(EVAL_CSV)
 
 $(EVAL_CSV):
 	@echo "Training Hydra v2 with full timeframe splits (train=2010-2018, val=2019, test=2020)"
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) modeling/train_quick_transformer_torch.py $(TRAIN_ARGS)
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) modeling/training/train_quick_transformer_torch.py $(TRAIN_ARGS)
 	@echo "Training complete; evaluation written to $(EVAL_CSV)"
 
 plots_full: $(EVAL_CSV)
@@ -71,7 +71,7 @@ plots_full: $(EVAL_CSV)
 
 hpo:
 	@echo "Starting Optuna hyperparameter search with $(HPO_TRIALS) trials"
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) modeling/hpo_optuna.py \
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) modeling/hpo/hpo_optuna.py \
 		--data $(DATA_PATH) \
 		--study-name $(HPO_STUDY) \
 		--n-trials $(HPO_TRIALS) \

@@ -31,86 +31,86 @@
     }
   },
   "experiments": {
-    "baseline": {
-      "name": "Baseline (Hydra v2)",
-      "description": "Current best model without new features"
+    "lstm_nwm_era5": {
+      "name": "LSTM (NWM+ERA5)",
+      "description": "LSTM encoder baseline; NWM+ERA5 inputs, residual correction"
     },
-    "causal": {
-      "name": "Causal Mask",
-      "description": "Transformer with causal attention masking"
+    "transformer_nwm_era5": {
+      "name": "Transformer (NWM+ERA5)",
+      "description": "Transformer-only encoder (no GRU); NWM+ERA5 inputs"
     },
-    "direct": {
-      "name": "Direct Mode",
-      "description": "Predict USGS directly (no NWM residual)"
+    "gru_transformer_v2_nwm_era5": {
+      "name": "GRU-Transformer v2 (NWM+ERA5)",
+      "description": "GRU-Transformer hybrid (Hydra v2); NWM+ERA5 inputs"
     },
-    "physics": {
-      "name": "Physics Constraint",
-      "description": "Non-negativity penalty on streamflow"
+    "gru_transformer_v2_nwm_era5_tuned": {
+      "name": "GRU-Transformer v2 Tuned",
+      "description": "Hydra v2 with HPO-tuned hyperparameters"
     },
-    "combined": {
-      "name": "Combined",
-      "description": "Causal mask + physics constraint"
+    "gru_transformer_v2_causal": {
+      "name": "GRU-Transformer v2 + Causal",
+      "description": "Hydra v2 with causal attention masking"
     },
-    "hydra_v1": {
-      "name": "Hydra v1 (Ablation)",
-      "description": "Transformer-only (no GRU)"
+    "gru_transformer_v2_direct": {
+      "name": "GRU-Transformer v2 Direct",
+      "description": "Hydra v2 predicting discharge directly (no residual)"
     },
-    "hydra_v2": {
-      "name": "Hydra v2",
-      "description": "GRU-Transformer hybrid"
+    "gru_transformer_v2_nonneg": {
+      "name": "GRU-Transformer v2 + NonNeg",
+      "description": "Hydra v2 with non-negativity physics constraint"
     },
-    "lstm": {
-      "name": "LSTM Baseline",
-      "description": "Simple LSTM encoder"
+    "gru_transformer_v2_causal_nonneg": {
+      "name": "GRU-Transformer v2 + Causal + NonNeg",
+      "description": "Hydra v2 with causal masking and non-negativity constraint"
     },
-    "v3_baseline": {
-      "name": "Hydra v3 Baseline",
-      "description": "v3 architecture with feature gate, multi-scale conv, regime bias"
+    "hydra_v3_nwm_era5": {
+      "name": "Hydra v3 (NWM+ERA5)",
+      "description": "v3 with feature gate, multi-scale conv, regime bias; NWM+ERA5"
     },
-    "v3_causal": {
-      "name": "v3 + Causal Mask",
+    "hydra_v3_causal": {
+      "name": "Hydra v3 + Causal",
       "description": "Hydra v3 with causal attention masking"
     },
-    "v3_physics": {
-      "name": "v3 + Physics",
-      "description": "Hydra v3 with non-negativity constraint (\u03bb=0.1)"
+    "hydra_v3_nonneg": {
+      "name": "Hydra v3 + NonNeg",
+      "description": "Hydra v3 with non-negativity constraint"
     },
-    "v3_combined": {
-      "name": "v3 + Causal + Physics",
-      "description": "Hydra v3 with causal mask and physics constraint"
+    "hydra_v3_causal_nonneg": {
+      "name": "Hydra v3 + Causal + NonNeg",
+      "description": "Hydra v3 with causal masking and non-negativity constraint"
     },
-    "v3_eventsample": {
-      "name": "v3 + Event Sampling",
-      "description": "Hydra v3 with 3\u00d7 oversampling on Q90+ events"
+    "hydra_v3_event_oversample": {
+      "name": "Hydra v3 + Event Oversampling",
+      "description": "Hydra v3 with 3x oversampling on Q90+ events"
     },
-    "v3_full": {
-      "name": "v3 Full",
-      "description": "Hydra v3 with causal + physics + event oversampling"
+    "hydra_v3_causal_nonneg_event": {
+      "name": "Hydra v3 + Causal + NonNeg + Event",
+      "description": "Hydra v3 with causal, non-negativity, and event oversampling"
     },
-    "v3_autonorm": {
-      "name": "v3 AutoNorm",
-      "description": "v3 full + automatic loss normalisation"
+    "hydra_v3_full_autonorm": {
+      "name": "Hydra v3 Full + AutoNorm",
+      "description": "Hydra v3 full config with automatic loss normalization"
     },
-    "usgs_only_v3": {
+    "hydra_v3_era5_only": {
       "name": "ERA5-Only (Hydra v3)",
       "description": "Hydra v3 trained on ERA5 meteorological data only (no NWM input)"
     },
-    "usgs_only_simple": {
+    "gru_era5_only": {
       "name": "ERA5-Only (Simple GRU)",
       "description": "Simple GRU model trained on ERA5 meteorological data only (no NWM input)"
     },
-    "usgs_nwm_era5_v3": {
+    "hydra_v3_usgs_nwm_era5": {
       "name": "USGS+NWM+ERA5 (Hydra v3)",
       "description": "Hydra v3 with lagged USGS observations added as input alongside NWM and ERA5"
     },
-    "usgs_era5_v3": {
+    "hydra_v3_usgs_era5": {
       "name": "USGS+ERA5 (Hydra v3)",
       "description": "Hydra v3 with lagged USGS + ERA5 inputs only (no NWM), predicting USGS directly"
     }
   },
   "results": [
     {
-      "experiment": "baseline",
+      "experiment": "gru_transformer_v2_nwm_era5_tuned",
       "site_id": "03161000",
       "file": "exp_baseline_03161000_metrics.json",
       "model_version": "v2",
@@ -163,7 +163,7 @@
       }
     },
     {
-      "experiment": "baseline",
+      "experiment": "gru_transformer_v2_nwm_era5_tuned",
       "site_id": "03164000",
       "file": "exp_baseline_03164000_metrics.json",
       "model_version": "v2",
@@ -216,7 +216,7 @@
       }
     },
     {
-      "experiment": "baseline",
+      "experiment": "gru_transformer_v2_nwm_era5_tuned",
       "site_id": "03479000",
       "file": "exp_baseline_03479000_metrics.json",
       "model_version": "v2",
@@ -269,7 +269,7 @@
       }
     },
     {
-      "experiment": "baseline",
+      "experiment": "gru_transformer_v2_nwm_era5_tuned",
       "site_id": "03486000",
       "file": "exp_baseline_03486000_metrics.json",
       "model_version": "v2",
@@ -322,7 +322,7 @@
       }
     },
     {
-      "experiment": "causal",
+      "experiment": "gru_transformer_v2_causal",
       "site_id": "03161000",
       "file": "exp_causal_03161000_metrics.json",
       "model_version": "v2",
@@ -375,7 +375,7 @@
       }
     },
     {
-      "experiment": "causal",
+      "experiment": "gru_transformer_v2_causal",
       "site_id": "03164000",
       "file": "exp_causal_03164000_metrics.json",
       "model_version": "v2",
@@ -428,7 +428,7 @@
       }
     },
     {
-      "experiment": "causal",
+      "experiment": "gru_transformer_v2_causal",
       "site_id": "03479000",
       "file": "exp_causal_03479000_metrics.json",
       "model_version": "v2",
@@ -481,7 +481,7 @@
       }
     },
     {
-      "experiment": "causal",
+      "experiment": "gru_transformer_v2_causal",
       "site_id": "03486000",
       "file": "exp_causal_03486000_metrics.json",
       "model_version": "v2",
@@ -534,7 +534,7 @@
       }
     },
     {
-      "experiment": "combined",
+      "experiment": "gru_transformer_v2_causal_nonneg",
       "site_id": "03161000",
       "file": "exp_combined_03161000_metrics.json",
       "model_version": "v2",
@@ -587,7 +587,7 @@
       }
     },
     {
-      "experiment": "combined",
+      "experiment": "gru_transformer_v2_causal_nonneg",
       "site_id": "03164000",
       "file": "exp_combined_03164000_metrics.json",
       "model_version": "v2",
@@ -640,7 +640,7 @@
       }
     },
     {
-      "experiment": "combined",
+      "experiment": "gru_transformer_v2_causal_nonneg",
       "site_id": "03479000",
       "file": "exp_combined_03479000_metrics.json",
       "model_version": "v2",
@@ -693,7 +693,7 @@
       }
     },
     {
-      "experiment": "combined",
+      "experiment": "gru_transformer_v2_causal_nonneg",
       "site_id": "03486000",
       "file": "exp_combined_03486000_metrics.json",
       "model_version": "v2",
@@ -746,7 +746,7 @@
       }
     },
     {
-      "experiment": "direct",
+      "experiment": "gru_transformer_v2_direct",
       "site_id": "03161000",
       "file": "exp_direct_03161000_metrics.json",
       "model_version": "v2",
@@ -799,7 +799,7 @@
       }
     },
     {
-      "experiment": "direct",
+      "experiment": "gru_transformer_v2_direct",
       "site_id": "03164000",
       "file": "exp_direct_03164000_metrics.json",
       "model_version": "v2",
@@ -852,7 +852,7 @@
       }
     },
     {
-      "experiment": "direct",
+      "experiment": "gru_transformer_v2_direct",
       "site_id": "03479000",
       "file": "exp_direct_03479000_metrics.json",
       "model_version": "v2",
@@ -905,7 +905,7 @@
       }
     },
     {
-      "experiment": "direct",
+      "experiment": "gru_transformer_v2_direct",
       "site_id": "03486000",
       "file": "exp_direct_03486000_metrics.json",
       "model_version": "v2",
@@ -958,7 +958,7 @@
       }
     },
     {
-      "experiment": "hydra_v1",
+      "experiment": "transformer_nwm_era5",
       "site_id": "03161000",
       "file": "exp_hydra_v1_03161000_metrics.json",
       "model_version": "v2",
@@ -1011,7 +1011,7 @@
       }
     },
     {
-      "experiment": "hydra_v1",
+      "experiment": "transformer_nwm_era5",
       "site_id": "03164000",
       "file": "exp_hydra_v1_03164000_metrics.json",
       "model_version": "v2",
@@ -1064,7 +1064,7 @@
       }
     },
     {
-      "experiment": "hydra_v1",
+      "experiment": "transformer_nwm_era5",
       "site_id": "03479000",
       "file": "exp_hydra_v1_03479000_metrics.json",
       "model_version": "v2",
@@ -1117,7 +1117,7 @@
       }
     },
     {
-      "experiment": "hydra_v2",
+      "experiment": "gru_transformer_v2_nwm_era5",
       "site_id": "03161000",
       "file": "exp_hydra_v2_03161000_metrics.json",
       "model_version": "v2",
@@ -1170,7 +1170,7 @@
       }
     },
     {
-      "experiment": "hydra_v2",
+      "experiment": "gru_transformer_v2_nwm_era5",
       "site_id": "03164000",
       "file": "exp_hydra_v2_03164000_metrics.json",
       "model_version": "v2",
@@ -1223,7 +1223,7 @@
       }
     },
     {
-      "experiment": "hydra_v2",
+      "experiment": "gru_transformer_v2_nwm_era5",
       "site_id": "03479000",
       "file": "exp_hydra_v2_03479000_metrics.json",
       "model_version": "v2",
@@ -1276,7 +1276,7 @@
       }
     },
     {
-      "experiment": "lstm",
+      "experiment": "lstm_nwm_era5",
       "site_id": "03161000",
       "file": "exp_lstm_03161000_metrics.json",
       "model_version": "v2",
@@ -1302,7 +1302,7 @@
       "rmse_residual": 11.881216049194336
     },
     {
-      "experiment": "lstm",
+      "experiment": "lstm_nwm_era5",
       "site_id": "03164000",
       "file": "exp_lstm_03164000_metrics.json",
       "model_version": "v2",
@@ -1328,7 +1328,7 @@
       "rmse_residual": 63.07179260253906
     },
     {
-      "experiment": "lstm",
+      "experiment": "lstm_nwm_era5",
       "site_id": "03479000",
       "file": "exp_lstm_03479000_metrics.json",
       "model_version": "v2",
@@ -1354,7 +1354,7 @@
       "rmse_residual": 7.70089864730835
     },
     {
-      "experiment": "physics",
+      "experiment": "gru_transformer_v2_nonneg",
       "site_id": "03161000",
       "file": "exp_physics_03161000_metrics.json",
       "model_version": "v2",
@@ -1407,7 +1407,7 @@
       }
     },
     {
-      "experiment": "physics",
+      "experiment": "gru_transformer_v2_nonneg",
       "site_id": "03164000",
       "file": "exp_physics_03164000_metrics.json",
       "model_version": "v2",
@@ -1460,7 +1460,7 @@
       }
     },
     {
-      "experiment": "physics",
+      "experiment": "gru_transformer_v2_nonneg",
       "site_id": "03479000",
       "file": "exp_physics_03479000_metrics.json",
       "model_version": "v2",
@@ -1513,7 +1513,7 @@
       }
     },
     {
-      "experiment": "physics",
+      "experiment": "gru_transformer_v2_nonneg",
       "site_id": "03486000",
       "file": "exp_physics_03486000_metrics.json",
       "model_version": "v2",
@@ -1566,7 +1566,7 @@
       }
     },
     {
-      "experiment": "usgs_era5_v3",
+      "experiment": "hydra_v3_usgs_era5",
       "site_id": "03161000",
       "file": "exp_usgs_era5_v3_03161000_metrics.json",
       "model_version": "v3",
@@ -1619,7 +1619,7 @@
       }
     },
     {
-      "experiment": "usgs_era5_v3",
+      "experiment": "hydra_v3_usgs_era5",
       "site_id": "03164000",
       "file": "exp_usgs_era5_v3_03164000_metrics.json",
       "model_version": "v3",
@@ -1672,7 +1672,7 @@
       }
     },
     {
-      "experiment": "usgs_era5_v3",
+      "experiment": "hydra_v3_usgs_era5",
       "site_id": "03479000",
       "file": "exp_usgs_era5_v3_03479000_metrics.json",
       "model_version": "v3",
@@ -1725,7 +1725,7 @@
       }
     },
     {
-      "experiment": "usgs_nwm_era5_v3",
+      "experiment": "hydra_v3_usgs_nwm_era5",
       "site_id": "03161000",
       "file": "exp_usgs_nwm_era5_v3_03161000_metrics.json",
       "model_version": "v3",
@@ -1778,7 +1778,7 @@
       }
     },
     {
-      "experiment": "usgs_nwm_era5_v3",
+      "experiment": "hydra_v3_usgs_nwm_era5",
       "site_id": "03164000",
       "file": "exp_usgs_nwm_era5_v3_03164000_metrics.json",
       "model_version": "v3",
@@ -1831,7 +1831,7 @@
       }
     },
     {
-      "experiment": "usgs_nwm_era5_v3",
+      "experiment": "hydra_v3_usgs_nwm_era5",
       "site_id": "03479000",
       "file": "exp_usgs_nwm_era5_v3_03479000_metrics.json",
       "model_version": "v3",
@@ -1884,7 +1884,7 @@
       }
     },
     {
-      "experiment": "usgs_only_simple",
+      "experiment": "gru_era5_only",
       "site_id": "03161000",
       "file": "exp_usgs_only_simple_03161000_metrics.json",
       "model_version": "v2",
@@ -1937,7 +1937,7 @@
       }
     },
     {
-      "experiment": "usgs_only_simple",
+      "experiment": "gru_era5_only",
       "site_id": "03164000",
       "file": "exp_usgs_only_simple_03164000_metrics.json",
       "model_version": "v2",
@@ -1990,7 +1990,7 @@
       }
     },
     {
-      "experiment": "usgs_only_simple",
+      "experiment": "gru_era5_only",
       "site_id": "03479000",
       "file": "exp_usgs_only_simple_03479000_metrics.json",
       "model_version": "v2",
@@ -2043,7 +2043,7 @@
       }
     },
     {
-      "experiment": "usgs_only_v3",
+      "experiment": "hydra_v3_era5_only",
       "site_id": "03161000",
       "file": "exp_usgs_only_v3_03161000_metrics.json",
       "model_version": "v3",
@@ -2096,7 +2096,7 @@
       }
     },
     {
-      "experiment": "usgs_only_v3",
+      "experiment": "hydra_v3_era5_only",
       "site_id": "03164000",
       "file": "exp_usgs_only_v3_03164000_metrics.json",
       "model_version": "v3",
@@ -2149,7 +2149,7 @@
       }
     },
     {
-      "experiment": "usgs_only_v3",
+      "experiment": "hydra_v3_era5_only",
       "site_id": "03479000",
       "file": "exp_usgs_only_v3_03479000_metrics.json",
       "model_version": "v3",
@@ -2202,7 +2202,7 @@
       }
     },
     {
-      "experiment": "v3_autonorm",
+      "experiment": "hydra_v3_full_autonorm",
       "site_id": "03161000",
       "file": "exp_v3_autonorm_03161000_metrics.json",
       "model_version": "v3",
@@ -2255,7 +2255,7 @@
       }
     },
     {
-      "experiment": "v3_autonorm",
+      "experiment": "hydra_v3_full_autonorm",
       "site_id": "03164000",
       "file": "exp_v3_autonorm_03164000_metrics.json",
       "model_version": "v3",
@@ -2308,7 +2308,7 @@
       }
     },
     {
-      "experiment": "v3_autonorm",
+      "experiment": "hydra_v3_full_autonorm",
       "site_id": "03479000",
       "file": "exp_v3_autonorm_03479000_metrics.json",
       "model_version": "v3",
@@ -2361,7 +2361,7 @@
       }
     },
     {
-      "experiment": "v3_baseline",
+      "experiment": "hydra_v3_nwm_era5",
       "site_id": "03161000",
       "file": "exp_v3_baseline_03161000_metrics.json",
       "model_version": "v3",
@@ -2414,7 +2414,7 @@
       }
     },
     {
-      "experiment": "v3_baseline",
+      "experiment": "hydra_v3_nwm_era5",
       "site_id": "03164000",
       "file": "exp_v3_baseline_03164000_metrics.json",
       "model_version": "v3",
@@ -2467,7 +2467,7 @@
       }
     },
     {
-      "experiment": "v3_baseline",
+      "experiment": "hydra_v3_nwm_era5",
       "site_id": "03479000",
       "file": "exp_v3_baseline_03479000_metrics.json",
       "model_version": "v3",
@@ -2520,7 +2520,7 @@
       }
     },
     {
-      "experiment": "v3_causal",
+      "experiment": "hydra_v3_causal",
       "site_id": "03161000",
       "file": "exp_v3_causal_03161000_metrics.json",
       "model_version": "v3",
@@ -2573,7 +2573,7 @@
       }
     },
     {
-      "experiment": "v3_causal",
+      "experiment": "hydra_v3_causal",
       "site_id": "03164000",
       "file": "exp_v3_causal_03164000_metrics.json",
       "model_version": "v3",
@@ -2626,7 +2626,7 @@
       }
     },
     {
-      "experiment": "v3_causal",
+      "experiment": "hydra_v3_causal",
       "site_id": "03479000",
       "file": "exp_v3_causal_03479000_metrics.json",
       "model_version": "v3",
@@ -2679,7 +2679,7 @@
       }
     },
     {
-      "experiment": "v3_combined",
+      "experiment": "hydra_v3_causal_nonneg",
       "site_id": "03161000",
       "file": "exp_v3_combined_03161000_metrics.json",
       "model_version": "v3",
@@ -2732,7 +2732,7 @@
       }
     },
     {
-      "experiment": "v3_combined",
+      "experiment": "hydra_v3_causal_nonneg",
       "site_id": "03164000",
       "file": "exp_v3_combined_03164000_metrics.json",
       "model_version": "v3",
@@ -2785,7 +2785,7 @@
       }
     },
     {
-      "experiment": "v3_combined",
+      "experiment": "hydra_v3_causal_nonneg",
       "site_id": "03479000",
       "file": "exp_v3_combined_03479000_metrics.json",
       "model_version": "v3",
@@ -2838,7 +2838,7 @@
       }
     },
     {
-      "experiment": "v3_eventsample",
+      "experiment": "hydra_v3_event_oversample",
       "site_id": "03161000",
       "file": "exp_v3_eventsample_03161000_metrics.json",
       "model_version": "v3",
@@ -2891,7 +2891,7 @@
       }
     },
     {
-      "experiment": "v3_eventsample",
+      "experiment": "hydra_v3_event_oversample",
       "site_id": "03164000",
       "file": "exp_v3_eventsample_03164000_metrics.json",
       "model_version": "v3",
@@ -2944,7 +2944,7 @@
       }
     },
     {
-      "experiment": "v3_eventsample",
+      "experiment": "hydra_v3_event_oversample",
       "site_id": "03479000",
       "file": "exp_v3_eventsample_03479000_metrics.json",
       "model_version": "v3",
@@ -2997,7 +2997,7 @@
       }
     },
     {
-      "experiment": "v3_full",
+      "experiment": "hydra_v3_causal_nonneg_event",
       "site_id": "03161000",
       "file": "exp_v3_full_03161000_metrics.json",
       "model_version": "v3",
@@ -3050,7 +3050,7 @@
       }
     },
     {
-      "experiment": "v3_full",
+      "experiment": "hydra_v3_causal_nonneg_event",
       "site_id": "03164000",
       "file": "exp_v3_full_03164000_metrics.json",
       "model_version": "v3",
@@ -3103,7 +3103,7 @@
       }
     },
     {
-      "experiment": "v3_full",
+      "experiment": "hydra_v3_causal_nonneg_event",
       "site_id": "03479000",
       "file": "exp_v3_full_03479000_metrics.json",
       "model_version": "v3",
@@ -3156,7 +3156,7 @@
       }
     },
     {
-      "experiment": "v3_physics",
+      "experiment": "hydra_v3_nonneg",
       "site_id": "03161000",
       "file": "exp_v3_physics_03161000_metrics.json",
       "model_version": "v3",
@@ -3209,7 +3209,7 @@
       }
     },
     {
-      "experiment": "v3_physics",
+      "experiment": "hydra_v3_nonneg",
       "site_id": "03164000",
       "file": "exp_v3_physics_03164000_metrics.json",
       "model_version": "v3",
@@ -3262,7 +3262,7 @@
       }
     },
     {
-      "experiment": "v3_physics",
+      "experiment": "hydra_v3_nonneg",
       "site_id": "03479000",
       "file": "exp_v3_physics_03479000_metrics.json",
       "model_version": "v3",
