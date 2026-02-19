@@ -1,0 +1,227 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{improved}{RGB}{0,128,0}
+\definecolor{degraded}{RGB}{200,0,0}
+
+\title{Hydra v3: Progress Report \& Experiment Results}
+\author{Mitchel Carson}
+\date{February 2026}
+
+\begin{document}
+\maketitle
+
+%----------------------------------------------------------------------
+\section{Project Summary}
+%----------------------------------------------------------------------
+
+\textbf{Objective:} Develop a hybrid GRU-Transformer neural network (``Hydra'') to correct systematic errors in the NOAA National Water Model (NWM) v2.1 hourly streamflow forecasts using recent USGS streamgage observations and ERA5 meteorological reanalysis data.
+
+\textbf{Study region:} Southern Appalachian headwaters (New River \& Watauga basins). Three unregulated USGS streamgages are used for model development; one regulated site (Elizabethton, TN) is excluded.
+
+\begin{table}[h]
+\centering
+\caption{Study sites}
+\begin{tabular}{llll}
+\toprule
+\textbf{USGS ID} & \textbf{Station Name} & \textbf{Watershed} & \textbf{Type} \\
+\midrule
+03161000 & S.\ Fork New River near Jefferson, NC & New River & Mid-basin \\
+03164000 & New River near Galax, VA & New River & Mainstem \\
+03479000 & Watauga River near Sugar Grove, NC & Watauga & Headwaters \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Data period:} 2010--2020 hourly. \\
+\textbf{Splits:} Train 2010--2017 (8 yr), Validation 2018 (1 yr), Test 2019--2020 (2 yr). \\
+Each site is trained independently (no cross-site data leakage).
+
+%----------------------------------------------------------------------
+\section{Model Architecture (Hydra v3)}
+%----------------------------------------------------------------------
+
+\begin{table}[h]
+\centering
+\caption{Hydra v3 architecture specification}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Input features         & 17 (1 USGS observed + 1 NWM forecast + 9 ERA5 met.\ + 6 temporal) \\
+Sequence length        & 168 timesteps (7 days $\times$ 24 hr) \\
+Hidden dimension       & $d_{\mathrm{model}} = 128$ \\
+Transformer heads      & 4 \\
+Transformer layers     & 4 \\
+Feedforward dim        & $2 \times d_{\mathrm{model}} = 256$ \\
+GRU encoder            & 1-layer bidirectional \\
+Dropout                & 0.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Input feature groups:}
+\begin{itemize}
+    \item \textbf{Streamflow (2):} USGS observed (lagged), NWM v2.1 forecast
+    \item \textbf{ERA5 meteorological (9):} temperature, dewpoint, surface pressure, precipitation, solar radiation, wind speed, VPD, relative humidity, soil moisture
+    \item \textbf{Temporal encodings (6):} cyclical sin/cos of hour-of-day, day-of-year, and month---encodes diurnal, seasonal, and monthly hydrological patterns without timestamp discontinuities
+\end{itemize}
+
+\textbf{Key architectural innovations (v3 over v2):}
+\begin{enumerate}
+    \item \textbf{Feature Importance Gate (FIG):} Input-dependent sigmoid gating that upweights precipitation and soil moisture during storm events before the GRU encoder.
+    \item \textbf{Gated Multi-Scale Temporal Convolution:} Three dilated-conv branches targeting distinct hydrological timescales---short (1--6\,h storm response), mid (6--48\,h rising/falling limbs), long (2--7\,d antecedent moisture)---with a learned per-sample softmax gate.
+    \item \textbf{Regime-Conditioned Bias:} Replaces the v2 scalar residual bias with a small MLP conditioned on the fused representation, producing flow-regime-dependent bias corrections.
+    \item \textbf{Attention Pooling:} Learnable query token with multi-head attention over transformer outputs, replacing simple last-timestep extraction.
+\end{enumerate}
+
+\textbf{Fusion:} Concatenation of last, mean, max-pool, attention-pooled, and multi-scale-conv summaries ($5 \times d_{\mathrm{model}}$) $\rightarrow$ linear projection $\rightarrow$ GELU $\rightarrow$ prediction heads.
+
+\textbf{Prediction heads:} (1) Residual correction $\hat{\epsilon}$ with log-variance (Gaussian NLL); (2) Corrected streamflow $\hat{Q}$ with log-variance; (3) Optional quantile head.
+
+%----------------------------------------------------------------------
+\section{Training Configuration}
+%----------------------------------------------------------------------
+
+\begin{table}[h]
+\centering
+\caption{Training hyperparameters}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Epochs (max)           & 40 \\
+Batch size             & 64 \\
+Learning rate          & $5 \times 10^{-4}$ \\
+Early stopping         & patience = 5 epochs \\
+Optimizer              & Ranger (RAdam + Lookahead), weight decay $5 \times 10^{-5}$ \\
+LR scheduler           & ReduceLROnPlateau (patience=3, factor=0.5) \\
+Mixed precision        & FP16 via \texttt{torch.autocast} (GPU) \\
+Target transform       & $\mathrm{asinh}(x)$ (variance stabilization) \\
+Feature normalization  & z-score (computed on training split only) \\
+Data augmentation      & 50\% chance Gaussian noise ($\sigma = 0.05$) on inputs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Multi-objective loss:}
+\begin{itemize}
+    \item Gaussian NLL (residual + corrected predictions) --- heteroscedastic uncertainty
+    \item Consistency loss: MSE between $\hat{Q}_{\mathrm{corrected}}$ and USGS observed
+    \item NSE surrogate (differentiable Nash--Sutcliffe proxy, weight 0.2)
+    \item KGE stabilizer (correlation + variability + bias decomposition)
+    \item Non-negativity penalty: $\lambda \cdot \mathrm{ReLU}(-\hat{Q})^2$, $\lambda = 0.1$
+    \item Quantile pinball loss (10th, 50th, 90th percentiles)
+\end{itemize}
+
+%----------------------------------------------------------------------
+\section{Experiment Results}
+%----------------------------------------------------------------------
+
+\subsection{Primary Results: Hydra v3 (USGS+NWM+ERA5)}
+
+The intended model configuration uses all three data sources: recent USGS streamgage observations (lagged by one timestep to prevent data leakage), the NWM v2.1 hourly forecast, and ERA5 meteorological reanalysis. The model ingests a 168-hour (7-day) input window ending at time $t{-}1$ and predicts streamflow at time $t$.
+
+\begin{table}[h]
+\centering
+\caption{Hydra v3 primary results: test-period performance (2019--2020)}
+\label{tab:primary}
+\begin{tabular}{ll rrrrr}
+\toprule
+\textbf{Site} & \textbf{Configuration} & \textbf{RMSE} & \textbf{$\Delta$RMSE} & \textbf{NSE} & \textbf{KGE} & \textbf{PBIAS} \\
+\midrule
+\multirow{2}{*}{Jefferson}
+  & NWM baseline      & 15.68 &        & 0.431 & 0.369 & $-$24.7\% \\
+  & Hydra v3          & \textbf{8.57}  & \textcolor{improved}{$-$\textbf{45.3\%}} & \textbf{0.830} & \textbf{0.676} & $-$5.8\% \\
+\midrule
+\multirow{2}{*}{Galax}
+  & NWM baseline      & 77.55 &        & 0.268 & 0.473 & $-$14.0\% \\
+  & Hydra v3          & \textbf{40.15} & \textcolor{improved}{$-$\textbf{48.2\%}} & \textbf{0.804} & \textbf{0.741} & $-$6.7\% \\
+\midrule
+\multirow{2}{*}{Sugar Grove}
+  & NWM baseline      & 7.92  &        & 0.617 & 0.682 & $+$0.6\% \\
+  & Hydra v3          & \textbf{3.48}  & \textcolor{improved}{$-$\textbf{56.0\%}} & \textbf{0.926} & \textbf{0.896} & $+$0.2\% \\
+\bottomrule
+\end{tabular}
+\vspace{0.3em}
+
+{\footnotesize RMSE in cms. $\Delta$RMSE = improvement over NWM baseline. All metrics improve at all sites.}
+\end{table}
+
+\subsection{Input Ablation: Role of NWM Forecast}
+
+To quantify the contribution of the NWM forecast, an ablation experiment was run using only USGS observations and ERA5 inputs (removing NWM). This isolates how much additional value the NWM forecast provides beyond what the model can learn from observations and meteorology alone.
+
+\begin{table}[h]
+\centering
+\caption{Input ablation: effect of removing NWM forecast (test period 2019--2020)}
+\label{tab:ablation}
+\begin{tabular}{ll rrrrr}
+\toprule
+\textbf{Site} & \textbf{Inputs} & \textbf{RMSE} & \textbf{$\Delta$RMSE} & \textbf{NSE} & \textbf{KGE} & \textbf{PBIAS} \\
+\midrule
+\multirow{3}{*}{Jefferson}
+  & NWM baseline      & 15.68 &        & 0.431 & 0.369 & $-$24.7\% \\
+  & USGS+ERA5         & 10.45 & \textcolor{improved}{$-$33.4\%} & 0.747 & 0.707 & $-$14.8\% \\
+  & USGS+NWM+ERA5     & \textbf{8.57}  & \textcolor{improved}{$-$\textbf{45.3\%}} & \textbf{0.830} & \textbf{0.676} & \textbf{$-$5.8\%} \\
+\midrule
+\multirow{3}{*}{Galax}
+  & NWM baseline      & 77.55 &        & 0.268 & 0.473 & $-$14.0\% \\
+  & USGS+ERA5         & 57.53 & \textcolor{improved}{$-$25.8\%} & 0.597 & 0.645 & $-$11.0\% \\
+  & USGS+NWM+ERA5     & \textbf{40.15} & \textcolor{improved}{$-$\textbf{48.2\%}} & \textbf{0.804} & \textbf{0.741} & \textbf{$-$6.7\%} \\
+\midrule
+\multirow{3}{*}{Sugar Grove}
+  & NWM baseline      & 7.92  &        & 0.617 & 0.682 & $+$0.6\% \\
+  & USGS+ERA5         & 7.00  & \textcolor{improved}{$-$11.7\%} & 0.702 & 0.734 & $+$0.5\% \\
+  & USGS+NWM+ERA5     & \textbf{3.48}  & \textcolor{improved}{$-$\textbf{56.0\%}} & \textbf{0.926} & \textbf{0.896} & \textbf{$+$0.2\%} \\
+\bottomrule
+\end{tabular}
+\vspace{0.3em}
+
+{\footnotesize RMSE in cms. Removing the NWM forecast degrades performance substantially at all sites.}
+\end{table}
+
+%----------------------------------------------------------------------
+\section{Key Findings}
+%----------------------------------------------------------------------
+
+\begin{enumerate}
+    \item \textbf{Hydra v3 substantially corrects NWM errors:} The model achieves 45--56\% RMSE reduction across all three sites, with every evaluation metric (RMSE, MAE, NSE, KGE, PBIAS, Pearson $r$, Spearman $\rho$) improving at every site.
+
+    \item \textbf{NWM forecast provides complementary information:} The input ablation (Table~\ref{tab:ablation}) demonstrates that the NWM forecast contributes substantial predictive value beyond what USGS observations and ERA5 meteorology provide alone. Removing NWM degrades RMSE improvement from 45\% to 33\% at Jefferson, 48\% to 26\% at Galax, and 56\% to 12\% at Sugar Grove. The NWM encodes catchment-specific hydrological process knowledge that the model leverages.
+
+    \item \textbf{PBIAS substantially reduced:} The NWM baseline exhibits strong negative bias at Jefferson ($-$24.7\%) and Galax ($-$14.0\%). Hydra v3 reduces this to $-$5.8\% and $-$6.7\% respectively. Sugar Grove, which was already nearly unbiased ($+$0.6\%), remains so ($+$0.2\%).
+
+    \item \textbf{Largest gains at sites where NWM struggles most:} Galax (NSE 0.268$\rightarrow$0.804) and Jefferson (NSE 0.431$\rightarrow$0.830) show the greatest improvement, while Sugar Grove---where NWM already performs well (NSE 0.617)---still achieves NSE 0.926.
+
+    \item \textbf{Sugar Grove: most dramatic relative improvement:} Despite being the site with the best NWM baseline performance, Hydra v3 achieves the largest relative RMSE reduction (56\%) and highest final NSE (0.926) at this headwater site. The NWM forecast is particularly valuable here: removing it drops improvement from 56\% to just 12\%.
+\end{enumerate}
+
+%----------------------------------------------------------------------
+\section{Current Status \& Infrastructure}
+%----------------------------------------------------------------------
+
+\begin{itemize}
+    \item \textbf{Codebase:} Restructured into \texttt{modeling/}, \texttt{scripts/}, \texttt{configs/} subdirectories with canonical experiment IDs
+    \item \textbf{Dashboard:} Next.js web application deployed at \url{https://hydramodel.ai} with pages for Home, Model, Training, Experiments, and Evaluation
+    \item \textbf{Manuscript:} AGU Water Resources Research format draft in progress (\texttt{docs/manuscript/wrr\_draft.tex})
+    \item \textbf{Experiments completed:} 7 v3 training ablations $\times$ 3 sites = 21 experiments, plus v2 baseline, LSTM, and input ablations
+\end{itemize}
+
+%----------------------------------------------------------------------
+\section{Discussion Items for Advisor}
+%----------------------------------------------------------------------
+
+\begin{enumerate}
+    \item \textbf{NWM value-add narrative:} The input ablation (Table~\ref{tab:ablation}) shows the NWM forecast is not redundant---it encodes catchment process knowledge that USGS+ERA5 alone cannot capture. How prominently should we feature this finding?
+    \item \textbf{Training ablation scope:} Earlier experiments explored architectural variants (causal masking, physics constraints, event oversampling) using NWM+ERA5 inputs only (USGS input was inadvertently omitted). These achieved 5--27\% RMSE reduction. Include in manuscript as supplementary material, or omit?
+    \item \textbf{Generalizability:} Results are from 3 unregulated headwater sites---discuss limitations and potential for transfer to other basins?
+    \item Timeline for manuscript submission to WRR
+\end{enumerate}
+
+\end{document}

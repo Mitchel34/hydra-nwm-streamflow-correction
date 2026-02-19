@@ -183,7 +183,7 @@ export default function StudyRegionMap() {
     if (!wrapperRef.current) return;
     const observer = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect.width || 500;
-      setDimensions({ width: w, height: Math.min(w * 0.7, 380) });
+      setDimensions({ width: w, height: Math.max(280, Math.min(w * 0.7, 380)) });
     });
     observer.observe(wrapperRef.current);
     return () => observer.disconnect();
@@ -200,7 +200,7 @@ export default function StudyRegionMap() {
 
       <div className="grid lg:grid-cols-2 gap-0">
         {/* Map Section */}
-        <div className="p-6 bg-[#0a1a26]" ref={wrapperRef}>
+        <div className="p-6 bg-[#0a1a26] min-h-[300px]" ref={wrapperRef}>
           {loading || !projection || !pathGenerator ? (
             <div
               className="w-full rounded-lg border border-[#2f465a] bg-[#0c1b2a] animate-pulse flex items-center justify-center"
@@ -210,9 +210,9 @@ export default function StudyRegionMap() {
             </div>
           ) : (
             <svg
-              width={dimensions.width}
-              height={dimensions.height}
-              className="rounded-lg border border-[#2f465a]"
+              viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+              className="w-full rounded-lg border border-[#2f465a]"
+              style={{ aspectRatio: `${dimensions.width} / ${dimensions.height}` }}
               role="img"
               aria-label="Map of study sites in the Southern Appalachian region"
             >
