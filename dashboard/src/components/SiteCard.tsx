@@ -59,7 +59,7 @@ export default function SiteCard({
               {metadata.type}
             </span>
           </div>
-          <p className="text-[0.7rem] mt-2 text-[#84a3b8]">
+          <p className="text-xs mt-2 text-[#84a3b8]">
             Lat {metadata.lat.toFixed(3)}, Lon {metadata.lon.toFixed(3)}
           </p>
         </div>
@@ -77,11 +77,11 @@ export default function SiteCard({
           </div>
         )}
       </div>
-      <div className="mt-3 rounded-md border border-[#2a4255] bg-[#091522] px-2.5 py-2 text-[0.72rem] text-[#9cb7c9] leading-relaxed">
+      <div className="mt-3 rounded-md border border-[#2a4255] bg-[#091522] px-2.5 py-2 text-xs text-[#9cb7c9] leading-relaxed">
         {rmseText}
       </div>
       {disabled && (
-        <div className="mt-2 text-[0.7rem] uppercase tracking-[0.09em] text-[#7e99ad]">
+        <div className="mt-2 text-xs uppercase tracking-[0.09em] text-[#7e99ad]">
           Pending metrics
         </div>
       )}
@@ -89,7 +89,7 @@ export default function SiteCard({
         <Link
           href={`/experiments/site/${siteId}`}
           onClick={(e) => e.stopPropagation()}
-          className="mt-2 inline-flex items-center gap-1 text-[0.7rem] uppercase tracking-[0.09em] text-hydra-corrected/70 hover:text-hydra-corrected transition-colors"
+          className="mt-2 flex items-center gap-1 py-2 text-xs uppercase tracking-[0.09em] text-hydra-corrected/70 hover:text-hydra-corrected transition-colors"
         >
           Deep dive
           <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

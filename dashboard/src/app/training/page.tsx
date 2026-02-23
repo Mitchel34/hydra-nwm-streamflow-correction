@@ -117,7 +117,7 @@ export default function TrainingPage() {
       <Navigation />
 
       <main className="relative z-10">
-        <div className="mx-auto max-w-7xl px-6 pt-12 pb-20">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 pt-12 pb-20">
           {/* Hero */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -362,7 +362,7 @@ export default function TrainingPage() {
           >
             <h2 className="mb-6 font-display text-2xl gradient-text">Training Configuration</h2>
 
-            <div className="grid gap-6 md:grid-cols-5 mb-8">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 mb-8">
               <StatCard label="Epochs" value="40" description="Maximum training epochs" delay={0.5} />
               <StatCard label="Batch Size" value="64" description="Sequences per gradient step" delay={0.55} />
               <StatCard label="Sequence" value="168" unit="h" description="7-day input window" delay={0.6} />
@@ -455,7 +455,7 @@ export default function TrainingPage() {
                       className="flex items-start gap-4 rounded-xl border border-[#264257] bg-[#0c1a26] p-4"
                     >
                       <div className="shrink-0 mt-0.5">
-                        <span className={`inline-block rounded-full border px-2 py-0.5 text-[0.65rem] font-mono ${
+                        <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-mono ${
                           comp.always
                             ? 'bg-hydra-corrected/15 text-hydra-corrected border-hydra-corrected/30'
                             : 'bg-[#1a2d3f] text-[#7f9db2] border-[#35526a]'

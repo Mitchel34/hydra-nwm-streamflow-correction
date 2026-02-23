@@ -40,7 +40,7 @@ export default function MetricCard({
       <div className="text-[#7896ab] text-xs mt-1">
         Baseline: {baseline.toFixed(3)} {unit}
       </div>
-      <div className="text-[#6f8da0] text-[0.68rem] mt-1 uppercase tracking-[0.07em]">
+      <div className="text-[#6f8da0] text-xs mt-1 uppercase tracking-[0.07em]">
         {comparisonLabel ?? 'vs NWM baseline'}
       </div>
     </div>
