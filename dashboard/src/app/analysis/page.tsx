@@ -142,7 +142,7 @@ export default function AnalysisPage() {
     <div className="min-h-screen text-white">
       <Navigation />
 
-      <main className="mx-auto max-w-7xl px-6 py-10">
+      <main className="mx-auto max-w-7xl px-4 md:px-6 py-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -292,7 +292,7 @@ export default function AnalysisPage() {
             <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc] mb-5">
               Architecture Comparison: v2 vs v3
             </h2>
-            <div className="surface-panel rounded-xl overflow-hidden">
+            <div className="surface-panel rounded-xl overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-[#122334]">
                   <tr>
@@ -342,7 +342,7 @@ export default function AnalysisPage() {
             <h2 className="font-display text-sm uppercase tracking-[0.28em] text-[#8fb4cc] mb-5">
               Experiment Summary
             </h2>
-            <div className="surface-panel rounded-xl overflow-hidden">
+            <div className="surface-panel rounded-xl overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-[#122334]">
                   <tr>

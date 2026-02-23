@@ -51,24 +51,21 @@ const QuantileCoverageChart = dynamic(
 );
 
 const preferredExperimentOrder = [
-  'hydra_v3_causal_nonneg_event',
-  'hydra_v3_causal_nonneg',
-  'hydra_v3_full_autonorm',
+  'hydra_v3_usgs_nwm_era5',        // Primary nowcasting result
+  'hydra_v3_usgs_era5',             // Nowcasting ablation (no NWM)
+  'hydra_v3_causal_nonneg',         // Best v3 operational (Jefferson)
+  'hydra_v3_nwm_era5',              // v3 baseline
+  'hydra_v3_causal_nonneg_event',   // v3 full config
   'hydra_v3_event_oversample',
   'hydra_v3_nonneg',
   'hydra_v3_causal',
-  'hydra_v3_nwm_era5',
   'hydra_v3_era5_only',
   'gru_era5_only',
-  'hydra_v3_usgs_nwm_era5',
-  'hydra_v3_usgs_era5',
+  'gru_transformer_v2_causal_nonneg', // Best v2 operational
   'gru_transformer_v2_nwm_era5',
-  'gru_transformer_v2_causal_nonneg',
   'gru_transformer_v2_nonneg',
   'gru_transformer_v2_causal',
-  'gru_transformer_v2_direct',
-  'gru_transformer_v2_nwm_era5_tuned',
-  'transformer_nwm_era5',
+  'transformer_nwm_era5',           // Hydra v1 (negative result)
   'lstm_nwm_era5',
 ];
 
@@ -80,7 +77,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [controlsOpen, setControlsOpen] = useState(false);
-  const [versionFilter, setVersionFilter] = useState<'all' | 'v2' | 'v3' | 'era5_only' | 'usgs'>('all');
+  const [versionFilter, setVersionFilter] = useState<'all' | 'operational' | 'nowcasting'>('all');
   const [timeSeriesLoading, setTimeSeriesLoading] = useState(false);
   const [evalData, setEvalData] = useState<RigorousEvalData | null>(null);
 
@@ -286,19 +283,19 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen text-white">
       <Navigation />
-      <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-6 py-4">
-        <div className="mx-auto max-w-7xl flex items-center justify-between">
+      <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-4 md:px-6 py-4">
+        <div className="mx-auto max-w-7xl flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-2xl gradient-text">Experiments</h1>
             <p className="text-sm text-[#8daec2] mt-1">Select an experiment to explore site-specific metrics, or visit the <Link href="/evaluation" className="text-hydra-corrected hover:underline">Evaluation</Link> page for cross-site statistical comparisons.</p>
           </div>
-          <span className="text-sm text-[#8daec2]">
+          <span className="text-sm text-[#8daec2] hidden sm:block">
             Updated: {new Date(data.generated_at).toLocaleDateString()}
           </span>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-4 md:px-6 py-8">
         <section className="mb-6 rounded-xl border border-hydra-accent/35 bg-[#0a1d2c] px-4 py-3 text-sm text-[#b5cede]">
           Showing{' '}
           <span className="font-semibold text-hydra-corrected">

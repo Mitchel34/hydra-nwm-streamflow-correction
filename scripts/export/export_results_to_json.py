@@ -113,86 +113,89 @@ def _canonicalize_id(raw_id: str) -> str:
 
 
 EXPERIMENTS: Dict[str, Dict[str, str]] = {
-    # -- v2 architecture ablation --
+    # -- Architecture baselines --
     "lstm_nwm_era5": {
-        "name": "LSTM (NWM+ERA5)",
+        "name": "LSTM Baseline",
         "description": "LSTM encoder baseline; NWM+ERA5 inputs, residual correction",
     },
     "transformer_nwm_era5": {
-        "name": "Transformer (NWM+ERA5)",
-        "description": "Transformer-only encoder (no GRU); NWM+ERA5 inputs",
+        "name": "Hydra v1 (Transformer-Only)",
+        "description": "Transformer-only encoder without GRU; NWM+ERA5 inputs. Negative result: degrades NWM.",
     },
     "gru_transformer_v2_nwm_era5": {
-        "name": "GRU-Transformer v2 (NWM+ERA5)",
-        "description": "GRU-Transformer hybrid (Hydra v2); NWM+ERA5 inputs",
+        "name": "Hydra v2",
+        "description": "GRU-Transformer hybrid; NWM+ERA5 inputs, residual correction",
     },
     "gru_transformer_v2_nwm_era5_tuned": {
-        "name": "GRU-Transformer v2 Tuned",
-        "description": "Hydra v2 with HPO-tuned hyperparameters",
+        "name": "Hydra v2 (Tuned)",
+        "description": "Hydra v2 with HPO-tuned hyperparameters [hidden]",
+        "hidden": "true",
     },
-    # -- v2 training ablation --
+    # -- Hydra v2 training ablation --
     "gru_transformer_v2_causal": {
-        "name": "GRU-Transformer v2 + Causal",
-        "description": "Hydra v2 with causal attention masking",
+        "name": "Hydra v2 + Causal Mask",
+        "description": "Hydra v2 with causal attention masking (prevents future information leakage)",
     },
     "gru_transformer_v2_direct": {
-        "name": "GRU-Transformer v2 Direct",
-        "description": "Hydra v2 predicting discharge directly (no residual)",
+        "name": "Hydra v2 Direct",
+        "description": "Hydra v2 predicting discharge directly instead of residuals [hidden]",
+        "hidden": "true",
     },
     "gru_transformer_v2_nonneg": {
-        "name": "GRU-Transformer v2 + NonNeg",
-        "description": "Hydra v2 with non-negativity physics constraint",
+        "name": "Hydra v2 + Non-Neg",
+        "description": "Hydra v2 with non-negativity physics constraint on corrected flow",
     },
     "gru_transformer_v2_causal_nonneg": {
-        "name": "GRU-Transformer v2 + Causal + NonNeg",
+        "name": "Hydra v2 + Causal + Non-Neg",
         "description": "Hydra v2 with causal masking and non-negativity constraint",
     },
-    # -- Hydra v3 experiments --
+    # -- Hydra v3 training ablation --
     "hydra_v3_nwm_era5": {
-        "name": "Hydra v3 (NWM+ERA5)",
-        "description": "v3 with feature gate, multi-scale conv, regime bias; NWM+ERA5",
+        "name": "Hydra v3",
+        "description": "Hydra v3 base: feature gate, multi-scale conv, regime bias; NWM+ERA5 inputs",
     },
     "hydra_v3_causal": {
-        "name": "Hydra v3 + Causal",
+        "name": "Hydra v3 + Causal Mask",
         "description": "Hydra v3 with causal attention masking",
     },
     "hydra_v3_nonneg": {
-        "name": "Hydra v3 + NonNeg",
-        "description": "Hydra v3 with non-negativity constraint",
+        "name": "Hydra v3 + Non-Neg",
+        "description": "Hydra v3 with non-negativity physics constraint",
     },
     "hydra_v3_causal_nonneg": {
-        "name": "Hydra v3 + Causal + NonNeg",
+        "name": "Hydra v3 + Causal + Non-Neg",
         "description": "Hydra v3 with causal masking and non-negativity constraint",
     },
     "hydra_v3_event_oversample": {
         "name": "Hydra v3 + Event Oversampling",
-        "description": "Hydra v3 with 3x oversampling on Q90+ events",
+        "description": "Hydra v3 with 3× oversampling on Q90+ high-flow events",
     },
     "hydra_v3_causal_nonneg_event": {
-        "name": "Hydra v3 + Causal + NonNeg + Event",
-        "description": "Hydra v3 with causal, non-negativity, and event oversampling",
+        "name": "Hydra v3 Full",
+        "description": "Hydra v3 with causal masking, non-negativity, and event oversampling",
     },
     "hydra_v3_full_autonorm": {
         "name": "Hydra v3 Full + AutoNorm",
-        "description": "Hydra v3 full config with automatic loss normalization",
+        "description": "Hydra v3 full config with automatic loss normalization [hidden]",
+        "hidden": "true",
     },
-    # -- ERA5-only (input ablation) --
+    # -- ERA5-only (operational input ablation) --
     "hydra_v3_era5_only": {
-        "name": "ERA5-Only (Hydra v3)",
-        "description": "Hydra v3 trained on ERA5 meteorological data only (no NWM input)",
+        "name": "Hydra v3 (ERA5-Only)",
+        "description": "Hydra v3 with ERA5 meteorological inputs only — no NWM or USGS",
     },
     "gru_era5_only": {
-        "name": "ERA5-Only (Simple GRU)",
-        "description": "Simple GRU model trained on ERA5 meteorological data only (no NWM input)",
+        "name": "GRU (ERA5-Only)",
+        "description": "Simple GRU with ERA5 inputs only — no NWM or USGS",
     },
-    # -- USGS input experiments --
+    # -- Nowcasting: USGS observed discharge as input --
     "hydra_v3_usgs_nwm_era5": {
-        "name": "USGS+NWM+ERA5 (Hydra v3)",
-        "description": "Hydra v3 with lagged USGS observations added as input alongside NWM and ERA5",
+        "name": "Hydra v3 + USGS (Primary)",
+        "description": "Primary nowcasting config: Hydra v3 with lagged USGS obs + NWM + ERA5 inputs",
     },
     "hydra_v3_usgs_era5": {
-        "name": "USGS+ERA5 (Hydra v3)",
-        "description": "Hydra v3 with lagged USGS + ERA5 inputs only (no NWM), predicting USGS directly",
+        "name": "Hydra v3 + USGS (No NWM)",
+        "description": "Nowcasting ablation: Hydra v3 with lagged USGS + ERA5 only (NWM removed)",
     },
 }
 

@@ -200,7 +200,7 @@ export default function StudyRegionMap() {
 
       <div className="grid lg:grid-cols-2 gap-0">
         {/* Map Section */}
-        <div className="p-6 bg-[#0a1a26] min-h-[300px]" ref={wrapperRef}>
+        <div className="p-4 lg:p-6 bg-[#0a1a26] min-h-[300px]" ref={wrapperRef}>
           {loading || !projection || !pathGenerator ? (
             <div
               className="w-full rounded-lg border border-[#2f465a] bg-[#0c1b2a] animate-pulse flex items-center justify-center"
@@ -427,14 +427,14 @@ export default function StudyRegionMap() {
         </div>
 
         {/* Context Section */}
-        <div className="p-6 space-y-5">
+        <div className="p-4 lg:p-6 space-y-5">
           {/* Study Sites Overview */}
           <div>
             <p className="text-sm text-[#a9c2d3] leading-relaxed">
               Three unregulated USGS gauging stations in the southern Appalachian highlands,
               spanning the New River and Watauga River basins in Virginia and North Carolina.
             </p>
-            <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="grid grid-cols-1 gap-2 mt-3 sm:grid-cols-3">
               {[
                 { id: '03161000', name: 'Jefferson', river: 'S. Fork New River' },
                 { id: '03164000', name: 'Galax', river: 'New River' },
@@ -446,7 +446,7 @@ export default function StudyRegionMap() {
                 >
                   <div className="text-sm font-medium text-white">{site.name}</div>
                   <div className="text-xs text-[#8fb4cc] mt-0.5">{site.river}</div>
-                  <div className="text-[0.65rem] text-[#6f8da0] mt-1 font-mono">{site.id}</div>
+                  <div className="text-xs text-[#6f8da0] mt-1 font-mono">{site.id}</div>
                 </div>
               ))}
             </div>

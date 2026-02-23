@@ -38,12 +38,13 @@ export default function Navigation() {
     { href: '/model', label: 'Model' },
     { href: '/training', label: 'Training' },
     { href: '/experiments', label: 'Experiments' },
+    { href: '/analysis', label: 'Analysis' },
     { href: '/evaluation', label: 'Evaluation' },
   ];
 
   return (
     <nav className="relative z-50 border-b border-[#2a455c]/55 bg-[#06131f]/70 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-6 py-4">
         <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
           <div className="h-8 w-8 rounded-md bg-gradient-to-br from-hydra-accent to-hydra-corrected shadow-[0_0_20px_rgba(43,227,214,0.45)]" />
           <span className="font-display text-lg font-semibold tracking-[0.12em]">HYDRA</span>
@@ -98,7 +99,7 @@ export default function Navigation() {
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="md:hidden border-t border-[#2a455c]/55 bg-[#06131f] px-6 py-4 space-y-3">
+        <div className="md:hidden border-t border-[#2a455c]/55 bg-[#06131f] px-4 py-4 space-y-3">
           {navLinks.map((link) => {
             const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
             return (
@@ -106,7 +107,7 @@ export default function Navigation() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className={`block py-2 text-sm transition-colors ${
+                className={`block py-3 text-sm transition-colors ${
                   isActive
                     ? 'font-medium text-hydra-corrected'
                     : 'text-[#c2d8e8] hover:text-white'
@@ -122,7 +123,7 @@ export default function Navigation() {
               handleMotionToggle();
               setMenuOpen(false);
             }}
-            className="mt-2 rounded-full border border-hydra-accent/35 px-3 py-1.5 text-xs text-[#bbd4e5]"
+            className="mt-2 rounded-full border border-hydra-accent/35 px-3 py-2.5 text-xs text-[#bbd4e5]"
           >
             {reduceMotion ? 'Motion: Reduced' : 'Motion: Full'}
           </button>
