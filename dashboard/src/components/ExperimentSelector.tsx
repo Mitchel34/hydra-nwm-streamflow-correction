@@ -1,9 +1,26 @@
 'use client';
 
 import { useMemo } from 'react';
-import { getExperimentCategory, RigorousEvalData } from '@/lib/types';
+import { RigorousEvalData } from '@/lib/types';
 
-type VersionFilter = 'all' | 'v3' | 'v2' | 'era5_only' | 'usgs';
+export type VersionFilter = 'all' | 'operational' | 'nowcasting';
+
+const HIDDEN_EXPERIMENTS = new Set([
+  'gru_transformer_v2_nwm_era5_tuned',
+  'gru_transformer_v2_direct',
+  'hydra_v3_full_autonorm',
+]);
+
+const NOWCASTING_EXPERIMENTS = new Set([
+  'hydra_v3_usgs_nwm_era5',
+  'hydra_v3_usgs_era5',
+]);
+
+function getGroup(id: string): 'operational' | 'nowcasting' | 'hidden' {
+  if (HIDDEN_EXPERIMENTS.has(id)) return 'hidden';
+  if (NOWCASTING_EXPERIMENTS.has(id)) return 'nowcasting';
+  return 'operational';
+}
 
 interface ExperimentSelectorProps {
   experiments: Record<string, { name: string; description: string }>;
@@ -13,13 +30,6 @@ interface ExperimentSelectorProps {
   versionFilter?: VersionFilter;
   onVersionFilterChange?: (filter: VersionFilter) => void;
   evalData?: RigorousEvalData | null;
-}
-
-const USGS_EXPERIMENTS = new Set(['hydra_v3_usgs_nwm_era5', 'hydra_v3_usgs_era5', 'hydra_v3_era5_only', 'gru_era5_only']);
-
-function getExtendedCategory(id: string): 'v3' | 'v2' | 'era5_only' | 'usgs' {
-  if (USGS_EXPERIMENTS.has(id)) return 'usgs';
-  return getExperimentCategory(id);
 }
 
 export default function ExperimentSelector({
@@ -32,47 +42,40 @@ export default function ExperimentSelector({
   evalData,
 }: ExperimentSelectorProps) {
   const groups = useMemo(() => {
-    const v3: [string, { name: string; description: string }][] = [];
-    const v2: [string, { name: string; description: string }][] = [];
-    const era5: [string, { name: string; description: string }][] = [];
-    const usgs: [string, { name: string; description: string }][] = [];
+    const operational: [string, { name: string; description: string }][] = [];
+    const nowcasting: [string, { name: string; description: string }][] = [];
     for (const [id, exp] of Object.entries(experiments)) {
-      const category = getExtendedCategory(id);
-      if (category === 'usgs') usgs.push([id, exp]);
-      else if (category === 'era5_only') era5.push([id, exp]);
-      else if (category === 'v3') v3.push([id, exp]);
-      else v2.push([id, exp]);
+      const group = getGroup(id);
+      if (group === 'hidden') continue;
+      if (group === 'nowcasting') nowcasting.push([id, exp]);
+      else operational.push([id, exp]);
     }
-    return { v3, v2, era5, usgs };
+    return { operational, nowcasting };
   }, [experiments]);
 
-  const showV3 = versionFilter === 'all' || versionFilter === 'v3';
-  const showV2 = versionFilter === 'all' || versionFilter === 'v2';
-  const showEra5 = versionFilter === 'all' || versionFilter === 'era5_only';
-  const showUsgs = versionFilter === 'all' || versionFilter === 'usgs';
+  const showOperational = versionFilter === 'all' || versionFilter === 'operational';
+  const showNowcasting = versionFilter === 'all' || versionFilter === 'nowcasting';
 
   const filterTabs: { id: VersionFilter; label: string; count: number }[] = [
-    { id: 'all', label: 'All', count: Object.keys(experiments).length },
-    { id: 'v3', label: 'Hydra v3', count: groups.v3.length },
-    { id: 'usgs', label: 'USGS Input', count: groups.usgs.length },
-    { id: 'v2', label: 'Hydra v2', count: groups.v2.length },
-    { id: 'era5_only', label: 'ERA5-Only', count: groups.era5.length },
+    { id: 'all', label: 'All', count: groups.operational.length + groups.nowcasting.length },
+    { id: 'operational', label: 'Operational', count: groups.operational.length },
+    { id: 'nowcasting', label: 'Nowcasting', count: groups.nowcasting.length },
   ];
 
   return (
     <div className="space-y-4">
-      {/* Version filter tabs */}
+      {/* Filter tabs */}
       {onVersionFilterChange && (
         <div className="flex gap-2 flex-wrap">
-          {filterTabs.filter((t) => t.count > 0 || t.id === 'all').map((tab) => (
+          {filterTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onVersionFilterChange(tab.id)}
-              className={`rounded-full px-3 py-1 text-xs font-display uppercase tracking-[0.1em] transition-all ${
+              className={`rounded-full px-3 py-2 text-xs font-display uppercase tracking-[0.1em] transition-all ${
                 versionFilter === tab.id
-                  ? tab.id === 'era5_only'
-                    ? 'bg-hydra-era5/20 text-hydra-era5 border border-hydra-era5/40'
-                    : 'bg-hydra-corrected/20 text-hydra-corrected border border-hydra-corrected/40'
+                  ? tab.id === 'nowcasting'
+                    ? 'bg-hydra-corrected/20 text-hydra-corrected border border-hydra-corrected/40'
+                    : 'bg-hydra-accent/20 text-hydra-accent border border-hydra-accent/40'
                   : 'bg-[#0c1a26] text-[#7f9db2] border border-[#264257] hover:border-[#3b5f79]'
               }`}
             >
@@ -83,14 +86,14 @@ export default function ExperimentSelector({
         </div>
       )}
 
-      {/* USGS Input experiments */}
-      {showUsgs && groups.usgs.length > 0 && (
+      {/* Nowcasting experiments */}
+      {showNowcasting && groups.nowcasting.length > 0 && (
         <div>
-          <p className="text-[0.68rem] uppercase tracking-[0.18em] text-hydra-corrected/70 mb-2 font-display">
-            USGS Input — Observed Discharge Features
+          <p className="text-xs uppercase tracking-[0.18em] text-hydra-corrected/70 mb-2 font-display">
+            Nowcasting — Requires Real-Time USGS Observations
           </p>
           <ExperimentGrid
-            entries={groups.usgs}
+            entries={groups.nowcasting}
             selected={selected}
             onSelect={onSelect}
             availableExperiments={availableExperiments}
@@ -100,48 +103,14 @@ export default function ExperimentSelector({
         </div>
       )}
 
-      {/* v3 experiments */}
-      {showV3 && groups.v3.length > 0 && (
+      {/* Operational experiments */}
+      {showOperational && groups.operational.length > 0 && (
         <div>
-          <p className="text-[0.68rem] uppercase tracking-[0.18em] text-hydra-corrected/70 mb-2 font-display">
-            Hydra v3 — New Architecture
+          <p className="text-xs uppercase tracking-[0.18em] text-hydra-accent/80 mb-2 font-display">
+            Operational — No Real-Time Gauge Data Required
           </p>
           <ExperimentGrid
-            entries={groups.v3}
-            selected={selected}
-            onSelect={onSelect}
-            availableExperiments={availableExperiments}
-            accentClass="border-hydra-corrected/55 bg-hydra-corrected/[0.14]"
-            evalData={evalData}
-          />
-        </div>
-      )}
-
-      {/* ERA5-only experiments */}
-      {showEra5 && groups.era5.length > 0 && (
-        <div>
-          <p className="text-[0.68rem] uppercase tracking-[0.18em] text-hydra-era5/70 mb-2 font-display">
-            ERA5-Only — No NWM Input
-          </p>
-          <ExperimentGrid
-            entries={groups.era5}
-            selected={selected}
-            onSelect={onSelect}
-            availableExperiments={availableExperiments}
-            accentClass="border-hydra-era5/55 bg-hydra-era5/[0.10]"
-            evalData={evalData}
-          />
-        </div>
-      )}
-
-      {/* v2 experiments */}
-      {showV2 && groups.v2.length > 0 && (
-        <div>
-          <p className="text-[0.68rem] uppercase tracking-[0.18em] text-hydra-accent/60 mb-2 font-display">
-            Hydra v2 — Baseline Experiments
-          </p>
-          <ExperimentGrid
-            entries={groups.v2}
+            entries={groups.operational}
             selected={selected}
             onSelect={onSelect}
             availableExperiments={availableExperiments}
@@ -170,7 +139,7 @@ function ExperimentGrid({
   evalData?: RigorousEvalData | null;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {entries.map(([id, exp]) => {
         const isAvailable = availableExperiments
           ? availableExperiments.has(id)

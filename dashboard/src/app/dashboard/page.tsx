@@ -80,7 +80,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [controlsOpen, setControlsOpen] = useState(false);
-  const [versionFilter, setVersionFilter] = useState<'all' | 'v2' | 'v3' | 'era5_only' | 'usgs'>('all');
+  const [versionFilter, setVersionFilter] = useState<'all' | 'operational' | 'nowcasting'>('all');
   const [timeSeriesLoading, setTimeSeriesLoading] = useState(false);
 
   useEffect(() => {
@@ -285,19 +285,19 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen text-white">
       <Navigation />
-      <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-6 py-4">
-        <div className="mx-auto max-w-7xl flex items-center justify-between">
+      <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-4 md:px-6 py-4">
+        <div className="mx-auto max-w-7xl flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-2xl gradient-text">Experiment Dashboard</h1>
             <p className="text-sm text-[#8daec2] mt-1">Interactive exploration of model performance across sites and configurations</p>
           </div>
-          <span className="text-sm text-[#8daec2]">
+          <span className="text-sm text-[#8daec2] hidden sm:block">
             Updated: {new Date(data.generated_at).toLocaleDateString()}
           </span>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-4 md:px-6 py-8">
         <section className="mb-6 rounded-xl border border-hydra-accent/35 bg-[#0a1d2c] px-4 py-3 text-sm text-[#b5cede]">
           Showing{' '}
           <span className="font-semibold text-hydra-corrected">
@@ -425,7 +425,7 @@ export default function Dashboard() {
             {currentResult ? (
               <section>
                 <h2 className="mb-4 font-display text-lg">Performance Metrics</h2>
-                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                   <MetricCard
                     label="RMSE"
                     baseline={currentResult.baseline.rmse || 0}

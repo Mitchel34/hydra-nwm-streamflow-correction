@@ -184,7 +184,7 @@ export default function EvaluationPage() {
     <div className="min-h-screen text-white">
       <Navigation />
 
-      <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-6 py-5">
+      <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-4 md:px-6 py-5">
         <div className="mx-auto max-w-7xl">
           <h1 className="font-display text-2xl gradient-text">Evaluation</h1>
           <p className="mt-2 max-w-3xl text-sm text-[#a9c2d3] leading-relaxed">
@@ -196,7 +196,7 @@ export default function EvaluationPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8 space-y-8">
+      <main className="mx-auto max-w-7xl px-4 md:px-6 py-8 space-y-8">
         {/* Key Takeaways */}
         {takeaways && (
           <div className="grid gap-4 md:grid-cols-3">

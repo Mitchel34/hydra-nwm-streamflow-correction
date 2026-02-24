@@ -1,25 +1,37 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { GradientData } from '@/lib/types';
 
 interface GradientHeatmapProps {
   data: GradientData[];
-  width?: number;
   height?: number;
 }
 
 export default function GradientHeatmap({
   data,
-  width = 600,
   height = 300,
 }: GradientHeatmapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(600);
+
+  // Track container width responsively
+  useEffect(() => {
+    if (!wrapperRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (w && w > 0) setContainerWidth(Math.floor(w));
+    });
+    observer.observe(wrapperRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!svgRef.current || data.length === 0) return;
 
+    const width = containerWidth;
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
@@ -155,11 +167,16 @@ export default function GradientHeatmap({
       .call(legendAxis)
       .selectAll('text')
       .attr('fill', '#9ca3af');
-  }, [data, width, height]);
+  }, [data, containerWidth, height]);
 
   return (
-    <div className="bg-gray-900 rounded-lg p-4">
-      <svg ref={svgRef} width={width} height={height} className="w-full" />
+    <div ref={wrapperRef} className="bg-gray-900 rounded-lg p-4">
+      <svg
+        ref={svgRef}
+        width={containerWidth}
+        height={height}
+        className="w-full"
+      />
     </div>
   );
 }

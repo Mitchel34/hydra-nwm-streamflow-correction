@@ -57,7 +57,7 @@ export default function SkeletonLoader({
 export function DashboardSkeleton() {
   return (
     <div className="min-h-screen text-white">
-      <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 py-8 space-y-8">
         {/* Header skeleton */}
         <div className="flex items-center justify-between">
           <div className="space-y-2">
@@ -74,7 +74,7 @@ export function DashboardSkeleton() {
             <Pulse className="h-7 w-20 rounded-full" />
             <Pulse className="h-7 w-20 rounded-full" />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Pulse key={i} className="h-20 rounded-xl" />
             ))}
@@ -89,7 +89,7 @@ export function DashboardSkeleton() {
             ))}
           </div>
           <div className="space-y-8 lg:col-span-3">
-            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonLoader key={i} type="metric" />
               ))}

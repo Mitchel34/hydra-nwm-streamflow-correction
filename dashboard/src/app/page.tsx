@@ -48,7 +48,7 @@ export default function HomePage() {
       <Navigation />
 
       <main className="relative z-10">
-        <div className="mx-auto max-w-7xl px-6 pt-16 pb-20">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 pt-16 pb-20">
           {/* Hero */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -71,14 +71,14 @@ export default function HomePage() {
 
           {/* CTAs */}
           <motion.div
-            className="mt-10 flex justify-center gap-4"
+            className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Link
               href="/experiments"
-              className="group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-hydra-accent to-hydra-corrected px-8 py-4 font-display font-medium text-[#022133] shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_10px_25px_rgba(43,227,214,0.26)]"
+              className="group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-hydra-accent to-hydra-corrected px-6 py-3 sm:px-8 sm:py-4 font-display font-medium text-[#022133] shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_10px_25px_rgba(43,227,214,0.26)]"
             >
               <span>Explore Results</span>
               <svg className="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -87,7 +87,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/model"
-              className="group relative inline-flex items-center gap-2 rounded-full border-2 border-hydra-accent/50 bg-transparent px-8 py-4 font-display font-medium text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:border-hydra-corrected hover:bg-hydra-accent/10"
+              className="group relative inline-flex items-center gap-2 rounded-full border-2 border-hydra-accent/50 bg-transparent px-6 py-3 sm:px-8 sm:py-4 font-display font-medium text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:border-hydra-corrected hover:bg-hydra-accent/10"
             >
               <span>Model Specs</span>
               <svg className="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
