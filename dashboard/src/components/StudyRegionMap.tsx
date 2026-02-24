@@ -112,8 +112,9 @@ interface Projection {
 }
 
 function createProjection(width: number, height: number, padding: number): Projection {
-  const minX = MAP_BOUNDS.minLon;
-  const maxX = MAP_BOUNDS.maxLon;
+  const RAD = Math.PI / 180;
+  const minX = MAP_BOUNDS.minLon * RAD;
+  const maxX = MAP_BOUNDS.maxLon * RAD;
   const minY = mercatorY(MAP_BOUNDS.minLat);
   const maxY = mercatorY(MAP_BOUNDS.maxLat);
 
@@ -127,7 +128,7 @@ function createProjection(width: number, height: number, padding: number): Proje
   const offsetY = padding + (drawH - (maxY - minY) * scale) / 2;
 
   return ([lon, lat]: [number, number]) => {
-    const x = offsetX + (lon - minX) * scale;
+    const x = offsetX + (lon * RAD - minX) * scale;
     const y = offsetY + (maxY - mercatorY(lat)) * scale;
     return [x, y];
   };
