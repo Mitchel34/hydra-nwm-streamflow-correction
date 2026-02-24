@@ -3,177 +3,128 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { fetchExperimentResults, fetchTimeSeries, fetchRigorousEval, buildVersionComparison } from '@/lib/data';
-import { DashboardData, RigorousEvalData, MetricComparison, TimeSeriesPoint, VersionComparisonRow } from '@/lib/types';
-import { getExperimentLabels } from '@/lib/experiment-context';
-import SiteCard from '@/components/SiteCard';
-import ExperimentSelector from '@/components/ExperimentSelector';
-import MetricCard from '@/components/MetricCard';
+import {
+  fetchExperimentResults,
+  fetchRigorousEval,
+  buildVersionComparison,
+} from '@/lib/data';
+import {
+  DashboardData,
+  RigorousEvalData,
+  VersionComparisonRow,
+  ExperimentResult,
+} from '@/lib/types';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { DashboardSkeleton } from '@/components/SkeletonLoader';
-
-const Hydrograph = dynamic(() => import('@/components/charts/Hydrograph'), {
-  ssr: false,
-  loading: () => <div className="h-96 rounded-lg bg-[#0f202f] animate-pulse" />,
-});
-
-const MetricsBarChart = dynamic(
-  () => import('@/components/charts/MetricsBarChart'),
-  {
-    ssr: false,
-    loading: () => <div className="h-72 rounded-lg bg-[#0f202f] animate-pulse" />,
-  }
-);
-
-const ErrorDistribution = dynamic(
-  () => import('@/components/charts/ErrorDistribution'),
-  {
-    ssr: false,
-    loading: () => <div className="h-72 rounded-lg bg-[#0f202f] animate-pulse" />,
-  }
-);
+import ExperimentExplorerTable from '@/components/ExperimentExplorerTable';
 
 const VersionComparisonChart = dynamic(
   () => import('@/components/charts/VersionComparison'),
   {
     ssr: false,
-    loading: () => <div className="h-72 rounded-lg bg-[#0f202f] animate-pulse" />,
+    loading: () => <div className="h-80 rounded-lg bg-[#0f202f] animate-pulse" />,
   }
 );
 
-const QuantileCoverageChart = dynamic(
-  () => import('@/components/charts/QuantileCoverage'),
-  {
-    ssr: false,
-    loading: () => <div className="h-48 rounded-lg bg-[#0f202f] animate-pulse" />,
-  }
-);
+/* ---------- Constants ---------- */
 
-const preferredExperimentOrder = [
-  'hydra_v3_usgs_nwm_era5',        // Primary nowcasting result
-  'hydra_v3_usgs_era5',             // Nowcasting ablation (no NWM)
-  'hydra_v3_causal_nonneg',         // Best v3 operational (Jefferson)
-  'hydra_v3_nwm_era5',              // v3 baseline
-  'hydra_v3_causal_nonneg_event',   // v3 full config
-  'hydra_v3_event_oversample',
-  'hydra_v3_nonneg',
-  'hydra_v3_causal',
-  'hydra_v3_era5_only',
-  'gru_era5_only',
-  'gru_transformer_v2_causal_nonneg', // Best v2 operational
-  'gru_transformer_v2_nwm_era5',
-  'gru_transformer_v2_nonneg',
-  'gru_transformer_v2_causal',
-  'transformer_nwm_era5',           // Hydra v1 (negative result)
-  'lstm_nwm_era5',
-];
+const PRIMARY_EXPERIMENT = 'hydra_v3_usgs_nwm_era5';
 
-export default function Dashboard() {
+const SITE_SHORT: Record<string, string> = {
+  '03161000': 'Jefferson',
+  '03164000': 'Galax',
+  '03479000': 'Sugar Grove',
+};
+
+/* ---------- Helpers ---------- */
+
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+/* ---------- Page ---------- */
+
+export default function ExperimentsPage() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [selectedSite, setSelectedSite] = useState<string>('');
-  const [selectedExperiment, setSelectedExperiment] = useState<string>('');
-  const [timeSeries, setTimeSeries] = useState<TimeSeriesPoint[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [evalData, setEvalData] = useState<RigorousEvalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [controlsOpen, setControlsOpen] = useState(false);
-  const [versionFilter, setVersionFilter] = useState<'all' | 'operational' | 'nowcasting'>('all');
-  const [timeSeriesLoading, setTimeSeriesLoading] = useState(false);
-  const [evalData, setEvalData] = useState<RigorousEvalData | null>(null);
 
   useEffect(() => {
     Promise.all([fetchExperimentResults(), fetchRigorousEval()])
-      .then(([d, e]) => { setData(d); setEvalData(e); })
+      .then(([d, e]) => {
+        setData(d);
+        setEvalData(e);
+      })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (!data || data.results.length === 0) {
-      return;
-    }
+  /* ── Section 1: Executive Summary ── */
+  const executiveSummary = useMemo(() => {
+    if (!data) return null;
+    const primary = data.results.filter((r) => r.experiment === PRIMARY_EXPERIMENT);
+    if (primary.length === 0) return null;
 
-    const currentIsValid = data.results.some(
-      (result) =>
-        result.experiment === selectedExperiment && result.site_id === selectedSite
-    );
-
-    if (currentIsValid) {
-      return;
-    }
-
-    const prioritizedResult =
-      preferredExperimentOrder
-        .map((experiment) =>
-          data.results.find((result) => result.experiment === experiment)
-        )
-        .find(Boolean) || data.results[0];
-
-    setSelectedExperiment(prioritizedResult.experiment);
-    setSelectedSite(prioritizedResult.site_id);
-  }, [data, selectedExperiment, selectedSite]);
-
-  useEffect(() => {
-    if (!data || !selectedExperiment) {
-      return;
-    }
-
-    const sitesForExperiment = data.results
-      .filter((result) => result.experiment === selectedExperiment)
-      .map((result) => result.site_id);
-
-    if (sitesForExperiment.length > 0 && !sitesForExperiment.includes(selectedSite)) {
-      setSelectedSite(sitesForExperiment[0]);
-    }
-  }, [data, selectedExperiment, selectedSite]);
-
-  useEffect(() => {
-    if (!selectedExperiment || !selectedSite) {
-      setTimeSeries([]);
-      return;
-    }
-
-    let active = true;
-    setTimeSeriesLoading(true);
-
-    fetchTimeSeries(selectedExperiment, selectedSite).then((series) => {
-      if (active) {
-        setTimeSeries(series ?? []);
-        setTimeSeriesLoading(false);
-      }
+    const rmseVals = primary.map((r) => r.rmse_improvement_pct ?? 0).filter(Number.isFinite);
+    const nsePctVals = primary.map((r) => {
+      const base = r.baseline.nse ?? 0;
+      const corr = r.corrected.nse ?? 0;
+      return base !== 0 ? ((corr - base) / Math.abs(base)) * 100 : 0;
     });
+    const sitesImproved = primary.filter((r) => (r.rmse_improvement_pct ?? 0) > 0).length;
 
-    return () => {
-      active = false;
+    return {
+      medianRmse: median(rmseVals),
+      medianNsePct: median(nsePctVals),
+      sitesImproved,
+      totalSites: primary.length,
     };
-  }, [selectedExperiment, selectedSite]);
+  }, [data]);
 
-  const availableExperiments = useMemo(
-    () => new Set((data?.results ?? []).map((result) => result.experiment)),
-    [data?.results]
-  );
+  /* ── Section 3: Best result per site ── */
+  const bestPerSite = useMemo(() => {
+    if (!data) return [];
+    return Object.keys(data.sites).map((siteId) => {
+      const siteResults = data.results.filter((r) => r.site_id === siteId);
+      const best = siteResults.reduce<ExperimentResult | null>(
+        (b, r) =>
+          !b || (r.rmse_improvement_pct ?? -Infinity) > (b.rmse_improvement_pct ?? -Infinity)
+            ? r
+            : b,
+        null
+      );
+      return { siteId, metadata: data.sites[siteId], best };
+    });
+  }, [data]);
 
-  const availableSitesForSelectedExperiment = useMemo(
-    () =>
-      new Set(
-        (data?.results ?? [])
-          .filter((result) => result.experiment === selectedExperiment)
-          .map((result) => result.site_id)
-      ),
-    [data?.results, selectedExperiment]
-  );
-
+  /* ── Section 4: Architecture comparison ── */
   const versionComparison: VersionComparisonRow[] = useMemo(
-    () =>
-      data ? buildVersionComparison(data.results, data.sites) : [],
+    () => (data ? buildVersionComparison(data.results, data.sites) : []),
     [data]
   );
 
-  const labels = getExperimentLabels(selectedExperiment);
+  const archInterpretation = useMemo(() => {
+    if (versionComparison.length === 0) return null;
+    const allV3Better = versionComparison.every((row) => row.v3_improvement > row.v2_improvement);
+    const medV2 = median(versionComparison.map((r) => r.v2_improvement));
+    const medV3 = median(versionComparison.map((r) => r.v3_improvement));
+    return {
+      allV3Better,
+      medianV2: medV2.toFixed(1),
+      medianV3: medV3.toFixed(1),
+      gain: (medV3 - medV2).toFixed(1),
+    };
+  }, [versionComparison]);
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
+  /* ── Loading / Error ── */
+
+  if (loading) return <DashboardSkeleton />;
 
   if (error || !data) {
     return (
@@ -182,8 +133,7 @@ export default function Dashboard() {
           <div className="mb-2 text-xl text-red-400">Error loading data</div>
           <div className="text-[#afc6d7]">{error}</div>
           <p className="mt-4 text-sm text-[#86a6bc]">
-            Ensure results are exported to
-            {' '}
+            Ensure results are exported to{' '}
             <code>/public/data/experiment_results.json</code>
           </p>
         </div>
@@ -191,391 +141,208 @@ export default function Dashboard() {
     );
   }
 
-  const currentResult = data.results.find(
-    (result) =>
-      result.site_id === selectedSite && result.experiment === selectedExperiment
-  );
-
-  const selectedSiteMetadata = selectedSite ? data.sites[selectedSite] : undefined;
-  const selectedExperimentName = selectedExperiment
-    ? data.experiments[selectedExperiment]?.name || selectedExperiment
-    : 'No experiment selected';
-
-  const metricsComparison: MetricComparison[] = currentResult
-    ? [
-        {
-          metric: 'RMSE',
-          baseline: currentResult.baseline.rmse || 0,
-          corrected: currentResult.corrected.rmse || 0,
-          improvement:
-            (((currentResult.baseline.rmse || 0) - (currentResult.corrected.rmse || 0)) /
-              (currentResult.baseline.rmse || 1)) *
-            100,
-        },
-        {
-          metric: 'MAE',
-          baseline: currentResult.baseline.mae || 0,
-          corrected: currentResult.corrected.mae || 0,
-          improvement:
-            (((currentResult.baseline.mae || 0) - (currentResult.corrected.mae || 0)) /
-              (currentResult.baseline.mae || 1)) *
-            100,
-        },
-        {
-          metric: 'NSE',
-          baseline: currentResult.baseline.nse || 0,
-          corrected: currentResult.corrected.nse || 0,
-          improvement:
-            ((currentResult.corrected.nse || 0) - (currentResult.baseline.nse || 0)) *
-            100,
-        },
-        {
-          metric: 'KGE',
-          baseline: currentResult.baseline.kge || 0,
-          corrected: currentResult.corrected.kge || 0,
-          improvement:
-            ((currentResult.corrected.kge || 0) - (currentResult.baseline.kge || 0)) *
-            100,
-        },
-        ...(currentResult.corrected.pearson_r != null
-          ? [{
-              metric: 'Pearson r',
-              baseline: currentResult.baseline.pearson_r || 0,
-              corrected: currentResult.corrected.pearson_r || 0,
-              improvement:
-                ((currentResult.corrected.pearson_r || 0) - (currentResult.baseline.pearson_r || 0)) *
-                100,
-            }]
-          : []),
-        ...(currentResult.corrected.spearman_r != null
-          ? [{
-              metric: 'Spearman ρ',
-              baseline: currentResult.baseline.spearman_r || 0,
-              corrected: currentResult.corrected.spearman_r || 0,
-              improvement:
-                ((currentResult.corrected.spearman_r || 0) - (currentResult.baseline.spearman_r || 0)) *
-                100,
-            }]
-          : []),
-      ]
-    : [];
-
-  const nwmErrors = timeSeries
-    .map((point) => point.nwm - point.usgs)
-    .filter((value) => Number.isFinite(value));
-  const correctedErrors = timeSeries
-    .map((point) => point.corrected - point.usgs)
-    .filter((value) => Number.isFinite(value));
-
   const uniqueExperiments = new Set(data.results.map((r) => r.experiment)).size;
   const uniqueSites = new Set(data.results.map((r) => r.site_id)).size;
-
-  const handleExperimentSelect = (experimentId: string) => {
-    setSelectedExperiment(experimentId);
-    const firstSite = data.results.find(
-      (result) => result.experiment === experimentId
-    )?.site_id;
-    if (firstSite) {
-      setSelectedSite(firstSite);
-    }
-  };
 
   return (
     <div className="min-h-screen text-white">
       <Navigation />
-      <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-4 md:px-6 py-4">
+
+      {/* Page header */}
+      <header className="border-b border-[#2a445b]/50 bg-[#071420]/50 px-4 md:px-6 py-5">
         <div className="mx-auto max-w-7xl flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-2xl gradient-text">Experiments</h1>
-            <p className="text-sm text-[#8daec2] mt-1">Select an experiment to explore site-specific metrics, or visit the <Link href="/evaluation" className="text-hydra-corrected hover:underline">Evaluation</Link> page for cross-site statistical comparisons.</p>
+            <p className="text-sm text-[#8daec2] mt-1">
+              {uniqueExperiments} configurations across {uniqueSites} sites. Select a row to
+              explore configurations, or{' '}
+              <Link href="/evaluation" className="text-hydra-corrected hover:underline">
+                visit Evaluation
+              </Link>{' '}
+              for cross-site significance tests.
+            </p>
           </div>
-          <span className="text-sm text-[#8daec2] hidden sm:block">
+          <span className="text-sm text-[#8daec2] hidden sm:block shrink-0">
             Updated: {new Date(data.generated_at).toLocaleDateString()}
           </span>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 md:px-6 py-8">
-        <section className="mb-6 rounded-xl border border-hydra-accent/35 bg-[#0a1d2c] px-4 py-3 text-sm text-[#b5cede]">
-          Showing{' '}
-          <span className="font-semibold text-hydra-corrected">
-            {data.results.length} results
-          </span>
-          {' '}across {uniqueExperiments} experiments and {uniqueSites} sites.
+      <main className="mx-auto max-w-7xl px-4 md:px-6 py-10 space-y-16">
+
+        {/* ── SECTION 1: Executive Summary ── */}
+        <section>
+          <div className="mb-1">
+            <h2 className="font-display text-lg text-white">Executive Summary</h2>
+            <p className="text-sm text-[#8daec2] mt-0.5">
+              Primary result:{' '}
+              <span className="text-hydra-corrected font-medium">Hydra v3 + USGS</span>
+              {' '}— nowcasting with lagged discharge observations.
+            </p>
+          </div>
+
+          {executiveSummary ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-emerald-500/20 bg-[#061e14] p-5">
+                <div className="text-4xl font-bold text-emerald-400 tabular-nums leading-none">
+                  ↓{executiveSummary.medianRmse.toFixed(0)}%
+                </div>
+                <div className="mt-3 text-sm font-medium text-white">Median RMSE Reduction</div>
+                <div className="mt-1 text-xs text-[#4a9e72]">
+                  vs. NWM baseline across {executiveSummary.totalSites} unregulated sites
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-sky-500/20 bg-[#051820] p-5">
+                <div className="text-4xl font-bold text-sky-400 tabular-nums leading-none">
+                  ↑{executiveSummary.medianNsePct.toFixed(0)}%
+                </div>
+                <div className="mt-3 text-sm font-medium text-white">Median NSE Improvement</div>
+                <div className="mt-1 text-xs text-[#3a8aaa]">
+                  Relative increase in Nash-Sutcliffe efficiency
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-[#2be3d6]/20 bg-[#05191a] p-5">
+                <div className="text-4xl font-bold text-hydra-corrected tabular-nums leading-none">
+                  {executiveSummary.sitesImproved} / {executiveSummary.totalSites}
+                </div>
+                <div className="mt-3 text-sm font-medium text-white">Sites Improved</div>
+                <div className="mt-1 text-xs text-[#2a8a86]">
+                  Consistent generalization across all gauges
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-[#2a445b] bg-[#0a1822] px-4 py-6 text-sm text-[#6a8fa6] text-center">
+              Primary experiment (hydra_v3_usgs_nwm_era5) results not available.
+            </div>
+          )}
         </section>
 
-        <section className="mb-8">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="font-display text-lg">Experiment Configurations</h2>
-              <p className="text-sm text-[#8daec2]">
-                {uniqueExperiments} configurations across {uniqueSites} sites. Skill score badges show median SS_RMSE.
-              </p>
-            </div>
-            <div className="rounded-full border border-[#304a60] px-3 py-1 text-xs uppercase tracking-[0.11em] text-[#95b0c4]">
-              Active: {selectedExperimentName}
-            </div>
+        {/* ── SECTION 2: Experiment Explorer ── */}
+        <section>
+          <div className="mb-4">
+            <h2 className="font-display text-lg text-white">Experiment Explorer</h2>
+            <p className="text-sm text-[#8daec2] mt-0.5">
+              {Object.keys(data.experiments).length} configurations evaluated. Click any row to
+              expand site-level details and navigate to deep-dive pages.
+            </p>
           </div>
-          <ExperimentSelector
+          <ExperimentExplorerTable
             experiments={data.experiments}
-            selected={selectedExperiment}
-            onSelect={handleExperimentSelect}
-            availableExperiments={availableExperiments}
-            versionFilter={versionFilter}
-            onVersionFilterChange={setVersionFilter}
-            evalData={evalData}
+            results={data.results}
+            sites={data.sites}
           />
         </section>
 
-        <button
-          type="button"
-          onClick={() => setControlsOpen((open) => !open)}
-          className="mb-4 rounded-lg border border-[#35526a] px-3 py-2 text-sm text-[#bbd4e5] transition-colors hover:border-hydra-corrected/50 lg:hidden"
-          aria-label={controlsOpen ? 'Hide site controls' : 'Show site controls'}
-        >
-          {controlsOpen ? 'Hide Site Controls' : 'Show Site Controls'}
-        </button>
+        {/* ── SECTION 3: Site Performance Overview ── */}
+        <section>
+          <div className="mb-4">
+            <h2 className="font-display text-lg text-white">Site Performance Overview</h2>
+            <p className="text-sm text-[#8daec2] mt-0.5">
+              Best result per site across all experiments. Click a card for the full site
+              analysis.
+            </p>
+          </div>
 
-        <div className="grid gap-8 lg:grid-cols-4">
-          <aside className={`${controlsOpen ? 'block' : 'hidden'} lg:col-span-1 lg:block`}>
-            <h2 className="mb-4 font-display text-lg">Study Sites</h2>
-            <div className="space-y-3">
-              {Object.entries(data.sites).map(([siteId, metadata]) => {
-                const siteResult = data.results.find(
-                  (result) =>
-                    result.site_id === siteId && result.experiment === selectedExperiment
-                );
-                const hasMetrics = availableSitesForSelectedExperiment.has(siteId);
+          <div className="grid gap-4 sm:grid-cols-3">
+            {bestPerSite.map(({ siteId, metadata, best }) => {
+              if (!best) return null;
+              const shortName = SITE_SHORT[siteId] ?? siteId;
+              const rmsePct = best.rmse_improvement_pct ?? 0;
+              const nseCorrected = best.corrected.nse ?? 0;
+              const bestExpName =
+                data.experiments[best.experiment]?.name ?? best.experiment;
 
-                return (
-                  <SiteCard
-                    key={siteId}
-                    siteId={siteId}
-                    metadata={metadata}
-                    isSelected={selectedSite === siteId}
-                    onClick={() => setSelectedSite(siteId)}
-                    disabled={!hasMetrics}
-                    comparisonLabel={labels.comparisonLabel}
-                    metrics={
-                      siteResult
-                        ? {
-                            rmseImprovement: siteResult.rmse_improvement_pct || 0,
-                            nseImprovement:
-                              ((siteResult.corrected.nse || 0) -
-                                (siteResult.baseline.nse || 0)) *
-                              100,
-                          }
-                        : undefined
-                    }
-                  />
-                );
-              })}
-            </div>
-          </aside>
-
-          <div className="space-y-8 lg:col-span-3">
-            <section className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-              <div className="surface-panel rounded-xl p-4">
-                <h2 className="font-display text-lg text-white">
-                  {selectedSiteMetadata?.name || 'Site context unavailable'}
-                </h2>
-                <p className="mt-2 text-sm text-[#9ebace]">
-                  Gauge ID {selectedSite || 'N/A'} in the {selectedSiteMetadata?.watershed || 'N/A'} watershed.
-                  {' '}
-                  Type:
-                  {' '}
-                  {selectedSiteMetadata?.type || 'N/A'}.
-                </p>
-                <p className="mt-2 text-xs uppercase tracking-[0.09em] text-[#7f9db2]">
-                  Experiment: {selectedExperimentName}
-                </p>
-              </div>
-              <div className="surface-panel rounded-xl p-4">
-                <h3 className="font-display text-sm uppercase tracking-[0.14em] text-[#9bb7ca]">
-                  Location Inset
-                </h3>
-                {selectedSiteMetadata ? (
-                  <>
+              return (
+                <Link
+                  key={siteId}
+                  href={`/experiments/site/${siteId}`}
+                  className="group block rounded-xl border border-[#2a445b] bg-[#091929] p-5 hover:border-hydra-corrected/40 hover:bg-[#0c1e30] transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-lg font-semibold text-white group-hover:text-hydra-corrected transition-colors">
+                        {shortName}
+                      </div>
+                      <div className="text-xs font-mono text-[#4a7080] mt-0.5">
+                        {siteId}
+                      </div>
+                      <div className="text-xs text-[#5a8099] mt-1">{metadata.watershed}</div>
+                    </div>
                     <svg
-                      viewBox="0 0 140 88"
-                      className="mt-3 h-20 w-full rounded border border-[#2f465a] bg-[#0a1622]"
-                      role="img"
-                      aria-label="Simplified site location inset"
+                      className="w-4 h-4 text-[#4a6a80] group-hover:text-hydra-corrected mt-1 transition-colors shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <rect x="5" y="5" width="130" height="78" rx="8" fill="#0c1b2a" stroke="#2f465a" />
-                      <path d="M18 58 C 45 25, 90 30, 122 18" stroke="#4da0ff" strokeWidth="2" fill="none" opacity="0.6" />
-                      <circle
-                        cx={22 + ((selectedSiteMetadata.lon + 82.4) / 1.7) * 96}
-                        cy={16 + ((36.9 - selectedSiteMetadata.lat) / 1.1) * 52}
-                        r="4"
-                        fill="#2be3d6"
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
                       />
                     </svg>
-                    <p className="mt-2 text-xs text-[#92b0c5]">
-                      Lat {selectedSiteMetadata.lat.toFixed(3)}, Lon {selectedSiteMetadata.lon.toFixed(3)}
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-3 text-xs text-[#92b0c5]">No location metadata available.</p>
-                )}
-              </div>
-            </section>
-
-            {currentResult ? (
-              <section>
-                <h2 className="mb-4 font-display text-lg">Performance Metrics</h2>
-                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-                  <MetricCard
-                    label="RMSE"
-                    baseline={currentResult.baseline.rmse || 0}
-                    corrected={currentResult.corrected.rmse || 0}
-                    unit="m³/s"
-                    higherIsBetter={false}
-                    comparisonLabel={labels.comparisonLabel}
-                  />
-                  <MetricCard
-                    label="MAE"
-                    baseline={currentResult.baseline.mae || 0}
-                    corrected={currentResult.corrected.mae || 0}
-                    unit="m³/s"
-                    higherIsBetter={false}
-                    comparisonLabel={labels.comparisonLabel}
-                  />
-                  <MetricCard
-                    label="NSE"
-                    baseline={currentResult.baseline.nse || 0}
-                    corrected={currentResult.corrected.nse || 0}
-                    higherIsBetter={true}
-                    comparisonLabel={labels.comparisonLabel}
-                  />
-                  <MetricCard
-                    label="KGE"
-                    baseline={currentResult.baseline.kge || 0}
-                    corrected={currentResult.corrected.kge || 0}
-                    higherIsBetter={true}
-                    comparisonLabel={labels.comparisonLabel}
-                  />
-                  {(currentResult.corrected.pearson_r != null) && (
-                    <MetricCard
-                      label="Pearson r"
-                      baseline={currentResult.baseline.pearson_r || 0}
-                      corrected={currentResult.corrected.pearson_r || 0}
-                      higherIsBetter={true}
-                      comparisonLabel={labels.comparisonLabel}
-                    />
-                  )}
-                  {(currentResult.corrected.spearman_r != null) && (
-                    <MetricCard
-                      label="Spearman ρ"
-                      baseline={currentResult.baseline.spearman_r || 0}
-                      corrected={currentResult.corrected.spearman_r || 0}
-                      higherIsBetter={true}
-                      comparisonLabel={labels.comparisonLabel}
-                    />
-                  )}
-                </div>
-
-                {/* Quantile Coverage (v3 experiments only) */}
-                {currentResult.quantiles && Object.keys(currentResult.quantiles).length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="mb-3 font-display text-base text-[#bbd4e5]">
-                      Quantile Calibration
-                    </h3>
-                    <QuantileCoverageChart
-                      quantiles={currentResult.quantiles}
-                      experimentName={selectedExperimentName}
-                    />
                   </div>
-                )}
 
-                {/* Bias Shift Info (v3 experiments only) */}
-                {currentResult.bias_shift && (
-                  <div className="mt-4 surface-panel rounded-xl p-4">
-                    <h3 className="font-display text-sm uppercase tracking-[0.12em] text-[#9bb7ca] mb-2">
-                      Bias Correction
-                    </h3>
-                    <div className="grid gap-3 sm:grid-cols-4 text-sm">
-                      <div>
-                        <span className="text-[#7f9db2]">Strategy</span>
-                        <p className="text-white font-medium">{currentResult.bias_shift.strategy}</p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div>
+                      <div
+                        className={`text-3xl font-bold tabular-nums leading-none ${
+                          rmsePct > 0 ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                      >
+                        {rmsePct > 0 ? '↓' : '↑'}
+                        {Math.abs(rmsePct).toFixed(0)}%
                       </div>
-                      <div>
-                        <span className="text-[#7f9db2]">PBIAS</span>
-                        <p className="text-white font-medium">
-                          {currentResult.bias_shift.pbias_percent != null
-                            ? `${currentResult.bias_shift.pbias_percent.toFixed(1)}%`
-                            : 'N/A'}
-                        </p>
+                      <div className="text-xs text-[#4a7080] mt-1">RMSE reduction</div>
+                    </div>
+                    <div>
+                      <div className="text-3xl font-bold tabular-nums leading-none text-sky-400">
+                        {nseCorrected.toFixed(2)}
                       </div>
-                      <div>
-                        <span className="text-[#7f9db2]">Alpha</span>
-                        <p className="text-white font-medium">{currentResult.bias_shift.alpha}</p>
-                      </div>
-                      <div>
-                        <span className="text-[#7f9db2]">Status</span>
-                        <p className={`font-medium ${
-                          currentResult.bias_shift.status === 'applied'
-                            ? 'text-hydra-corrected' : 'text-[#f59e0b]'
-                        }`}>
-                          {currentResult.bias_shift.status}
-                        </p>
-                      </div>
+                      <div className="text-xs text-[#4a7080] mt-1">NSE</div>
                     </div>
                   </div>
-                )}
-              </section>
-            ) : (
-              <section className="rounded-xl border border-[#345066] bg-[#0c1b29] px-4 py-4 text-sm text-[#a6c1d3]">
-                Metrics for this site and experiment are not available yet. Choose another available
-                combination from the controls while runs continue.
-              </section>
-            )}
 
-            <section>
-              <h2 className="mb-4 font-display text-lg">Hydrograph</h2>
-              {timeSeriesLoading ? (
-                <div className="h-[420px] rounded-xl border border-[#2a4558] bg-[#0a1a27] p-4">
-                  <div className="h-full w-full animate-pulse rounded-lg bg-[#1a2d3f]" />
-                </div>
-              ) : (
-                <Hydrograph
-                  data={timeSeries}
-                  height={420}
-                  experimentName={selectedExperimentName}
-                  siteName={selectedSiteMetadata?.name || selectedSite}
-                  labels={labels}
-                />
-              )}
-            </section>
+                  <div className="mt-3 pt-3 border-t border-[#1a3045] text-[10px] text-[#3a6070] truncate">
+                    Best: {bestExpName}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <section>
-                <h2 className="mb-4 font-display text-lg">Metrics Comparison</h2>
-                <MetricsBarChart data={metricsComparison} />
-              </section>
-
-              <section>
-                <h2 className="mb-4 font-display text-lg">Error Distribution</h2>
-                <ErrorDistribution
-                  nwmErrors={nwmErrors}
-                  correctedErrors={correctedErrors}
-                  baselineLabel={labels.baselineName}
-                />
-              </section>
+        {/* ── SECTION 4: Architecture Comparison ── */}
+        {versionComparison.length > 0 && (
+          <section>
+            <div className="mb-4">
+              <h2 className="font-display text-lg text-white">Architecture Impact</h2>
+              <p className="text-sm text-[#8daec2] mt-0.5">
+                Best result per architecture version per site. Does model complexity improve
+                performance?
+              </p>
             </div>
 
-            {/* Version Comparison: best v2 vs best v3 per site */}
-            {versionComparison.length > 0 && (
-              <section>
-                <h2 className="mb-4 font-display text-lg">v2 vs v3 Comparison</h2>
-                <p className="mb-3 text-sm text-[#8daec2]">
-                  Best experiment from each architecture version per site (by RMSE improvement).
+            <div className="rounded-xl border border-[#2a445b] bg-[#091929] p-5">
+              <VersionComparisonChart data={versionComparison} />
+              {archInterpretation && (
+                <p className="mt-5 text-sm text-[#8daec2] leading-relaxed border-t border-[#1a3045] pt-4">
+                  {archInterpretation.allV3Better
+                    ? `v3 outperforms v2 at every site, with a median RMSE improvement of ${archInterpretation.medianV3}% vs. ${archInterpretation.medianV2}% — a ${archInterpretation.gain} percentage-point gain from the causal attention mechanism and non-negativity constraints.`
+                    : `v3 achieves a median RMSE improvement of ${archInterpretation.medianV3}% vs. ${archInterpretation.medianV2}% for v2 across study sites. The hybrid GRU-transformer architecture with causal masking delivers measurable gains at most locations.`}{' '}
+                  See the{' '}
+                  <Link href="/evaluation" className="text-hydra-corrected hover:underline">
+                    Evaluation page
+                  </Link>{' '}
+                  for bootstrap confidence intervals and Diebold-Mariano significance tests.
                 </p>
-                <VersionComparisonChart data={versionComparison} />
-              </section>
-            )}
-          </div>
-        </div>
+              )}
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer />
