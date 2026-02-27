@@ -63,6 +63,14 @@ def plot_error_by_flow_regime(
     site_name: str = "",
 ) -> None:
     apply_wrr_style()
+    plt.rcParams.update({
+        "font.size": 14,
+        "axes.labelsize": 14,
+        "xtick.labelsize": 13,
+        "ytick.labelsize": 13,
+        "legend.fontsize": 12,
+        "axes.titlesize": 14,
+    })
     df = pd.read_csv(csv_path, parse_dates=["timestamp"])
 
     obs_col = "corrected_true_cms" if "corrected_true_cms" in df.columns else "usgs_cms"
@@ -110,37 +118,25 @@ def plot_error_by_flow_regime(
         bars_corr = ax.bar(x + width / 2, corr_vals, width, label="Hydra",
                            color=COLORS["ml"], alpha=0.85, edgecolor="white", linewidth=0.5)
 
-        ax.set_ylabel(ylabel, fontsize=10)
+        ax.set_ylabel(ylabel, fontsize=14)
         ax.set_xticks(x)
-        ax.set_xticklabels(labels, fontsize=8)
-        ax.legend(fontsize=8, loc="best")
+        ax.set_xticklabels(labels, fontsize=11)
+        ax.legend(fontsize=12, loc="best")
         ax.grid(axis="y", alpha=0.3)
 
         if key == "pbias":
             ax.axhline(0, color="black", linewidth=0.8, linestyle="-")
-
-        # Add sample count annotation
-        for i_bin, n_nwm in enumerate(nwm_metrics_list):
-            ax.annotate(
-                f"n={n_nwm['n']}",
-                xy=(x[i_bin], 0),
-                xytext=(0, -18),
-                textcoords="offset points",
-                ha="center",
-                fontsize=6,
-                color="gray",
-            )
 
     title = "Error Decomposition by Flow Regime"
     if site_name:
         title += f"\n{site_name}"
     if site_id:
         title += f" ({site_id})"
-    fig.suptitle(title, fontsize=12, fontweight="bold", y=1.02)
+    fig.suptitle(title, fontsize=15, fontweight="bold", y=1.02)
 
     panel_labels = ["(a)", "(b)", "(c)", "(d)"]
     for ax, label in zip(axes.flat, panel_labels):
-        ax.text(-0.1, 1.05, label, transform=ax.transAxes, fontsize=11, fontweight="bold")
+        ax.text(-0.1, 1.05, label, transform=ax.transAxes, fontsize=14, fontweight="bold")
 
     ensure_parent(output)
     fig.tight_layout()

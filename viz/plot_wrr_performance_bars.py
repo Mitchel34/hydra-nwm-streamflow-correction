@@ -13,6 +13,14 @@ import pandas as pd
 def _plot_metric(df: pd.DataFrame, metric: str, label: str, out_path: Path) -> None:
     x = range(len(df))
     width = 0.35
+    plt.rcParams.update({
+        "font.size": 14,
+        "axes.labelsize": 14,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+        "legend.fontsize": 13,
+        "axes.titlesize": 14,
+    })
     plt.figure(figsize=(8, 4))
     plt.bar([i - width / 2 for i in x], df[f"{metric}_baseline"], width, label="NWM", color="tab:gray")
     plt.bar([i + width / 2 for i in x], df[f"{metric}_hydra"], width, label="Hydra", color="tab:red", alpha=0.75)

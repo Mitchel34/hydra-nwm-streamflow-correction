@@ -40,6 +40,12 @@ def main() -> None:
     proj = ccrs.LambertConformal(central_longitude=-81.4, central_latitude=36.4)
     pc = ccrs.PlateCarree()
 
+    plt.rcParams.update({
+        "font.size": 14,
+        "axes.labelsize": 14,
+        "legend.fontsize": 12,
+        "axes.titlesize": 14,
+    })
     fig = plt.figure(figsize=(8, 6.5))
     ax = fig.add_subplot(1, 1, 1, projection=proj)
     ax.set_extent([-82.8, -80.2, 35.7, 37.1], crs=pc)
@@ -92,7 +98,7 @@ def main() -> None:
             f"{sid}\n{info['name']}",
             xy=(lon, lat),
             xytext=(lon + dx, lat + dy),
-            fontsize=7, zorder=6,
+            fontsize=8, zorder=6,
             xycoords=pc._as_mpl_transform(ax),
             textcoords=pc._as_mpl_transform(ax),
             bbox=dict(
@@ -152,7 +158,7 @@ def main() -> None:
         "Watauga Dam\n(TVA)",
         xy=(dam["lon"], dam["lat"]),
         xytext=(dam["lon"] - 0.4, dam["lat"] + 0.18),
-        fontsize=8, fontweight="bold", color="#d62728",
+        fontsize=9, fontweight="bold", color="#d62728",
         xycoords=pc._as_mpl_transform(ax),
         textcoords=pc._as_mpl_transform(ax),
         arrowprops=dict(arrowstyle="->", color="#d62728", lw=1.0),
@@ -169,8 +175,8 @@ def main() -> None:
     )
     gl.top_labels = False
     gl.right_labels = False
-    gl.xlabel_style = {"size": 8}
-    gl.ylabel_style = {"size": 8}
+    gl.xlabel_style = {"size": 10}
+    gl.ylabel_style = {"size": 10}
 
     # Legend
     unreg_marker = mlines.Line2D(
@@ -186,12 +192,12 @@ def main() -> None:
     )
     ax.legend(
         handles=[unreg_marker, reg_marker, flow_arrow],
-        loc="lower right", fontsize=8, framealpha=0.9,
+        loc="lower right", fontsize=10, framealpha=0.9,
     )
 
     ax.set_title(
         "Study Sites: Southern Appalachian Watersheds",
-        fontsize=12, fontweight="bold", pad=12,
+        fontsize=14, fontweight="bold", pad=12,
     )
 
     args.out.parent.mkdir(parents=True, exist_ok=True)

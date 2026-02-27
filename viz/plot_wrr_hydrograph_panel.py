@@ -83,7 +83,6 @@ def _plot_panel(
     *,
     site_name: str,
     is_highflow: bool,
-    show_legend: bool,
     panel_label: str,
 ) -> None:
     """Plot a single hydrograph panel with uncertainty band."""
@@ -115,20 +114,9 @@ def _plot_panel(
             peak_row["timestamp"], color="k", linestyle=":", linewidth=0.8, alpha=0.7,
         )
 
-    # MAE annotation
-    mae_h = (corr - obs).abs().mean()
-    mae_n = (nwm - obs).abs().mean()
-    ax.text(
-        0.02, 0.93,
-        f"MAE \u2014 Hydra: {mae_h:.1f}  NWM: {mae_n:.1f}",
-        transform=ax.transAxes, fontsize=7,
-        bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.85, edgecolor="none"),
-        verticalalignment="top",
-    )
-
     ax.set_ylim(bottom=0)
-    ax.set_ylabel("Q (m\u00b3/s)", fontsize=8)
-    ax.tick_params(labelsize=7)
+    ax.set_ylabel("Q (m\u00b3/s)", fontsize=13)
+    ax.tick_params(labelsize=12)
 
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=2))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %d"))
@@ -137,11 +125,8 @@ def _plot_panel(
     # Panel label
     ax.text(
         -0.10, 1.06, f"({panel_label})",
-        transform=ax.transAxes, fontsize=9, fontweight="bold", va="top",
+        transform=ax.transAxes, fontsize=13, fontweight="bold", va="top",
     )
-
-    if show_legend:
-        ax.legend(fontsize=6, loc="upper right", ncol=2, framealpha=0.8)
 
 
 def plot_wrr_hydrograph_panel(
@@ -153,11 +138,19 @@ def plot_wrr_hydrograph_panel(
     hours: int = 168,
 ) -> None:
     apply_wrr_style()
+    plt.rcParams.update({
+        "font.size": 13,
+        "axes.labelsize": 13,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 11,
+        "axes.titlesize": 14,
+    })
 
     n_sites = len(eval_csvs)
     assert len(site_ids) == n_sites and len(site_names) == n_sites
 
-    fig = plt.figure(figsize=(14, 4.0 * n_sites))
+    fig = plt.figure(figsize=(14, 4.0 * n_sites + 0.7))
     gs = gridspec.GridSpec(n_sites, 2, figure=fig, hspace=0.38, wspace=0.25)
 
     for row, (csv_path, sid, sname) in enumerate(zip(eval_csvs, site_ids, site_names)):
@@ -176,20 +169,29 @@ def plot_wrr_hydrograph_panel(
         _plot_panel(
             ax_high, win_high, p10, p90,
             site_name=sname, is_highflow=True,
-            show_legend=(row == 0), panel_label=label_high,
+            panel_label=label_high,
         )
         _plot_panel(
             ax_typ, win_typ, p10, p90,
             site_name=sname, is_highflow=False,
-            show_legend=False, panel_label=label_typ,
+            panel_label=label_typ,
         )
 
         # Row site name on left panel
-        ax_high.set_title(sname, fontsize=9, fontweight="bold", loc="left")
+        ax_high.set_title(sname, fontsize=13, fontweight="bold", loc="left")
 
     # Column headers
-    fig.text(0.30, 0.99, "High-Flow Event", ha="center", fontsize=11, fontweight="bold")
-    fig.text(0.74, 0.99, "Typical-Flow Period", ha="center", fontsize=11, fontweight="bold")
+    fig.text(0.30, 0.99, "High-Flow Event", ha="center", fontsize=14, fontweight="bold")
+    fig.text(0.74, 0.99, "Typical-Flow Period", ha="center", fontsize=14, fontweight="bold")
+
+    # Figure-level legend below all panels (shared across all subplots)
+    handles, labels = fig.axes[0].get_legend_handles_labels()
+    fig.legend(
+        handles, labels,
+        loc="lower center", bbox_to_anchor=(0.5, 0.0),
+        ncol=len(handles), fontsize=11, framealpha=0.9,
+        bbox_transform=fig.transFigure,
+    )
 
     ensure_parent(output)
     fig.savefig(output, dpi=300, bbox_inches="tight")
