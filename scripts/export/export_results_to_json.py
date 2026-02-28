@@ -116,15 +116,15 @@ EXPERIMENTS: Dict[str, Dict[str, str]] = {
     # -- Architecture baselines --
     "lstm_nwm_era5": {
         "name": "LSTM Baseline",
-        "description": "LSTM encoder baseline; NWM+ERA5 inputs, residual correction",
+        "description": "Input ablation: LSTM encoder baseline with NWM + ERA5 only (no real-time gauges)",
     },
     "transformer_nwm_era5": {
         "name": "Hydra v1 (Transformer-Only)",
-        "description": "Transformer-only encoder without GRU; NWM+ERA5 inputs. Negative result: degrades NWM.",
+        "description": "Input ablation: Transformer-only encoder with NWM + ERA5 only (no real-time gauges). Negative result: degrades NWM.",
     },
     "gru_transformer_v2_nwm_era5": {
         "name": "Hydra v2",
-        "description": "GRU-Transformer hybrid; NWM+ERA5 inputs, residual correction",
+        "description": "Input ablation: GRU-Transformer hybrid with NWM + ERA5 only (no real-time gauges)",
     },
     "gru_transformer_v2_nwm_era5_tuned": {
         "name": "Hydra v2 (Tuned)",
@@ -152,7 +152,7 @@ EXPERIMENTS: Dict[str, Dict[str, str]] = {
     # -- Hydra v3 training ablation --
     "hydra_v3_nwm_era5": {
         "name": "Hydra v3",
-        "description": "Hydra v3 base: feature gate, multi-scale conv, regime bias; NWM+ERA5 inputs",
+        "description": "Input ablation: Hydra v3 base with NWM + ERA5 only (no real-time gauges)",
     },
     "hydra_v3_causal": {
         "name": "Hydra v3 + Causal Mask",
@@ -179,14 +179,14 @@ EXPERIMENTS: Dict[str, Dict[str, str]] = {
         "description": "Hydra v3 full config with automatic loss normalization [hidden]",
         "hidden": "true",
     },
-    # -- ERA5-only (operational input ablation) --
+    # -- ERA5-only input ablation --
     "hydra_v3_era5_only": {
         "name": "Hydra v3 (ERA5-Only)",
-        "description": "Hydra v3 with ERA5 meteorological inputs only — no NWM or USGS",
+        "description": "Input ablation: ERA5 meteorological inputs only (no real-time gauges or NWM)",
     },
     "gru_era5_only": {
         "name": "GRU (ERA5-Only)",
-        "description": "Simple GRU with ERA5 inputs only — no NWM or USGS",
+        "description": "Input ablation: ERA5 inputs only (no real-time gauges or NWM)",
     },
     # -- Nowcasting: USGS observed discharge as input --
     "hydra_v3_usgs_nwm_era5": {
@@ -195,7 +195,7 @@ EXPERIMENTS: Dict[str, Dict[str, str]] = {
     },
     "hydra_v3_usgs_era5": {
         "name": "Hydra v3 + USGS (No NWM)",
-        "description": "Nowcasting ablation: Hydra v3 with lagged USGS + ERA5 only (NWM removed)",
+        "description": "Input ablation: Hydra v3 with lagged USGS + ERA5 only (NWM removed)",
     },
 }
 

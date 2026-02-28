@@ -1,0 +1,7 @@
+experiment,experiment_label,site_id,site_name,ss_rmse,ss_rmse_ci_lo,ss_rmse_ci_hi,delta_nse,delta_nse_ci_lo,delta_nse_ci_hi,dm_statistic,dm_p_value,dm_significant_005,dm_significant_001
+hydra_v3_usgs_nwm_era5,Hydra v3 + USGS + NWM + ERA5,03161000,"Jefferson, NC",0.4535,0.3879,0.5917,0.3989,0.3512,0.4720,4.2327,2.30908e-05,True,True
+hydra_v3_usgs_nwm_era5,Hydra v3 + USGS + NWM + ERA5,03164000,"Galax, VA",0.4823,0.4072,0.5990,0.5359,0.4375,0.6613,5.1217,3.02787e-07,True,True
+hydra_v3_usgs_nwm_era5,Hydra v3 + USGS + NWM + ERA5,03479000,"Sugar Grove, NC",0.5605,0.4449,0.7006,0.3089,0.2060,0.4466,3.2360,0.00121234,True,True
+hydra_v3_nwm_era5,Hydra v3,03161000,"Jefferson, NC",0.0853,0.0522,0.1452,0.0929,0.0566,0.1526,4.4933,7.01236e-06,True,True
+hydra_v3_nwm_era5,Hydra v3,03164000,"Galax, VA",0.2184,0.1582,0.2859,0.2849,0.2022,0.3739,3.5667,0.000361513,True,True
+hydra_v3_nwm_era5,Hydra v3,03479000,"Sugar Grove, NC",0.0496,0.0287,0.0916,0.0371,0.0213,0.0677,3.8306,0.000127832,True,True

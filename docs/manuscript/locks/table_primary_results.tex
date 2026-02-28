@@ -1,0 +1,17 @@
+\begin{table}
+\centering
+\caption{Primary nowcasting performance (Hydra v3 with lagged USGS + NWM + ERA5) on the test period.}
+\small
+\begin{tabular}{l rr r rr rr rr}
+\toprule
+\textbf{Site} & \multicolumn{2}{c}{\textbf{RMSE}} & \textbf{$\Delta$RMSE} & \multicolumn{2}{c}{\textbf{NSE}} & \multicolumn{2}{c}{\textbf{KGE}} & \multicolumn{2}{c}{\textbf{PBIAS (\%)}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}
+ & NWM & Hydra & & NWM & Hydra & NWM & Hydra & NWM & Hydra \\
+\midrule
+Jefferson, NC & 15.68 & \textbf{8.57} & \textbf{45.3\%} & 0.431 & 0.830 & 0.369 & 0.676 & -24.74 & -5.76 \\
+Galax, VA & 77.55 & \textbf{40.15} & \textbf{48.2\%} & 0.268 & 0.804 & 0.473 & 0.741 & -13.98 & -6.68 \\
+Sugar Grove, NC & 7.92 & \textbf{3.48} & \textbf{56.0\%} & 0.617 & 0.926 & 0.682 & 0.896 & 0.58 & 0.16 \\
+\bottomrule
+\end{tabular}
+\label{tab:primary_results}
+\end{table}

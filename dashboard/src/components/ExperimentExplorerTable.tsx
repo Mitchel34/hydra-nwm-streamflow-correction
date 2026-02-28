@@ -73,7 +73,7 @@ function median(values: number[]): number {
 interface ExperimentStat {
   id: string;
   name: string;
-  type: 'nowcasting' | 'operational';
+  type: 'nowcasting' | 'ablation';
   arch: string;
   inputs: string;
   medianRmse: number;
@@ -91,7 +91,7 @@ interface Props {
 /* ---------- Component ---------- */
 
 export default function ExperimentExplorerTable({ experiments, results }: Props) {
-  const [filterType, setFilterType] = useState<'all' | 'operational' | 'nowcasting'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'ablation' | 'nowcasting'>('all');
   const [sortKey, setSortKey] = useState<'default' | 'rmse' | 'nse'>('rmse');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -109,7 +109,7 @@ export default function ExperimentExplorerTable({ experiments, results }: Props)
         return {
           id,
           name: meta.name,
-          type: NOWCASTING.has(id) ? 'nowcasting' : 'operational',
+          type: NOWCASTING.has(id) ? 'nowcasting' : 'ablation',
           arch: getArch(id),
           inputs: getInputLabel(id),
           medianRmse: median(rmseVals),
@@ -121,7 +121,7 @@ export default function ExperimentExplorerTable({ experiments, results }: Props)
   }, [experiments, results]);
 
   const nowcastingCount = useMemo(() => stats.filter((s) => s.type === 'nowcasting').length, [stats]);
-  const operationalCount = useMemo(() => stats.filter((s) => s.type === 'operational').length, [stats]);
+  const ablationCount = useMemo(() => stats.filter((s) => s.type === 'ablation').length, [stats]);
 
   const visible = useMemo(() => {
     let filtered = stats;
@@ -146,10 +146,10 @@ export default function ExperimentExplorerTable({ experiments, results }: Props)
       {/* Filter + Sort bar */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1 rounded-lg border border-[#2a445b] bg-[#0a1822] p-1">
-          {(['all', 'operational', 'nowcasting'] as const).map((f) => {
+          {(['all', 'ablation', 'nowcasting'] as const).map((f) => {
             const labels = {
               all: `All (${stats.length})`,
-              operational: `Operational (${operationalCount})`,
+              ablation: `Input Ablation (${ablationCount})`,
               nowcasting: `Nowcasting (${nowcastingCount})`,
             };
             return (
@@ -293,7 +293,7 @@ export default function ExperimentExplorerTable({ experiments, results }: Props)
                             label: 'Type',
                             value: stat.type === 'nowcasting'
                               ? 'Nowcasting (lagged observations)'
-                              : 'Operational (NWP-only)',
+                              : 'Input Ablation',
                           },
                         ].map(({ label, value }) => (
                           <div key={label} className="rounded-lg border border-[#1f3a52] bg-[#0a1e30] px-3 py-2">

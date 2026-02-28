@@ -141,7 +141,7 @@ def main() -> None:
     )
 
     wr_lon = (data["03479000"]["lon"] + data["03486000"]["lon"]) / 2
-    wr_lat = min(data["03479000"]["lat"], data["03486000"]["lat"]) - 0.14
+    wr_lat = min(data["03479000"]["lat"], data["03486000"]["lat"]) - 0.22
     ax.text(
         wr_lon, wr_lat, "Watauga River Basin",
         fontsize=10, fontweight="bold", color="#1f77b4", alpha=0.9,

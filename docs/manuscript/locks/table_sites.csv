@@ -1,0 +1,5 @@
+site_id,site_name,watershed,regulated,nwm_comid,lat,lon
+03161000,"South Fork New River near Jefferson, NC",South Fork New River (HUC 05050001),No,6892192,36.3933,-81.4069
+03164000,"New River near Galax, VA",New River mainstem (downstream integrator),No,6887572,36.6474,-80.9790
+03479000,"Watauga River near Sugar Grove, NC",Watauga River (HUC 06010103),No,19743430,36.2392,-81.8222
+03486000,"Watauga River at Elizabethton, TN","Watauga River (downstream, regulated)",Yes,19745222,36.3559,-82.2235

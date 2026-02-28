@@ -66,8 +66,8 @@
       "description": "Hydra v2 with causal masking and non-negativity constraint"
     },
     "hydra_v3_nwm_era5": {
-      "name": "Hydra v3",
-      "description": "Hydra v3 base: feature gate, multi-scale conv, regime bias; NWM+ERA5 inputs"
+      "name": "Hydra v3 (Input Ablation)",
+      "description": "Input ablation: NWM + ERA5 only (no real-time gauges)"
     },
     "hydra_v3_causal": {
       "name": "Hydra v3 + Causal Mask",
@@ -95,20 +95,20 @@
       "hidden": "true"
     },
     "hydra_v3_era5_only": {
-      "name": "Hydra v3 (ERA5-Only)",
-      "description": "Hydra v3 with ERA5 meteorological inputs only \u2014 no NWM or USGS"
+      "name": "Hydra v3 (Input Ablation: ERA5-Only)",
+      "description": "Input ablation: ERA5 meteorological inputs only (no NWM or USGS)"
     },
     "gru_era5_only": {
-      "name": "GRU (ERA5-Only)",
-      "description": "Simple GRU with ERA5 inputs only \u2014 no NWM or USGS"
+      "name": "GRU (Input Ablation: ERA5-Only)",
+      "description": "Input ablation: ERA5 inputs only (no NWM or USGS)"
     },
     "hydra_v3_usgs_nwm_era5": {
-      "name": "Hydra v3 + USGS (Primary)",
-      "description": "Primary nowcasting config: Hydra v3 with lagged USGS obs + NWM + ERA5 inputs"
+      "name": "Hydra v3 Nowcasting (Primary)",
+      "description": "Primary nowcasting: lagged USGS + NWM + ERA5"
     },
     "hydra_v3_usgs_era5": {
-      "name": "Hydra v3 + USGS (No NWM)",
-      "description": "Nowcasting ablation: Hydra v3 with lagged USGS + ERA5 only (NWM removed)"
+      "name": "Hydra v3 (Input Ablation)",
+      "description": "Input ablation: USGS + ERA5 only (no NWM)"
     }
   },
   "results": [

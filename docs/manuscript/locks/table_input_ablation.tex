@@ -1,0 +1,17 @@
+\begin{table}
+\centering
+\caption{Input ablation using locked experiment outputs. NWM+ERA5 is the ablation baseline; USGS+ERA5 removes NWM from the nowcasting feature set.}
+\small
+\begin{tabular}{l cc cc cc}
+\toprule
+\textbf{Site} & \multicolumn{2}{c}{\textbf{NWM+ERA5}} & \multicolumn{2}{c}{\textbf{USGS+ERA5}} & \multicolumn{2}{c}{\textbf{USGS+NWM+ERA5}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+ & RMSE & $\Delta$RMSE & RMSE & $\Delta$RMSE & RMSE & $\Delta$RMSE \\
+\midrule
+Jefferson, NC & 14.34 & 8.5\% & 10.45 & 33.4\% & \textbf{8.57} & \textbf{45.3\%} \\
+Galax, VA & 60.61 & 21.8\% & 57.53 & 25.8\% & \textbf{40.15} & \textbf{48.2\%} \\
+Sugar Grove, NC & 7.53 & 5.0\% & 7.00 & 11.7\% & \textbf{3.48} & \textbf{56.0\%} \\
+\bottomrule
+\end{tabular}
+\label{tab:input_ablation}
+\end{table}

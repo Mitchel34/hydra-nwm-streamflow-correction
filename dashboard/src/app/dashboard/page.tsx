@@ -80,7 +80,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [controlsOpen, setControlsOpen] = useState(false);
-  const [versionFilter, setVersionFilter] = useState<'all' | 'operational' | 'nowcasting'>('all');
+  // Note: versionFilter removed - experiment categories now shown via ExperimentExplorerTable
   const [timeSeriesLoading, setTimeSeriesLoading] = useState(false);
 
   useEffect(() => {
@@ -323,8 +323,6 @@ export default function Dashboard() {
             selected={selectedExperiment}
             onSelect={handleExperimentSelect}
             availableExperiments={availableExperiments}
-            versionFilter={versionFilter}
-            onVersionFilterChange={setVersionFilter}
           />
         </section>
 

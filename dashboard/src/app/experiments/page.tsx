@@ -177,7 +177,7 @@ export default function ExperimentsPage() {
             <p className="text-sm text-[#8daec2] mt-0.5">
               Primary result:{' '}
               <span className="text-hydra-corrected font-medium">Hydra v3 + USGS</span>
-              {' '}— nowcasting with lagged discharge observations.
+              {' '}— best-performing configuration across the experiment suite.
             </p>
           </div>
 

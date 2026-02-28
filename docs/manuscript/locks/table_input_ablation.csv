@@ -1,0 +1,4 @@
+site_id,site_name,nwm_era5_rmse,nwm_era5_gain_pct,usgs_era5_rmse,usgs_era5_gain_pct,usgs_nwm_era5_rmse,usgs_nwm_era5_gain_pct,delta_remove_nwm_pct_pts
+03161000,"Jefferson, NC",14.34,8.5,10.45,33.4,8.57,45.3,12.0
+03164000,"Galax, VA",60.61,21.8,57.53,25.8,40.15,48.2,22.4
+03479000,"Sugar Grove, NC",7.53,5.0,7.00,11.7,3.48,56.0,44.3
