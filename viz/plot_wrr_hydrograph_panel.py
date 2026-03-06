@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""WRR multi-site hydrograph panel with empirical uncertainty bands.
+"""WRR multi-site hydrograph panel with residual-based uncertainty bands.
 
 Produces a 3-row × 2-col figure (one row per unregulated site):
     Left column:  high-flow event window (7-day half-window around peak)
     Right column: typical-flow period (7-day half-window around median flow)
 
-Each panel includes P10–P90 empirical prediction intervals derived from
+Each panel includes P10–P90 residual-based intervals derived from
 test-set residuals.
 
 Usage:
@@ -51,7 +51,7 @@ def _load_eval(csv_path: str | Path) -> pd.DataFrame:
 
 
 def _compute_bounds(df: pd.DataFrame) -> tuple[float, float]:
-    """Empirical P10/P90 offsets from full-dataset residuals."""
+    """Residual-based P10/P90 offsets from full-dataset residuals."""
     resid = df["corrected_pred_cms"].to_numpy() - df["corrected_true_cms"].to_numpy()
     return float(np.percentile(resid, 10)), float(np.percentile(resid, 90))
 

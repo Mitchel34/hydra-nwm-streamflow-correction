@@ -1,11 +1,11 @@
 # vNext Lock Artifacts
 
-Generated: 2026-02-25T22:51:46.787377+00:00
+Generated: 2026-03-05T22:40:40.905504+00:00
 
 Artifacts:
 - docs/manuscript/locks/table_primary_results.csv
 - docs/manuscript/locks/table_input_ablation.csv
-- docs/manuscript/locks/table_operational_architecture.csv
+- docs/manuscript/locks/table_ablation_architecture.csv
 - docs/manuscript/locks/table_significance.csv
 - docs/manuscript/locks/table_sites.csv
 - docs/manuscript/locks/table_temporal_split.csv
@@ -14,7 +14,7 @@ Artifacts:
 - docs/manuscript/locks/figure_lock.csv
 - docs/manuscript/locks/table_primary_results.tex
 - docs/manuscript/locks/table_input_ablation.tex
-- docs/manuscript/locks/table_operational_architecture.tex
+- docs/manuscript/locks/table_ablation_architecture.tex
 - docs/manuscript/locks/table_significance.tex
 - docs/manuscript/locks/table_sites.tex
 - docs/manuscript/locks/table_temporal_split.tex

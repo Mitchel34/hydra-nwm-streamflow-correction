@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Hydra v3 architecture diagram for WRR manuscript.
 
-Produces a vertical flow diagram showing the USGS+NWM+ERA5 nowcasting
-configuration of the Hydra v3 model: inputs → feature gating → GRU encoder
+Produces a vertical flow diagram showing the gauge-informed
+USGS+NWM+ERA5-Land configuration of the Hydra v3 model: inputs → feature gating → GRU encoder
 → Transformer encoder → multi-scale convolution + attention pooling →
 fusion → regime-conditioned bias → residual head → corrected discharge.
 
@@ -113,9 +113,9 @@ def plot_wrr_architecture(output: str | Path = "docs/figures/wrr_architecture.pd
     # ── Input block (3 sources side-by-side) ──────────────────────────────────
     iw, ih = 0.145, 0.052
     for i, (label, sub, xc) in enumerate([
-        ("USGS",   "Lagged obs.", 0.175),
-        ("NWM",    "Baseline Q",  0.500),
-        ("ERA5",   "Meteo.",      0.825),
+        ("USGS",      "Lagged discharge", 0.175),
+        ("NWM v2.1",  "Streamflow",       0.500),
+        ("ERA5-Land", "Meteorology",      0.825),
     ]):
         _box(ax, (xc, y_inputs), iw, ih, label, sub,
              facecolor=C_INPUT, fontsize=12)
@@ -177,7 +177,7 @@ def plot_wrr_architecture(output: str | Path = "docs/figures/wrr_architecture.pd
 
     # ── Title ─────────────────────────────────────────────────────────────────
     ax.text(cx, 0.992,
-            "Hydra v3 Architecture  (USGS + NWM + ERA5 Nowcasting Mode)",
+            "Hydra v3 Architecture  (Gauge-Informed Configuration)",
             ha="center", va="top", fontsize=14, fontweight="bold")
 
     ensure_parent(output)
