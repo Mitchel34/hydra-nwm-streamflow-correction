@@ -278,12 +278,17 @@ class HydraTemporalV3(nn.Module):
             self.logvar_max,
         )
 
-    def forward(self, x_seq: torch.Tensor, static_feats: Optional[torch.Tensor] = None) -> dict:
+    def forward(
+        self,
+        x_seq: torch.Tensor,
+        static_feats: Optional[torch.Tensor] = None,
+        return_intermediates: bool = False,
+    ) -> dict:
         # A2: gate the raw features before anything else
         seq = self.feature_gate(x_seq)
         seq = self.input_norm(seq)
-        seq, _ = self.pre_gru(seq)
-        seq = self.positional(seq)
+        gru_encoded, _ = self.pre_gru(seq)
+        seq = self.positional(gru_encoded)
         seq = self.dropout(seq)
 
         # Transformer encoder with optional causal mask
@@ -336,5 +341,12 @@ class HydraTemporalV3(nn.Module):
 
         if self.quantile_head is not None and self.quantiles:
             outputs["quantiles"] = self.quantile_head(fused)
+
+        if return_intermediates:
+            outputs["intermediates"] = {
+                "gru_last": gru_encoded[:, -1, :],
+                "transformer_last": encoded[:, -1, :],
+                "fused": fused,
+            }
 
         return outputs

@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
+from torch.utils.data import DataLoader, WeightedRandomSampler
 
 try:
     from torch_optimizer import Ranger
@@ -37,6 +37,12 @@ from modeling.models.hydra_temporal import HydraTemporalModel as HydraTemporalV2
 from modeling.models.hydra_temporal_v1 import HydraTemporalModel as HydraTemporalV1
 from modeling.models.hydra_temporal_v3 import HydraTemporalV3
 from modeling.models.gru_simple import SimpleGRUModel
+from modeling.training.data_utils import (
+    build_split_dataset,
+    load_data,
+    prepare_site_data,
+    validate_single_site,
+)
 
 # Optional TensorBoard for gradient tracking
 try:
@@ -45,26 +51,6 @@ try:
 except ImportError:
     HAS_TENSORBOARD = False
     SummaryWriter = None
-
-ERA5_CANDIDATES = [
-    "temp_c",
-    "dewpoint_c",
-    "pressure_hpa",
-    "precip_mm",
-    "radiation_mj_m2",
-    "wind_speed",
-    "vpd_kpa",
-    "rel_humidity_pct",
-    "soil_moisture_vwc",
-    "hour_sin",
-    "hour_cos",
-    "doy_sin",
-    "doy_cos",
-    "month_sin",
-    "month_cos",
-]
-
-STATIC_NUMERIC: List[str] = []
 
 EPS = 1e-6
 
@@ -116,93 +102,6 @@ def _unpack_predictions(outputs: Dict[str, torch.Tensor], y_nwm: torch.Tensor) -
     corr_from_res = outputs.get("corrected", y_nwm + pred_res_raw)
     pred_corr_t = transform_target(corr_from_res)
     return pred_res_raw, pred_res_t, corr_from_res, pred_corr_t, has_gaussian, logvar_res, logvar_corr
-
-
-class SeqDataset(Dataset):
-    def __init__(
-        self,
-        dyn: np.ndarray,
-        static: np.ndarray,
-        residual: np.ndarray,
-        usgs: np.ndarray,
-        nwm: np.ndarray,
-        seq_len: int,
-        augment: bool = False,
-    ) -> None:
-        self.seq_len = seq_len
-        self.dyn = dyn.astype(np.float32)
-        self.static = static.astype(np.float32) if static.size else static
-        self.residual = residual.astype(np.float32)
-        self.usgs = usgs.astype(np.float32)
-        self.nwm = nwm.astype(np.float32)
-        self.length = max(len(self.dyn) - seq_len, 0)
-        self.augment = augment
-
-    def __len__(self) -> int:
-        return self.length
-
-    def __getitem__(self, idx: int):
-        j = idx + self.seq_len
-        seq = self.dyn[idx:j]
-        if self.augment and np.random.rand() < 0.5:
-            seq = seq + np.random.normal(0.0, 0.05, size=seq.shape).astype(np.float32)
-        static_vec = self.static[j] if self.static.size else np.zeros(0, dtype=np.float32)
-        return (
-            torch.from_numpy(seq),
-            torch.from_numpy(static_vec),
-            torch.tensor(self.residual[j], dtype=torch.float32),
-            torch.tensor(self.usgs[j], dtype=torch.float32),
-            torch.tensor(self.nwm[j], dtype=torch.float32),
-        )
-
-
-def load_data(path: str) -> pd.DataFrame:
-    df = pd.read_parquet(path)
-    required = {"timestamp", "nwm_cms", "usgs_cms", "y_residual_cms"}
-    if not required.issubset(df.columns):
-        missing = required.difference(df.columns)
-        raise ValueError(f"Missing columns in dataset: {missing}")
-    df = df.sort_values("timestamp").dropna(subset=list(required))
-    return df.reset_index(drop=True)
-
-
-def add_static_columns(df: pd.DataFrame) -> List[str]:
-    cols: List[str] = []
-    for col in STATIC_NUMERIC:
-        if col in df.columns:
-            cols.append(col)
-    if "regulation_status" in df.columns:
-        df["is_regulated"] = (df["regulation_status"] == "Regulated").astype(float)
-        cols.append("is_regulated")
-    return cols
-
-
-def prepare_features(
-    df: pd.DataFrame,
-    train_idx: pd.Index,
-    dynamic_cols: List[str],
-    static_cols: List[str],
-) -> Tuple[np.ndarray, np.ndarray, dict]:
-    dyn_mean = df.loc[train_idx, dynamic_cols].mean()
-    dyn_std = df.loc[train_idx, dynamic_cols].std().replace(0, 1)
-    dyn_scaled = ((df[dynamic_cols] - dyn_mean) / dyn_std).fillna(0.0)
-
-    static_mean = None
-    static_std = None
-    if static_cols:
-        static_mean = df.loc[train_idx, static_cols].mean()
-        static_std = df.loc[train_idx, static_cols].std().replace(0, 1)
-        static_scaled = ((df[static_cols] - static_mean) / static_std).fillna(0.0)
-    else:
-        static_scaled = pd.DataFrame(index=df.index)
-
-    stats = {
-        "dyn_mean": dyn_mean,
-        "dyn_std": dyn_std,
-        "static_mean": static_mean,
-        "static_std": static_std,
-    }
-    return dyn_scaled.to_numpy(), static_scaled.to_numpy(), stats
 
 
 def _safe_mean(arr: np.ndarray) -> float:
@@ -405,183 +304,40 @@ def train_eval(
             return start
         return float(start + (final - start) * progress)
     df = load_data(data_path)
-    site_cols = [c for c in ("site_name", "comid") if c in df.columns]
-    if site_cols:
-        for col in site_cols:
-            if df[col].nunique() > 1:
-                unique_vals = df[col].nunique()
-                raise ValueError(
-                    f"Dataset contains {unique_vals} unique values in '{col}'. "
-                    "Train each gauge/site separately to avoid sequence leakage."
-                )
-    if all(ts is not None for ts in (train_start, train_end)):
-        train_start_ts = pd.Timestamp(train_start)
-        train_end_ts = pd.Timestamp(train_end)
-    else:
-        start = df["timestamp"].min()
-        train_start_ts = start
-        train_end_ts = start + pd.Timedelta(days=train_days)
+    validate_single_site(df)
+    prepared = prepare_site_data(
+        df,
+        seq_len=seq_len,
+        train_days=train_days,
+        val_days=val_days,
+        train_start=train_start,
+        train_end=train_end,
+        val_start=val_start,
+        val_end=val_end,
+        test_start=test_start,
+        test_end=test_end,
+        include_usgs=include_usgs,
+        no_nwm=no_nwm,
+    )
+    dynamic_cols = prepared.dynamic_cols
+    static_cols = prepared.static_cols
 
-    train_mask = (df["timestamp"] >= train_start_ts) & (df["timestamp"] <= train_end_ts)
-    if train_mask.sum() <= seq_len:
-        raise ValueError("Training window shorter than sequence length")
-
-    val_start_ts = pd.Timestamp(val_start) if val_start is not None else None
-    val_end_ts = pd.Timestamp(val_end) if val_end is not None else None
-    if val_start_ts is not None and val_end_ts is not None:
-        val_mask = (df["timestamp"] >= val_start_ts) & (df["timestamp"] <= val_end_ts)
-    else:
-        if val_days > 0:
-            val_start_ts = train_end_ts
-            val_end_ts = train_end_ts + pd.Timedelta(days=val_days)
-            val_mask = (df["timestamp"] >= val_start_ts) & (df["timestamp"] < val_end_ts)
-        else:
-            val_mask = pd.Series(False, index=df.index)
-            val_end_ts = None
-
-    if test_start is not None or test_end is not None:
-        if not (test_start and test_end):
-            raise ValueError("--test-start and --test-end must both be provided for custom evaluation windows.")
-        test_start_ts = pd.Timestamp(test_start)
-        test_end_ts = pd.Timestamp(test_end)
-        test_mask = (df["timestamp"] >= test_start_ts) & (df["timestamp"] <= test_end_ts)
-    elif val_end_ts is not None:
-        test_mask = df["timestamp"] > val_end_ts
-    else:
-        test_mask = ~train_mask
-    if test_mask.sum() == 0:
-        raise ValueError("No evaluation rows available after split")
-
-    era5_cols = [c for c in ERA5_CANDIDATES if c in df.columns]
     if no_nwm:
         if include_usgs:
-            dynamic_cols = ["usgs_cms"] + era5_cols
             print(f"[INFO] --no-nwm --include-usgs: {len(dynamic_cols)} features (lagged USGS + ERA5)")
         else:
-            dynamic_cols = era5_cols
-        if len(era5_cols) == 0:
-            raise ValueError(
-                "No ERA5 columns found in the dataset. "
-                "Cannot run --no-nwm without meteorological features."
-            )
-        if not include_usgs:
             print(f"[INFO] --no-nwm mode: {len(dynamic_cols)} ERA5-only features (NWM excluded)")
-    else:
-        if include_usgs:
-            dynamic_cols = ["nwm_cms", "usgs_cms"] + era5_cols
-            print(f"[INFO] --include-usgs: {len(dynamic_cols)} features (NWM + lagged USGS + ERA5)")
-        else:
-            dynamic_cols = ["nwm_cms"] + era5_cols
-        if not dynamic_cols or dynamic_cols[0] != "nwm_cms":
-            raise ValueError("First dynamic feature must be 'nwm_cms'")
-        if len(era5_cols) == 0:
-            raise ValueError(
-                "Dynamic feature set contains only 'nwm_cms'. "
-                "Ensure ERA5/meteorological columns are present in the parquet."
-            )
+    elif include_usgs:
+        print(f"[INFO] --include-usgs: {len(dynamic_cols)} features (NWM + lagged USGS + ERA5)")
 
-    static_cols = add_static_columns(df)
     if not static_cols:
         print("Warning: proceeding without static metadata features.")
 
-    dyn_scaled, static_scaled, _ = prepare_features(df, df.index[train_mask], dynamic_cols, static_cols)
+    train_ds, _ = build_split_dataset(prepared, "train", augment=augment)
+    val_ds, _ = build_split_dataset(prepared, "val", augment=False)
+    test_ds, _ = build_split_dataset(prepared, "test", augment=False)
 
-    residual = df["y_residual_cms"].to_numpy()
-    usgs = df["usgs_cms"].to_numpy()
-    nwm = df["nwm_cms"].to_numpy()
-
-    zero_static = lambda rows: np.zeros((rows, 0), dtype=np.float32)
-
-    train_idx = train_mask.values
-    val_idx = val_mask.values
-    test_idx = test_mask.values
-
-    train_dyn = dyn_scaled[train_idx]
-    train_static = static_scaled[train_idx] if static_cols else zero_static(train_idx.sum())
-    train_resid = residual[train_idx]
-    train_usgs = usgs[train_idx]
-    train_nwm = nwm[train_idx]
-
-    val_dyn = dyn_scaled[val_idx]
-    val_static = static_scaled[val_idx] if static_cols else zero_static(val_idx.sum())
-    val_resid = residual[val_idx]
-    val_usgs = usgs[val_idx]
-    val_nwm = nwm[val_idx]
-
-    test_dyn = dyn_scaled[test_idx]
-    test_static = static_scaled[test_idx] if static_cols else zero_static(test_idx.sum())
-    test_resid = residual[test_idx]
-    test_usgs = usgs[test_idx]
-    test_nwm = nwm[test_idx]
-
-    tail_train = min(seq_len, train_dyn.shape[0])
-    if tail_train < seq_len:
-        raise ValueError("Training window shorter than sequence length")
-
-    train_ds = SeqDataset(
-        train_dyn,
-        train_static,
-        train_resid,
-        train_usgs,
-        train_nwm,
-        seq_len,
-        augment=augment,
-    )
-
-    val_ds = None
-    if val_dyn.shape[0] > 0:
-        val_seed_dyn = np.concatenate([train_dyn[-tail_train:], val_dyn], axis=0)
-        val_seed_static = (
-            np.concatenate([train_static[-tail_train:], val_static], axis=0)
-            if static_cols
-            else zero_static(val_seed_dyn.shape[0])
-        )
-        val_seed_resid = np.concatenate([train_resid[-tail_train:], val_resid])
-        val_seed_usgs = np.concatenate([train_usgs[-tail_train:], val_usgs])
-        val_seed_nwm = np.concatenate([train_nwm[-tail_train:], val_nwm])
-        val_ds = SeqDataset(
-            val_seed_dyn,
-            val_seed_static,
-            val_seed_resid,
-            val_seed_usgs,
-            val_seed_nwm,
-            seq_len,
-            augment=False,
-        )
-
-    history_dyn = train_dyn if val_dyn.shape[0] == 0 else np.concatenate([train_dyn, val_dyn], axis=0)
-    history_static = (
-        train_static if val_dyn.shape[0] == 0 else np.concatenate([train_static, val_static], axis=0)
-    ) if static_cols else zero_static(history_dyn.shape[0])
-    history_resid = train_resid if val_dyn.shape[0] == 0 else np.concatenate([train_resid, val_resid])
-    history_usgs = train_usgs if val_dyn.shape[0] == 0 else np.concatenate([train_usgs, val_usgs])
-    history_nwm = train_nwm if val_dyn.shape[0] == 0 else np.concatenate([train_nwm, val_nwm])
-
-    tail_history = min(seq_len, history_dyn.shape[0])
-    if tail_history < seq_len:
-        raise ValueError("Insufficient history to seed evaluation sequences")
-
-    test_seed_dyn = np.concatenate([history_dyn[-tail_history:], test_dyn], axis=0)
-    test_seed_static = (
-        np.concatenate([history_static[-tail_history:], test_static], axis=0)
-        if static_cols
-        else zero_static(test_seed_dyn.shape[0])
-    )
-    test_seed_resid = np.concatenate([history_resid[-tail_history:], test_resid])
-    test_seed_usgs = np.concatenate([history_usgs[-tail_history:], test_usgs])
-    test_seed_nwm = np.concatenate([history_nwm[-tail_history:], test_nwm])
-
-    test_ds = SeqDataset(
-        test_seed_dyn,
-        test_seed_static,
-        test_seed_resid,
-        test_seed_usgs,
-        test_seed_nwm,
-        seq_len,
-        augment=False,
-    )
-
-    if len(train_ds) == 0 or len(test_ds) == 0:
+    if train_ds is None or test_ds is None or len(train_ds) == 0 or len(test_ds) == 0:
         raise ValueError("Insufficient data to build sequences")
 
     if torch.cuda.is_available():
@@ -1166,7 +922,7 @@ def train_eval(
     np.save(os.path.join(out_dir, f"{output_prefix}_pred_residual.npy"), pred_residual)
     np.save(os.path.join(out_dir, f"{output_prefix}_true_residual.npy"), true_residual)
 
-    timestamps = df.loc[test_mask, "timestamp"].to_numpy()
+    timestamps = prepared.df.loc[prepared.split_masks.test, "timestamp"].to_numpy()
     aligned_len = min(len(timestamps), len(corrected_pred))
     result_df = pd.DataFrame(
         {
