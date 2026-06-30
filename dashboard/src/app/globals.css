@@ -152,6 +152,65 @@ body {
   animation: hydra-road-water 5.5s ease-in-out infinite alternate;
 }
 
+.hydra-glass-rain-sheen {
+  animation: hydra-glass-sheen 12s ease-in-out infinite alternate;
+}
+
+.hydra-fog-drift {
+  background:
+    linear-gradient(92deg, transparent 0 14%, rgba(170, 220, 238, 0.08) 14% 15%, transparent 15% 46%, rgba(43, 227, 214, 0.06) 46% 47%, transparent 47%),
+    linear-gradient(180deg, rgba(179, 223, 241, 0.04), transparent 45%, rgba(40, 116, 137, 0.08));
+  animation: hydra-fog-drift 18s ease-in-out infinite alternate;
+}
+
+.hydra-glass-drop {
+  animation-name: hydra-glass-drop;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.hydra-pointer-ripple {
+  transform: scale(0.08);
+  opacity: 0.72;
+  animation: hydra-pointer-ripple 1.3s ease-out forwards;
+}
+
+.hydra-signal-map {
+  background-image:
+    linear-gradient(rgba(43, 227, 214, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(43, 227, 214, 0.1) 1px, transparent 1px),
+    linear-gradient(155deg, rgba(242, 180, 106, 0.09), transparent 38%, rgba(43, 227, 214, 0.08));
+  background-size: 38px 38px, 38px 38px, 100% 100%;
+}
+
+.hydra-signal-pulse {
+  animation: hydra-signal-pulse 2.4s ease-in-out infinite;
+}
+
+.hydra-card-rain {
+  animation: hydra-card-rain 8s linear infinite;
+}
+
+.hydra-education-water {
+  box-shadow: 0 -16px 34px rgba(77, 190, 220, 0.12);
+}
+
+.hydra-warning-pulse {
+  animation: hydra-warning-pulse 2.1s ease-in-out infinite;
+}
+
+.hydra-disappearing-road-line {
+  mask-image: linear-gradient(180deg, black 0 38%, rgba(0, 0, 0, 0.42) 54%, transparent 76%);
+}
+
+.hydra-interface-water {
+  backdrop-filter: blur(7px) saturate(1.35);
+}
+
+.hydra-submerged-card {
+  transition: filter 250ms ease, transform 250ms ease;
+}
+
 @keyframes hydra-wave-drift {
   from { transform: translateX(-8%) translateY(0); }
   to { transform: translateX(-28%) translateY(10px); }
@@ -172,6 +231,42 @@ body {
   to { transform: translateY(-10px); filter: saturate(1.25); }
 }
 
+@keyframes hydra-glass-sheen {
+  from { transform: translateX(-1%) skewX(-0.25deg); opacity: 0.74; }
+  to { transform: translateX(1%) skewX(0.25deg); opacity: 1; }
+}
+
+@keyframes hydra-fog-drift {
+  from { transform: translate3d(-2%, 0, 0); opacity: 0.48; }
+  to { transform: translate3d(2%, 1.5%, 0); opacity: 0.76; }
+}
+
+@keyframes hydra-glass-drop {
+  from { transform: translate3d(0, -24vh, 0) rotate(12deg); }
+  to { transform: translate3d(36px, 124vh, 0) rotate(12deg); }
+}
+
+@keyframes hydra-pointer-ripple {
+  0% { transform: scale(0.08); opacity: 0.78; }
+  72% { opacity: 0.24; }
+  100% { transform: scale(1.75); opacity: 0; }
+}
+
+@keyframes hydra-signal-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.88); opacity: 0.72; }
+  50% { transform: translate(-50%, -50%) scale(1.28); opacity: 1; }
+}
+
+@keyframes hydra-card-rain {
+  from { background-position: 0 -80px; }
+  to { background-position: 50px 140px; }
+}
+
+@keyframes hydra-warning-pulse {
+  0%, 100% { transform: scale(0.92); opacity: 0.32; }
+  50% { transform: scale(1.14); opacity: 0.72; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -179,4 +274,14 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+.hydra-reduced-motion,
+.hydra-reduced-motion *,
+.hydra-reduced-motion *::before,
+.hydra-reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }

@@ -1,18 +1,28 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValueEvent, useScroll } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { hydraExperience, safetySources } from '@/lib/hydra-experience-content';
-import RainField from './RainField';
+import { hydraExperience } from '@/lib/hydra-experience-content';
 import RisingWaterLayer from './RisingWaterLayer';
 import FloodEducationCards from './FloodEducationCards';
 import FloodRoadChoice from './FloodRoadChoice';
 import HydraActivationGrid from './HydraActivationGrid';
 import BeforeAfterHydra from './BeforeAfterHydra';
 import ExperienceControls from './ExperienceControls';
+import RainGlassLayer from './RainGlassLayer';
+import SignalParticlesLayer from './SignalParticlesLayer';
+import InterfaceFloodMoment from './InterfaceFloodMoment';
+
+const RainField = dynamic(() => import('./RainField'), {
+  ssr: false,
+  loading: () => (
+    <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(160deg,rgba(77,160,255,0.14),transparent_38%),linear-gradient(180deg,#051018,#07131f_55%,#031017)]" />
+  ),
+});
 
 interface AudioHandle {
   context: AudioContext;
@@ -32,8 +42,28 @@ function getInitialMotionPreference() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+function clamp(value: number, min = 0, max = 1) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function smoothstep(edge0: number, edge1: number, value: number) {
+  const t = clamp((value - edge0) / (edge1 - edge0));
+  return t * t * (3 - 2 * t);
+}
+
+function canUseWebGL() {
+  if (typeof document === 'undefined') return false;
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
+  } catch {
+    return false;
+  }
+}
+
 export default function HydraExperienceScene() {
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [webglAvailable, setWebglAvailable] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const audioRef = useRef<AudioHandle | null>(null);
@@ -45,6 +75,7 @@ export default function HydraExperienceScene() {
 
   useEffect(() => {
     setReduceMotion(getInitialMotionPreference());
+    setWebglAvailable(canUseWebGL());
     const hash = window.location.hash;
     if (hash) {
       window.setTimeout(() => {
@@ -70,6 +101,7 @@ export default function HydraExperienceScene() {
     const AudioCtor = window.AudioContext ?? (window as WindowWithWebAudio).webkitAudioContext;
     if (!AudioCtor) return;
     const context = new AudioCtor();
+    void context.resume();
     const oscillator = context.createOscillator();
     const gain = context.createGain();
     oscillator.type = 'sine';
@@ -101,9 +133,26 @@ export default function HydraExperienceScene() {
 
   useEffect(() => () => stopAudio(false), []);
 
+  useEffect(() => {
+    if (!audioRef.current) return;
+    const storm = smoothstep(0.1, 0.58, scrollProgress);
+    const flood = smoothstep(0.38, 0.66, scrollProgress);
+    const activation = smoothstep(0.68, 0.86, scrollProgress);
+    const targetGain = clamp(0.014 + storm * 0.018 - flood * 0.01 + activation * 0.014, 0.006, 0.04);
+    const targetFrequency = 72 - flood * 18 + activation * 32;
+    const { context, gain, oscillator } = audioRef.current;
+    gain.gain.setTargetAtTime(targetGain, context.currentTime, 0.12);
+    oscillator.frequency.setTargetAtTime(targetFrequency, context.currentTime, 0.12);
+  }, [scrollProgress, audioEnabled]);
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#030b12] text-white">
-      <RainField progress={scrollProgress} reduceMotion={reduceMotion} />
+    <div
+      className={`relative min-h-screen overflow-x-hidden bg-[#030b12] text-white ${
+        reduceMotion ? 'hydra-reduced-motion' : ''
+      }`}
+    >
+      <RainField progress={scrollProgress} reduceMotion={reduceMotion || !webglAvailable} />
+      <RainGlassLayer progress={scrollProgress} reduceMotion={reduceMotion} />
       <RisingWaterLayer progress={scrollProgress} reduceMotion={reduceMotion} />
       <div className="pointer-events-none fixed inset-0 z-[5] bg-[linear-gradient(115deg,rgba(77,160,255,0.12),transparent_34%),linear-gradient(245deg,rgba(43,227,214,0.09),transparent_38%),linear-gradient(180deg,rgba(3,11,18,0.18),rgba(3,11,18,0.88))]" />
       <Navigation />
@@ -133,6 +182,9 @@ export default function HydraExperienceScene() {
             </p>
             <p className="mt-6 max-w-3xl text-base leading-relaxed text-[#a9c2d3]">
               {hydraExperience.thesis}
+            </p>
+            <p className="mt-5 max-w-3xl rounded-lg border border-white/12 bg-[#06131f]/68 px-4 py-3 text-sm leading-relaxed text-[#bdd4e4] backdrop-blur-md">
+              {hydraExperience.safetyDisclaimer}
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a
@@ -167,71 +219,20 @@ export default function HydraExperienceScene() {
               between preparation and being trapped by water.
             </p>
           </div>
+          <SignalParticlesLayer reduceMotion={reduceMotion} />
+          <div className="mt-8" />
           <FloodEducationCards reduceMotion={reduceMotion} />
         </section>
 
-        <section id="road-choice" className="mx-auto max-w-7xl px-4 pb-24 pt-36 md:px-6 md:py-24">
+        <section id="road-choice" className="mx-auto max-w-7xl px-4 pb-24 pt-36 md:min-h-screen md:px-6 md:py-24">
           <FloodRoadChoice reduceMotion={reduceMotion} />
         </section>
 
-        <section id="warning-gap" className="mx-auto max-w-7xl px-4 pb-24 pt-36 md:px-6 md:py-24">
-          <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-            <motion.div
-              initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-              whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-10% 0px' }}
-              transition={{ duration: 0.55 }}
-              className="rounded-lg border border-amber-300/20 bg-[#130f12]/76 p-6 backdrop-blur-md"
-            >
-              <p className="font-display text-xs uppercase tracking-[0.28em] text-amber-200">
-                The warning gap
-              </p>
-              <h2 className="mt-3 font-display text-4xl text-white">
-                The interface floods before the decision feels obvious.
-              </h2>
-              <p className="mt-5 text-base leading-relaxed text-[#bdd4e4]">
-                In the demo, water rises over the screen to show how fast useful context can be
-                lost. Real protective action should follow official local instructions and happen
-                before routes are cut off.
-              </p>
-              <a
-                href={safetySources.readyFloods.url}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-5 inline-flex text-sm font-medium text-hydra-corrected hover:underline"
-              >
-                Source: {safetySources.readyFloods.label}
-              </a>
-            </motion.div>
-
-            <div className="relative min-h-[380px] overflow-hidden rounded-lg border border-white/12 bg-[#06131f]/78 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.38)] backdrop-blur-md">
-              <div className="absolute inset-0 opacity-50 hydra-experience-grid" />
-              <div className="relative grid gap-4 sm:grid-cols-2">
-                {['Rainfall rate', 'Gauge rise', 'Drainage stress', 'Road access'].map((label, index) => (
-                  <div key={label} className="rounded-lg border border-white/12 bg-black/22 p-4">
-                    <div className="font-display text-xs uppercase tracking-[0.2em] text-[#8fb4cc]">
-                      {label}
-                    </div>
-                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-amber-300 to-hydra-alert"
-                        style={{ width: `${58 + index * 11}%` }}
-                      />
-                    </div>
-                    <p className="mt-3 text-xs text-[#bdd4e4]">
-                      Signal uncertainty increases when reports lag conditions.
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="absolute bottom-5 left-5 right-5 rounded-lg border border-amber-300/20 bg-[#1a1008]/78 px-4 py-3 text-sm text-amber-50">
-                The visual flood is a teaching device. It is not a live hazard display.
-              </div>
-            </div>
-          </div>
+        <section id="warning-gap" className="mx-auto max-w-7xl px-4 pb-24 pt-36 md:min-h-screen md:px-6 md:py-24">
+          <InterfaceFloodMoment progress={scrollProgress} reduceMotion={reduceMotion} />
         </section>
 
-        <section id="hydra-activation" className="mx-auto max-w-7xl px-4 pb-24 pt-36 md:px-6 md:py-24">
+        <section id="hydra-activation" className="mx-auto max-w-7xl px-4 pb-24 pt-36 md:min-h-screen md:px-6 md:py-24">
           <HydraActivationGrid reduceMotion={reduceMotion} />
         </section>
 

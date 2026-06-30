@@ -17,12 +17,38 @@ export interface HydraSignal {
   name: string;
   role: string;
   detail: string;
+  layers: SignalLayerKey[];
 }
 
 export interface ExperienceCta {
   label: string;
   href: string;
   body: string;
+}
+
+export type SignalLayerKey =
+  | 'rainfall'
+  | 'gauge'
+  | 'terrain'
+  | 'drainage'
+  | 'roads'
+  | 'forecast'
+  | 'sensor'
+  | 'response';
+
+export interface ExperienceSignalNode {
+  id: string;
+  label: string;
+  layer: SignalLayerKey;
+  detail: string;
+  x: number;
+  y: number;
+}
+
+export interface SignalLayerConfig {
+  key: SignalLayerKey;
+  label: string;
+  description: string;
 }
 
 export const safetySources: Record<SafetySourceKey, SafetySource> = {
@@ -47,12 +73,122 @@ export const hydraExperience = {
   thesis:
     'A flood does not begin when water reaches your door. It begins when the warning comes too late.',
   tagline: 'Hydra: Many signals. One warning. More time.',
+  safetyDisclaimer:
+    'This is an educational simulation. In an actual emergency, follow official alerts and local authorities.',
   opening: {
     kicker: 'Hydra Experience',
     title: 'It starts as rain.',
     body:
       'A few drops. A forecast. A road you have driven a hundred times. Flood risk can become dangerous before it looks dramatic.',
   },
+  signalLayers: [
+    {
+      key: 'rainfall',
+      label: 'Rainfall',
+      description: 'Storm intensity and short-term rainfall accumulation.',
+    },
+    {
+      key: 'gauge',
+      label: 'Gauge',
+      description: 'River-stage and streamflow changes near local crossings.',
+    },
+    {
+      key: 'terrain',
+      label: 'Terrain',
+      description: 'Low crossings, slopes, and places where runoff concentrates.',
+    },
+    {
+      key: 'drainage',
+      label: 'Drainage',
+      description: 'Runoff moving faster than channels, culverts, or roads can clear it.',
+    },
+    {
+      key: 'roads',
+      label: 'Roads',
+      description: 'Segments that may become threatened before water reaches homes.',
+    },
+    {
+      key: 'forecast',
+      label: 'Forecast',
+      description: 'Weather shifts that change the lead-time picture.',
+    },
+    {
+      key: 'sensor',
+      label: 'Sensors',
+      description: 'Local observations that reveal conditions between reports.',
+    },
+    {
+      key: 'response',
+      label: 'Response',
+      description: 'Responder reports, road closures, and priority zones.',
+    },
+  ] satisfies SignalLayerConfig[],
+  signalNodes: [
+    {
+      id: 'rainfall-rate',
+      label: 'Rainfall rate',
+      layer: 'rainfall',
+      detail: 'Rainfall is intensifying over a short window.',
+      x: 17,
+      y: 36,
+    },
+    {
+      id: 'gauge-rise',
+      label: 'Gauge rise',
+      layer: 'gauge',
+      detail: 'Water level is changing faster than the last report cycle.',
+      x: 36,
+      y: 23,
+    },
+    {
+      id: 'drainage-stress',
+      label: 'Drainage stress',
+      layer: 'drainage',
+      detail: 'Runoff is accumulating faster than the system can clear.',
+      x: 55,
+      y: 48,
+    },
+    {
+      id: 'road-access',
+      label: 'Road access',
+      layer: 'roads',
+      detail: 'Low crossings may be cut off before water reaches homes.',
+      x: 74,
+      y: 38,
+    },
+    {
+      id: 'forecast-shift',
+      label: 'Forecast shift',
+      layer: 'forecast',
+      detail: 'The storm path is changing the available lead time.',
+      x: 29,
+      y: 67,
+    },
+    {
+      id: 'terrain-bowl',
+      label: 'Terrain',
+      layer: 'terrain',
+      detail: 'Nearby slopes and channels concentrate water toward the road.',
+      x: 62,
+      y: 71,
+    },
+    {
+      id: 'sensor-anomaly',
+      label: 'Sensor anomaly',
+      layer: 'sensor',
+      detail: 'A local observation no longer matches the calm-looking surface.',
+      x: 83,
+      y: 62,
+    },
+    {
+      id: 'responder-report',
+      label: 'Responder report',
+      layer: 'response',
+      detail: 'A field report adds context that a single hydrograph cannot show.',
+      x: 43,
+      y: 82,
+    },
+  ] satisfies ExperienceSignalNode[],
   educationCards: [
     {
       eyebrow: 'Flood Watch',
@@ -81,9 +217,9 @@ export const hydraExperience = {
     body:
       'Depth and current are difficult to judge from the driver seat. Flooded roads hide washouts, moving water, and debris.',
     unsafeResult:
-      'Do not drive through floodwater. The safer decision is to turn around and choose another route before options disappear.',
+      'Depth is almost impossible to judge from the driver’s seat. Floodwater can hide washouts, debris, and collapsed roadbeds. The safe educational answer is to turn around.',
     safeResult:
-      'Turning around preserves choices. Early action is the point of a warning: move before the road, bridge, or underpass becomes a trap.',
+      'Correct decision. The safest route is the one taken before the road disappears.',
     source: 'nwsTurnAround' as SafetySourceKey,
   },
   hydraSignals: [
@@ -91,26 +227,31 @@ export const hydraExperience = {
       name: 'Sense',
       role: 'Rainfall, river gauges, and water sensors',
       detail: 'Hydra watches many local signals at once instead of waiting for one late threshold.',
+      layers: ['rainfall', 'gauge', 'sensor'],
     },
     {
       name: 'Predict',
       role: 'Terrain, drainage stress, and forecast shifts',
       detail: 'The demo turns scattered conditions into a changing risk picture.',
+      layers: ['terrain', 'drainage', 'forecast'],
     },
     {
       name: 'Alert',
       role: 'Earlier decision support',
       detail: 'The experience shows how clearer timing could help people act before routes are cut off.',
+      layers: ['roads', 'forecast', 'response'],
     },
     {
       name: 'Coordinate',
       role: 'Hotspots, road closures, and priority zones',
       detail: 'Responders need a shared view when water is moving faster than field reports.',
+      layers: ['roads', 'response', 'sensor'],
     },
     {
       name: 'Learn',
       role: 'Post-event improvement',
       detail: 'Every event can improve the next risk picture when evidence is preserved and reviewed.',
+      layers: ['gauge', 'sensor', 'response'],
     },
   ] satisfies HydraSignal[],
   comparison: {
