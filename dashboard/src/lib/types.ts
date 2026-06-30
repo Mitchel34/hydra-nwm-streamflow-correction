@@ -249,3 +249,69 @@ export interface RigorousEvalData {
   results: Record<string, Record<string, SiteEval>>;
   cross_site: Record<string, CrossSiteAgg>;
 }
+
+// --- ERA5 Feature Sweep Types ---
+
+export interface Era5SweepRow {
+  site_id: string;
+  site_label: string;
+  config: string;
+  config_label: string;
+  mode: string;
+  mode_label: string;
+  features: string;
+  feature_list: string[];
+  n_features: number;
+  n_seeds: number;
+  rmse_mean: number;
+  rmse_std: number;
+  rmse_min: number;
+  rmse_max: number;
+  ss_rmse_mean: number;
+  ss_rmse_std: number;
+  kge_mean: number;
+  kge_std: number;
+  pbias_mean: number;
+  pbias_std: number;
+  nwm_rmse_mean: number;
+  rmse_se: number;
+  rmse_ci95_half_width: number;
+  ss_rmse_se: number;
+  ss_rmse_ci95_half_width: number;
+  kge_se: number;
+  kge_ci95_half_width: number;
+  pbias_se: number;
+  pbias_ci95_half_width: number;
+}
+
+export interface Era5SweepImpactRow extends Era5SweepRow {
+  all_rmse_mean: number;
+  all_ss_rmse_mean: number;
+  all_kge_mean: number;
+  all_pbias_mean: number;
+  delta_rmse_vs_all: number;
+  delta_ss_rmse_vs_all: number;
+  delta_kge_vs_all: number;
+  delta_pbias_vs_all: number;
+}
+
+export interface Era5SweepData {
+  generated_at: string;
+  source_artifacts: Record<string, string>;
+  row_counts: {
+    completed_runs: number;
+    summary: number;
+    impacts: number;
+    sites: number;
+  };
+  sites: Record<string, string>;
+  feature_labels: Record<string, string>;
+  mode_labels: Record<string, string>;
+  guardrails: string[];
+  headline: {
+    all_eligible: Era5SweepRow[];
+    top_predictive_sensitivities: Era5SweepImpactRow[];
+  };
+  summary: Era5SweepRow[];
+  impacts: Era5SweepImpactRow[];
+}

@@ -482,9 +482,9 @@ export default function StudyRegionMap() {
             </p>
           </div>
 
-          {/* Hurricane Helene Motivation */}
+          {/* Boundary conditions */}
           <div className="p-4 rounded-xl bg-[#122334] border border-hydra-accent/20">
-            <h3 className="font-display text-sm uppercase tracking-[0.14em] text-hydra-alert mb-2 flex items-center gap-2">
+            <h3 className="font-display text-sm uppercase tracking-[0.14em] text-hydra-accent mb-2 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -493,15 +493,13 @@ export default function StudyRegionMap() {
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
-              Research Motivation: Hurricane Helene
+              Interpretation Boundary
             </h3>
             <p className="text-sm text-[#a9c2d3] leading-relaxed">
-              Hurricane Helene (September 2024) devastated this region, with catastrophic flooding
-              in western North Carolina causing over 200 deaths and billions in damages. NWM
-              forecasts significantly underestimated peak flows during this event. This research
-              aims to improve streamflow predictions in mountainous terrain where operational
-              models struggle most, potentially enabling better early warnings for future extreme
-              events.
+              The primary evidence comes from three unregulated gauges where rainfall, runoff, and
+              channel response can be interpreted without reservoir-operation inputs. A fourth
+              Watauga site is retained as a boundary case because regulation can affect flow in ways
+              not directly represented by the current model inputs.
             </p>
           </div>
         </div>

@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { fetchExperimentResults, fetchTimeSeries, buildVersionComparison } from '@/lib/data';
-import { DashboardData, MetricComparison, TimeSeriesPoint, VersionComparisonRow } from '@/lib/types';
+import { fetchExperimentResults, fetchTimeSeries } from '@/lib/data';
+import { DashboardData, MetricComparison, TimeSeriesPoint } from '@/lib/types';
 import { getExperimentLabels } from '@/lib/experiment-context';
+import { getPublicExperimentName } from '@/lib/labels';
 import SiteCard from '@/components/SiteCard';
 import ExperimentSelector from '@/components/ExperimentSelector';
 import MetricCard from '@/components/MetricCard';
@@ -28,14 +28,6 @@ const MetricsBarChart = dynamic(
 
 const ErrorDistribution = dynamic(
   () => import('@/components/charts/ErrorDistribution'),
-  {
-    ssr: false,
-    loading: () => <div className="h-72 rounded-lg bg-[#0f202f] animate-pulse" />,
-  }
-);
-
-const VersionComparisonChart = dynamic(
-  () => import('@/components/charts/VersionComparison'),
   {
     ssr: false,
     loading: () => <div className="h-72 rounded-lg bg-[#0f202f] animate-pulse" />,
@@ -165,12 +157,6 @@ export default function Dashboard() {
     [data?.results, selectedExperiment]
   );
 
-  const versionComparison: VersionComparisonRow[] = useMemo(
-    () =>
-      data ? buildVersionComparison(data.results, data.sites) : [],
-    [data]
-  );
-
   const labels = getExperimentLabels(selectedExperiment);
 
   if (loading) {
@@ -200,7 +186,7 @@ export default function Dashboard() {
 
   const selectedSiteMetadata = selectedSite ? data.sites[selectedSite] : undefined;
   const selectedExperimentName = selectedExperiment
-    ? data.experiments[selectedExperiment]?.name || selectedExperiment
+    ? getPublicExperimentName(selectedExperiment, data.experiments[selectedExperiment]?.name)
     : 'No experiment selected';
 
   const metricsComparison: MetricComparison[] = currentResult
@@ -563,16 +549,6 @@ export default function Dashboard() {
               </section>
             </div>
 
-            {/* Version Comparison: best v2 vs best v3 per site */}
-            {versionComparison.length > 0 && (
-              <section>
-                <h2 className="mb-4 font-display text-lg">v2 vs v3 Comparison</h2>
-                <p className="mb-3 text-sm text-[#8daec2]">
-                  Best experiment from each architecture version per site (by RMSE improvement).
-                </p>
-                <VersionComparisonChart data={versionComparison} />
-              </section>
-            )}
           </div>
         </div>
       </main>

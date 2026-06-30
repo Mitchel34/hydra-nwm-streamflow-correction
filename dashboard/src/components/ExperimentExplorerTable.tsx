@@ -3,6 +3,11 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ExperimentResult, ExperimentMetadata, SiteMetadata } from '@/lib/types';
+import {
+  getExperimentSourceLabel,
+  getPublicExperimentDescription,
+  getPublicExperimentName,
+} from '@/lib/labels';
 
 /* ---------- Constants ---------- */
 
@@ -42,23 +47,22 @@ const SITE_SHORT: Record<string, string> = {
 /* ---------- Helpers ---------- */
 
 function getArch(id: string): string {
-  if (id === 'lstm_nwm_era5' || id === 'transformer_nwm_era5') return 'v1';
-  if (id.startsWith('hydra_v3')) return 'v3';
-  return 'v2';
+  if (id === 'lstm_nwm_era5') return 'LSTM';
+  if (id === 'transformer_nwm_era5') return 'Transformer';
+  if (id.startsWith('hydra_v3')) return 'Hydra';
+  return 'GRU-T';
 }
 
 function getArchLabel(id: string): string {
   const arch = getArch(id);
-  if (arch === 'v3') return 'v3 Hybrid GRU-Transformer';
-  if (arch === 'v2') return 'v2 GRU-Transformer';
-  return 'v1 Transformer-Only';
+  if (arch === 'Hydra') return 'Hybrid GRU-Transformer';
+  if (arch === 'GRU-T') return 'GRU-Transformer baseline';
+  if (arch === 'LSTM') return 'LSTM baseline';
+  return 'Transformer baseline';
 }
 
 function getInputLabel(id: string): string {
-  if (id.includes('usgs_nwm') || id.includes('usgs_nwm_era5')) return 'NWM + ERA5 + USGS';
-  if (id.includes('usgs_era5') && !id.includes('nwm')) return 'ERA5 + USGS';
-  if (id.includes('era5_only')) return 'ERA5 only';
-  return 'NWM + ERA5';
+  return getExperimentSourceLabel(id);
 }
 
 function median(values: number[]): number {
@@ -108,7 +112,7 @@ export default function ExperimentExplorerTable({ experiments, results }: Props)
           .filter(Number.isFinite);
         return {
           id,
-          name: meta.name,
+          name: getPublicExperimentName(id, meta.name),
           type: NOWCASTING.has(id) ? 'nowcasting' : 'ablation',
           arch: getArch(id),
           inputs: getInputLabel(id),
@@ -149,8 +153,8 @@ export default function ExperimentExplorerTable({ experiments, results }: Props)
           {(['all', 'ablation', 'nowcasting'] as const).map((f) => {
             const labels = {
               all: `All (${stats.length})`,
-              ablation: `Input Ablation (${ablationCount})`,
-              nowcasting: `Nowcasting (${nowcastingCount})`,
+              ablation: `Controlled Tests (${ablationCount})`,
+              nowcasting: `Gauge-Informed (${nowcastingCount})`,
             };
             return (
               <button
@@ -225,7 +229,7 @@ export default function ExperimentExplorerTable({ experiments, results }: Props)
                     </span>
                     {stat.type === 'nowcasting' && (
                       <span className="shrink-0 rounded-full border border-hydra-corrected/40 bg-hydra-corrected/10 px-1.5 py-0.5 text-[10px] font-medium text-hydra-corrected">
-                        Nowcasting
+                        Gauge-informed
                       </span>
                     )}
                     {!stat.hasResults && (
@@ -292,8 +296,8 @@ export default function ExperimentExplorerTable({ experiments, results }: Props)
                           {
                             label: 'Type',
                             value: stat.type === 'nowcasting'
-                              ? 'Nowcasting (lagged observations)'
-                              : 'Input Ablation',
+                              ? 'Gauge-informed correction'
+                              : 'Controlled experiment',
                           },
                         ].map(({ label, value }) => (
                           <div key={label} className="rounded-lg border border-[#1f3a52] bg-[#0a1e30] px-3 py-2">
@@ -304,7 +308,7 @@ export default function ExperimentExplorerTable({ experiments, results }: Props)
                       </div>
                       {experiments[stat.id]?.description && (
                         <p className="text-xs text-[#6a8fa6] leading-relaxed">
-                          {experiments[stat.id].description}
+                          {getPublicExperimentDescription(stat.id, experiments[stat.id].description)}
                         </p>
                       )}
                     </div>

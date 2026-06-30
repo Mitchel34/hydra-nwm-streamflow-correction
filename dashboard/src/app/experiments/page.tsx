@@ -2,30 +2,18 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import {
   fetchExperimentResults,
-  fetchRigorousEval,
-  buildVersionComparison,
 } from '@/lib/data';
 import {
   DashboardData,
-  RigorousEvalData,
-  VersionComparisonRow,
   ExperimentResult,
 } from '@/lib/types';
+import { getPublicExperimentName } from '@/lib/labels';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { DashboardSkeleton } from '@/components/SkeletonLoader';
 import ExperimentExplorerTable from '@/components/ExperimentExplorerTable';
-
-const VersionComparisonChart = dynamic(
-  () => import('@/components/charts/VersionComparison'),
-  {
-    ssr: false,
-    loading: () => <div className="h-80 rounded-lg bg-[#0f202f] animate-pulse" />,
-  }
-);
 
 /* ---------- Constants ---------- */
 
@@ -50,17 +38,12 @@ function median(values: number[]): number {
 
 export default function ExperimentsPage() {
   const [data, setData] = useState<DashboardData | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [evalData, setEvalData] = useState<RigorousEvalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchExperimentResults(), fetchRigorousEval()])
-      .then(([d, e]) => {
-        setData(d);
-        setEvalData(e);
-      })
+    fetchExperimentResults()
+      .then(setData)
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
@@ -103,25 +86,6 @@ export default function ExperimentsPage() {
     });
   }, [data]);
 
-  /* ── Section 4: Architecture comparison ── */
-  const versionComparison: VersionComparisonRow[] = useMemo(
-    () => (data ? buildVersionComparison(data.results, data.sites) : []),
-    [data]
-  );
-
-  const archInterpretation = useMemo(() => {
-    if (versionComparison.length === 0) return null;
-    const allV3Better = versionComparison.every((row) => row.v3_improvement > row.v2_improvement);
-    const medV2 = median(versionComparison.map((r) => r.v2_improvement));
-    const medV3 = median(versionComparison.map((r) => r.v3_improvement));
-    return {
-      allV3Better,
-      medianV2: medV2.toFixed(1),
-      medianV3: medV3.toFixed(1),
-      gain: (medV3 - medV2).toFixed(1),
-    };
-  }, [versionComparison]);
-
   /* ── Loading / Error ── */
 
   if (loading) return <DashboardSkeleton />;
@@ -154,12 +118,12 @@ export default function ExperimentsPage() {
           <div>
             <h1 className="font-display text-2xl gradient-text">Experiments</h1>
             <p className="text-sm text-[#8daec2] mt-1">
-              {uniqueExperiments} configurations across {uniqueSites} sites. Select a row to
-              explore configurations, or{' '}
-              <Link href="/evaluation" className="text-hydra-corrected hover:underline">
-                visit Evaluation
+              {uniqueExperiments} archived configurations across {uniqueSites} primary sites. Use
+              this page to inspect older controlled runs and hydrographs, or{' '}
+              <Link href="/era5" className="text-hydra-corrected hover:underline">
+                open the completed ERA5 sweep
               </Link>{' '}
-              for cross-site significance tests.
+              for the new feature-evidence view.
             </p>
           </div>
           <span className="text-sm text-[#8daec2] hidden sm:block shrink-0">
@@ -176,8 +140,8 @@ export default function ExperimentsPage() {
             <h2 className="font-display text-lg text-white">Executive Summary</h2>
             <p className="text-sm text-[#8daec2] mt-0.5">
               Primary result:{' '}
-              <span className="text-hydra-corrected font-medium">Hydra v3 + USGS</span>
-              {' '}— best-performing configuration across the experiment suite.
+              <span className="text-hydra-corrected font-medium">gauge-informed Hydra</span>
+              {' '}— recent USGS observations, NWM discharge, and ERA5-Land context.
             </p>
           </div>
 
@@ -209,7 +173,7 @@ export default function ExperimentsPage() {
                 </div>
                 <div className="mt-3 text-sm font-medium text-white">Sites Improved</div>
                 <div className="mt-1 text-xs text-[#2a8a86]">
-                  Consistent generalization across all gauges
+                  Relative to raw NWM at the primary gauges
                 </div>
               </div>
             </div>
@@ -225,8 +189,8 @@ export default function ExperimentsPage() {
           <div className="mb-4">
             <h2 className="font-display text-lg text-white">Experiment Explorer</h2>
             <p className="text-sm text-[#8daec2] mt-0.5">
-              {Object.keys(data.experiments).length} configurations evaluated. Click any row to
-              expand site-level details and navigate to deep-dive pages.
+              {Object.keys(data.experiments).length} archived configurations are available for
+              inspection. Click any row to expand site-level details.
             </p>
           </div>
           <ExperimentExplorerTable
@@ -253,7 +217,7 @@ export default function ExperimentsPage() {
               const rmsePct = best.rmse_improvement_pct ?? 0;
               const nseCorrected = best.corrected.nse ?? 0;
               const bestExpName =
-                data.experiments[best.experiment]?.name ?? best.experiment;
+                getPublicExperimentName(best.experiment, data.experiments[best.experiment]?.name);
 
               return (
                 <Link
@@ -315,34 +279,14 @@ export default function ExperimentsPage() {
           </div>
         </section>
 
-        {/* ── SECTION 4: Architecture Comparison ── */}
-        {versionComparison.length > 0 && (
-          <section>
-            <div className="mb-4">
-              <h2 className="font-display text-lg text-white">Architecture Impact</h2>
-              <p className="text-sm text-[#8daec2] mt-0.5">
-                Best result per architecture version per site. Does model complexity improve
-                performance?
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-[#2a445b] bg-[#091929] p-5">
-              <VersionComparisonChart data={versionComparison} />
-              {archInterpretation && (
-                <p className="mt-5 text-sm text-[#8daec2] leading-relaxed border-t border-[#1a3045] pt-4">
-                  {archInterpretation.allV3Better
-                    ? `v3 outperforms v2 at every site, with a median RMSE improvement of ${archInterpretation.medianV3}% vs. ${archInterpretation.medianV2}% — a ${archInterpretation.gain} percentage-point gain from the causal attention mechanism and non-negativity constraints.`
-                    : `v3 achieves a median RMSE improvement of ${archInterpretation.medianV3}% vs. ${archInterpretation.medianV2}% for v2 across study sites. The hybrid GRU-transformer architecture with causal masking delivers measurable gains at most locations.`}{' '}
-                  See the{' '}
-                  <Link href="/evaluation" className="text-hydra-corrected hover:underline">
-                    Evaluation page
-                  </Link>{' '}
-                  for bootstrap confidence intervals and Diebold-Mariano significance tests.
-                </p>
-              )}
-            </div>
-          </section>
-        )}
+        <section className="surface-panel rounded-xl p-5">
+          <h2 className="font-display text-lg text-white">How to Read This Page</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-relaxed text-[#8daec2]">
+            These archived experiments support the manuscript&apos;s information-source attribution.
+            They are separate from the completed ERA5 feature sweep and should not be read as a
+            claim that Hydra outperforms every one-hour baseline.
+          </p>
+        </section>
       </main>
 
       <Footer />

@@ -8,7 +8,6 @@ import {
   DashboardData,
   RigorousEvalData,
   RegimeKey,
-  SeasonKey,
 } from '@/lib/types';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';

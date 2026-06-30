@@ -35,11 +35,11 @@ export default function Navigation() {
 
   const navLinks = [
     { href: '/', label: 'Home' },
-    { href: '/model', label: 'Model' },
-    { href: '/training', label: 'Training' },
+    { href: '/analysis', label: 'Findings' },
+    { href: '/era5', label: 'ERA5 Evidence' },
     { href: '/experiments', label: 'Experiments' },
-    { href: '/analysis', label: 'Analysis' },
-    { href: '/evaluation', label: 'Evaluation' },
+    { href: '/model', label: 'Model' },
+    { href: '/manuscript', label: 'Manuscript' },
   ];
 
   return (

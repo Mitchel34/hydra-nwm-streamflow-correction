@@ -9,12 +9,57 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
 } from 'recharts';
 import { VersionComparisonRow } from '@/lib/types';
 
 interface VersionComparisonProps {
   data: VersionComparisonRow[];
+}
+
+interface VersionTooltipPayload {
+  payload: {
+    'v2 ΔRMSE%': number;
+    'v3 ΔRMSE%': number;
+    v2_nse?: number;
+    v3_nse?: number;
+    v2_exp: string;
+    v3_exp: string;
+  };
+}
+
+interface VersionTooltipProps {
+  active?: boolean;
+  payload?: VersionTooltipPayload[];
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: VersionTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0]?.payload;
+  return (
+    <div className="rounded-lg border border-[#2a445b] bg-[#0c1b29] p-3 text-sm shadow-lg">
+      <p className="font-display text-white mb-2">{label}</p>
+      <div className="space-y-1">
+        <p className="text-[#95b0c4]">
+          <span className="inline-block w-3 h-3 rounded-sm mr-1" style={{ background: '#6b8fad' }} />
+          v2 best: <span className="text-white font-medium">{d['v2 ΔRMSE%']}%</span>
+          <span className="text-[#6f8ea3] ml-1">({d.v2_exp})</span>
+        </p>
+        <p className="text-[#95b0c4]">
+          NSE = {d.v2_nse?.toFixed(3)}
+        </p>
+        <hr className="border-[#2a445b] my-1" />
+        <p className="text-[#95b0c4]">
+          <span className="inline-block w-3 h-3 rounded-sm mr-1" style={{ background: '#2be3d6' }} />
+          v3 best: <span className="text-hydra-corrected font-medium">{d['v3 ΔRMSE%']}%</span>
+          <span className="text-[#6f8ea3] ml-1">({d.v3_exp})</span>
+        </p>
+        <p className="text-[#95b0c4]">
+          NSE = {d.v3_nse?.toFixed(3)}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -48,35 +93,6 @@ export default function VersionComparison({ data }: VersionComparisonProps) {
       v3_exp: row.v3_experiment,
     };
   });
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload?.length) return null;
-    const d = payload[0]?.payload;
-    return (
-      <div className="rounded-lg border border-[#2a445b] bg-[#0c1b29] p-3 text-sm shadow-lg">
-        <p className="font-display text-white mb-2">{label}</p>
-        <div className="space-y-1">
-          <p className="text-[#95b0c4]">
-            <span className="inline-block w-3 h-3 rounded-sm mr-1" style={{ background: '#6b8fad' }} />
-            v2 best: <span className="text-white font-medium">{d['v2 ΔRMSE%']}%</span>
-            <span className="text-[#6f8ea3] ml-1">({d.v2_exp})</span>
-          </p>
-          <p className="text-[#95b0c4]">
-            NSE = {d.v2_nse?.toFixed(3)}
-          </p>
-          <hr className="border-[#2a445b] my-1" />
-          <p className="text-[#95b0c4]">
-            <span className="inline-block w-3 h-3 rounded-sm mr-1" style={{ background: '#2be3d6' }} />
-            v3 best: <span className="text-hydra-corrected font-medium">{d['v3 ΔRMSE%']}%</span>
-            <span className="text-[#6f8ea3] ml-1">({d.v3_exp})</span>
-          </p>
-          <p className="text-[#95b0c4]">
-            NSE = {d.v3_nse?.toFixed(3)}
-          </p>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="h-80">

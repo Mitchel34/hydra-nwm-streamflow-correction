@@ -5,8 +5,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { fetchExperimentResults, fetchTimeSeries } from '@/lib/data';
-import { DashboardData, ExperimentResult, TimeSeriesPoint, getExperimentCategory } from '@/lib/types';
+import { DashboardData, TimeSeriesPoint, getExperimentCategory } from '@/lib/types';
 import { getExperimentLabels } from '@/lib/experiment-context';
+import { getExperimentSourceLabel, getPublicExperimentName } from '@/lib/labels';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import MetricCard from '@/components/MetricCard';
@@ -127,7 +128,10 @@ export default function SiteDeepDive() {
               </thead>
               <tbody>
                 {siteResults.map((result, i) => {
-                  const name = data.experiments[result.experiment]?.name ?? result.experiment;
+                  const name = getPublicExperimentName(
+                    result.experiment,
+                    data.experiments[result.experiment]?.name,
+                  );
                   const category = getExperimentCategory(result.experiment);
                   const improvement = result.rmse_improvement_pct ?? 0;
                   const isSelected = result.experiment === selectedExperiment;
@@ -152,7 +156,7 @@ export default function SiteDeepDive() {
                               ? 'bg-hydra-era5/20 text-hydra-era5'
                               : 'bg-hydra-accent/20 text-hydra-accent'
                         }`}>
-                          {category === 'era5_only' ? 'ERA5' : category.toUpperCase()}
+                          {getExperimentSourceLabel(result.experiment)}
                         </span>
                       </td>
                       <td className="px-5 py-3 text-right font-mono text-sm text-[#c2d8e8]">
@@ -178,7 +182,10 @@ export default function SiteDeepDive() {
         {currentResult && (
           <section>
             <h2 className="font-display text-lg mb-4">
-              {data.experiments[selectedExperiment]?.name ?? selectedExperiment}
+              {getPublicExperimentName(
+                selectedExperiment,
+                data.experiments[selectedExperiment]?.name,
+              )}
             </h2>
             <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6 mb-6">
               <MetricCard

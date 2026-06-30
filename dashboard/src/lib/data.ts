@@ -5,6 +5,7 @@
 
 import {
   DashboardData,
+  Era5SweepData,
   ExperimentResult,
   RigorousEvalData,
   TimeSeriesPoint,
@@ -15,7 +16,7 @@ import {
 
 const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === 'true';
 
-// Exclude regulated site from dashboard (dam operations introduce non-stationarity)
+// Exclude the regulated boundary site from primary public summaries.
 const EXCLUDED_SITES = ['03486000'];
 
 // Supabase configuration (optional - will fall back to local JSON)
@@ -46,7 +47,7 @@ async function fetchFromLocalJSON(): Promise<DashboardData> {
     }
   }
 
-  // Filter out excluded sites (regulated sites with dam operations)
+  // Filter out excluded boundary sites from primary public summaries.
   const filteredSites = Object.fromEntries(
     Object.entries(data.sites).filter(([siteId]) => !EXCLUDED_SITES.includes(siteId))
   );
@@ -76,7 +77,7 @@ async function fetchFromSupabase(): Promise<DashboardData> {
     return fetchFromLocalJSON();
   }
 
-  // Transform Supabase data to match DashboardData format, excluding regulated sites
+  // Transform Supabase data to match DashboardData format, excluding boundary sites.
   const sites = Object.fromEntries(
     (sitesRes.data || [])
       .filter((s) => !EXCLUDED_SITES.includes(s.site_id))
@@ -176,6 +177,19 @@ export function buildVersionComparison(
 export async function fetchRigorousEval(): Promise<RigorousEvalData | null> {
   try {
     const response = await fetch('/data/rigorous_eval.json');
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch completed ERA5 feature-sweep evidence exported from revision artifacts.
+ */
+export async function fetchEra5Sweep(): Promise<Era5SweepData | null> {
+  try {
+    const response = await fetch('/data/era5_sweep.json');
     if (!response.ok) return null;
     return await response.json();
   } catch {

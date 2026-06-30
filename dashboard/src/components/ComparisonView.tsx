@@ -3,6 +3,7 @@
 import { ExperimentResult, ExperimentMetadata } from '@/lib/types';
 import { getExperimentLabels } from '@/lib/experiment-context';
 import { getExperimentCategory } from '@/lib/types';
+import { getExperimentSourceLabel, getPublicExperimentName } from '@/lib/labels';
 
 interface ComparisonViewProps {
   experiments: ExperimentResult[];
@@ -16,7 +17,6 @@ const COMPARISON_COLORS = ['#2be3d6', '#f59e0b', '#ec4899'];
 export default function ComparisonView({
   experiments,
   experimentMetadata,
-  siteId,
   siteName,
 }: ComparisonViewProps) {
   if (experiments.length === 0) {
@@ -48,7 +48,10 @@ export default function ComparisonView({
           </thead>
           <tbody>
             {experiments.map((result, i) => {
-              const name = experimentMetadata[result.experiment]?.name ?? result.experiment;
+              const name = getPublicExperimentName(
+                result.experiment,
+                experimentMetadata[result.experiment]?.name,
+              );
               const category = getExperimentCategory(result.experiment);
               const color = COMPARISON_COLORS[i % COMPARISON_COLORS.length];
               const improvement = result.rmse_improvement_pct ?? 0;
@@ -72,7 +75,7 @@ export default function ComparisonView({
                           ? 'bg-hydra-era5/20 text-hydra-era5'
                           : 'bg-hydra-accent/20 text-hydra-accent'
                     }`}>
-                      {category === 'era5_only' ? 'ERA5' : category.toUpperCase()}
+                      {getExperimentSourceLabel(result.experiment)}
                     </span>
                   </td>
                   <td className="px-5 py-3 text-right font-mono text-sm text-[#c2d8e8]">
@@ -99,7 +102,10 @@ export default function ComparisonView({
       {/* Metric cards side-by-side */}
       <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.min(experiments.length, 3)}, 1fr)` }}>
         {experiments.map((result, i) => {
-          const name = experimentMetadata[result.experiment]?.name ?? result.experiment;
+          const name = getPublicExperimentName(
+            result.experiment,
+            experimentMetadata[result.experiment]?.name,
+          );
           const labels = getExperimentLabels(result.experiment);
           const color = COMPARISON_COLORS[i % COMPARISON_COLORS.length];
 
