@@ -59,7 +59,9 @@ export default function BeforeAfterHydra({ reduceMotion }: BeforeAfterHydraProps
               Earlier signal organization preserves decision time.
             </h3>
           </div>
-          <div className="text-sm text-hydra-corrected">{100 - divider}% clearer with Hydra view</div>
+          <div className="text-sm text-hydra-corrected">
+            Visual split: {divider}% warning gap / {100 - divider}% Hydra view
+          </div>
         </div>
 
         <div className="relative min-h-[460px] overflow-hidden rounded-lg border border-white/12 bg-[#030b12]">
@@ -129,6 +131,18 @@ export default function BeforeAfterHydra({ reduceMotion }: BeforeAfterHydraProps
           />
         </div>
 
+        <div className="mt-4 grid gap-3 text-xs uppercase tracking-[0.14em] text-[#8fb4cc] sm:grid-cols-3">
+          <div className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2">
+            water coverage tracks the left side
+          </div>
+          <div className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2">
+            route clarity tracks the right side
+          </div>
+          <div className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2">
+            lead time appears before the route closes
+          </div>
+        </div>
+
         <div className="sr-only" aria-live="polite">
           Comparison slider position is {divider}. Without Hydra shows higher water coverage and
           late warning. With Hydra shows clearer routes, organized data, and earlier action.
@@ -150,6 +164,24 @@ export default function BeforeAfterHydra({ reduceMotion }: BeforeAfterHydraProps
 
       <div className="rounded-lg border border-white/12 bg-[#06131f]/84 p-5 text-sm leading-relaxed text-[#bdd4e4] backdrop-blur-md">
         {hydraExperience.comparison.guardrail}
+      </div>
+
+      <div className="relative overflow-hidden rounded-lg border border-hydra-corrected/28 bg-[#031d27]/82 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.34)] backdrop-blur-md">
+        <div className="absolute inset-0 opacity-50 hydra-experience-grid" />
+        <div className="relative z-10 max-w-4xl">
+          <p className="font-display text-xs uppercase tracking-[0.24em] text-hydra-corrected">
+            {hydraExperience.evidenceBridge.eyebrow}
+          </p>
+          <h3 className="mt-3 font-display text-3xl text-white md:text-4xl">
+            {hydraExperience.evidenceBridge.title}
+          </h3>
+          <p className="mt-4 text-base leading-relaxed text-[#bdd4e4]">
+            {hydraExperience.evidenceBridge.body}
+          </p>
+          <p className="mt-5 rounded-md border border-hydra-corrected/24 bg-hydra-corrected/10 px-4 py-3 text-sm leading-relaxed text-[#dffffb]">
+            {hydraExperience.evidenceBridge.statement}
+          </p>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-5">

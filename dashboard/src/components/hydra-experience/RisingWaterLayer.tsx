@@ -1,7 +1,8 @@
 'use client';
 
 interface RisingWaterLayerProps {
-  progress: number;
+  waterPressure: number;
+  hydraClarity: number;
   reduceMotion: boolean;
 }
 
@@ -9,16 +10,15 @@ function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
 }
 
-function smoothstep(edge0: number, edge1: number, value: number) {
-  const t = clamp((value - edge0) / (edge1 - edge0));
-  return t * t * (3 - 2 * t);
-}
-
-export default function RisingWaterLayer({ progress, reduceMotion }: RisingWaterLayerProps) {
+export default function RisingWaterLayer({
+  waterPressure,
+  hydraClarity,
+  reduceMotion,
+}: RisingWaterLayerProps) {
   if (reduceMotion) return null;
 
-  const danger = smoothstep(0.18, 0.66, progress);
-  const activation = smoothstep(0.66, 0.84, progress);
+  const danger = clamp(waterPressure);
+  const activation = clamp(hydraClarity);
   const height = clamp(7 + danger * 56 - activation * 22, 4, 63);
   const opacity = clamp(0.22 + danger * 0.58 - activation * 0.2, 0.16, 0.78);
   const blur = 2 + danger * 9;

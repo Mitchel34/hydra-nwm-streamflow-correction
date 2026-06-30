@@ -51,6 +51,19 @@ export interface SignalLayerConfig {
   description: string;
 }
 
+export interface CinematicSceneCopy {
+  id: string;
+  label: string;
+  cue: string;
+}
+
+export interface EvidenceBridge {
+  eyebrow: string;
+  title: string;
+  body: string;
+  statement: string;
+}
+
 export const safetySources: Record<SafetySourceKey, SafetySource> = {
   nwsWatchWarning: {
     key: 'nwsWatchWarning',
@@ -75,6 +88,38 @@ export const hydraExperience = {
   tagline: 'Hydra: Many signals. One warning. More time.',
   safetyDisclaimer:
     'This is an educational simulation. In an actual emergency, follow official alerts and local authorities.',
+  cinematicScenes: [
+    {
+      id: 'quiet-storm',
+      label: 'Quiet storm',
+      cue: 'Rain is visible, the road is still readable, and the warning problem has not yet announced itself.',
+    },
+    {
+      id: 'road-disappears',
+      label: 'Road disappears',
+      cue: 'Depth cues fail as water covers lane markings and reflections hide the crossing.',
+    },
+    {
+      id: 'signal-difference',
+      label: 'Signal difference',
+      cue: 'Scattered observations become lead time when Hydra organizes them into one decision view.',
+    },
+  ] satisfies CinematicSceneCopy[],
+  environmentCues: [
+    'Low-water crossing',
+    'Bridge silhouette',
+    'Headlight reflections',
+    'Rising surface line',
+  ],
+  leadTimeMarkers: ['0 min', '15 min', '30 min', 'earlier action'],
+  evidenceBridge: {
+    eyebrow: 'Evidence bridge',
+    title: 'The experience shows the problem. The findings show the evidence chain.',
+    body:
+      'The cinematic sequence is a teaching layer. The research pages document the model evidence, ERA5 feature sweeps, manuscript artifacts, and limitations behind Hydra.',
+    statement:
+      'Flooding is not only a water problem. It is a warning-time problem.',
+  } satisfies EvidenceBridge,
   opening: {
     kicker: 'Hydra Experience',
     title: 'It starts as rain.',

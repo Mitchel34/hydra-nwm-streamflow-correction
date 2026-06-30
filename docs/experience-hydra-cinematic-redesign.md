@@ -113,6 +113,49 @@ Known limitations:
 - Automated console-log capture is not yet part of the repository test harness; a one-off headless Playwright script was used for this implementation pass.
 - The WebGL fallback is implemented through feature detection and static CSS fallback, but a dedicated automated no-WebGL browser run was not added.
 
+## Next Iteration: Cinematic Upgrade
+
+Implemented: 2026-06-30
+
+This pass upgraded the latest Hydra Experience from a strong public narrative into a more explicitly cinematic flood-risk environment while preserving the same scientific and safety guardrails.
+
+Recommendations addressed:
+
+- Make the first viewport read as an environment, not only a dark page: added a hero-level low-water crossing, underpass/bridge silhouette, obscured lane line, headlight glow, water-depth marker, waterline, and scene-cue labels behind the opening copy.
+- Replace single global scroll progress with scene-local state: added `useCinematicSceneController` to track hero, signal, road, warning-gap, activation, and final scene progress, then used those values to drive storm intensity, water pressure, signal visibility, fog, and Hydra clarity.
+- Make water more physical: added `WaterInteractionLayer`, a lightweight canvas overlay with pointer/touch ripples, scroll-linked water surface, shimmer lines, and a reduced-motion static fallback.
+- Make Hydra activation feel like intervention: upgraded the R3F scene so rain slows, water recedes/translucifies, sensor nodes converge toward the grid, and lead-time rings appear as Hydra clarity rises.
+- Improve interaction affordances: added signal prompts, active-layer counts, labels on active signal nodes, road-depth ambiguity markers, lead-time marker sequencing, a "focus a capability" prompt, and an evidence bridge before the final research links.
+- Remove unsupported quantitative slider wording: changed the final comparison readout from a pseudo-quantitative clarity percentage to a visual split between the warning gap and Hydra view.
+
+Implementation details:
+
+- `dashboard/src/components/hydra-experience/HydraExperienceScene.tsx` now wires scene refs into the local scene controller and includes the hero environmental overlay.
+- `dashboard/src/components/hydra-experience/RainField.tsx` now accepts explicit storm, water, and Hydra clarity values and renders crossing geometry, road markings, bridge/underpass structure, headlight reflections, moving rain, signal convergence, atmospheric grid, and lead-time rings.
+- `dashboard/src/components/hydra-experience/RainGlassLayer.tsx` and `RisingWaterLayer.tsx` now respond to scene-state values instead of a single page-level progress number.
+- `dashboard/src/components/hydra-experience/SignalParticlesLayer.tsx`, `HydraActivationGrid.tsx`, `FloodRoadChoice.tsx`, and `BeforeAfterHydra.tsx` received interaction and readability upgrades.
+- `dashboard/src/lib/hydra-experience-content.ts` keeps the new cinematic scene cues, lead-time markers, and evidence-bridge copy auditable alongside the NWS and Ready.gov source links.
+
+Validation after this iteration:
+
+- `npm run lint`: passed with four pre-existing unused-variable warnings in untouched dashboard components.
+- `./node_modules/.bin/tsc --noEmit --pretty false`: passed.
+- `npm run build`: passed.
+- Production route checks returned 200 for `/`, `/analysis`, `/era5`, `/experiments`, `/model`, and `/manuscript`.
+- Headless Playwright validation passed for landing load, Begin Experience anchor scroll, signal node/layer interaction, flooded-road safe/unsafe outcomes, Hydra capability interaction, comparison-slider keyboard operation, opt-in sound, reduced-motion audio stop, Skip Experience navigation, and no captured console/page errors.
+- Canvas-pixel validation passed on the hero WebGL layer. Final run stats: `samples=16037`, `nonDark=12163`, `bright=590`.
+- Desktop screenshots were captured for hero, signal, road, warning-gap, Hydra activation, and final evidence bridge.
+- Mobile screenshots were captured for hero, signal, road, warning-gap, Hydra activation, and final evidence bridge.
+- Screenshot directory: `output/playwright/hydra-cinematic-20260630/`.
+- Public-claim search found only negative guardrail language such as "does not issue official warnings" and "does not prove"; no affirmative unsupported claims were added.
+
+Limitations and source/licensing notes:
+
+- No proprietary videos, shaders, map tiles, textures, third-party demo source, or reference-site assets were introduced.
+- The flood visuals remain an educational interface treatment, not a physically valid flood simulation or operational hazard display.
+- Sound remains a minimal procedural Web Audio tone, not a full ambient soundtrack. It is off by default and stops when reduced motion is enabled.
+- The automated browser script remains a one-off validation command rather than a committed Playwright test suite.
+
 ## Future Enhancements
 
 - Optional shader-based water distortion after profiling.

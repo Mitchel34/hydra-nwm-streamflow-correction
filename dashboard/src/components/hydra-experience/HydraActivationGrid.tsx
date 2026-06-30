@@ -6,14 +6,16 @@ import { hydraExperience } from '@/lib/hydra-experience-content';
 
 interface HydraActivationGridProps {
   reduceMotion: boolean;
+  hydraClarity: number;
 }
 
-export default function HydraActivationGrid({ reduceMotion }: HydraActivationGridProps) {
+export default function HydraActivationGrid({ reduceMotion, hydraClarity }: HydraActivationGridProps) {
   const [activeCapability, setActiveCapability] = useState(hydraExperience.hydraSignals[0].name);
   const capability =
     hydraExperience.hydraSignals.find((signal) => signal.name === activeCapability) ??
     hydraExperience.hydraSignals[0];
   const activeLayers = new Set(capability.layers);
+  const clarity = Math.min(1, Math.max(0, hydraClarity));
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.76fr_1.24fr] lg:items-center">
@@ -41,8 +43,16 @@ export default function HydraActivationGrid({ reduceMotion }: HydraActivationGri
       </motion.div>
 
       <div className="space-y-4">
-        <div className="relative min-h-[360px] overflow-hidden rounded-lg border border-hydra-corrected/24 bg-[#031a24]/88 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.4)]">
-          <div className="absolute inset-0 opacity-70 hydra-experience-grid" />
+        <div className="relative min-h-[390px] overflow-hidden rounded-lg border border-hydra-corrected/24 bg-[#031a24]/88 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.4)]">
+          <div
+            className="absolute inset-0 hydra-experience-grid transition-opacity duration-500"
+            style={{ opacity: 0.38 + clarity * 0.46 }}
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(43,227,214,0.24),transparent_31%),linear-gradient(135deg,rgba(77,160,255,0.1),transparent_38%)] transition-opacity duration-700"
+            style={{ opacity: clarity }}
+          />
           <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
             {hydraExperience.signalNodes.map((node) => (
               <line
@@ -54,14 +64,14 @@ export default function HydraActivationGrid({ reduceMotion }: HydraActivationGri
                 stroke={activeLayers.has(node.layer) ? '#2be3d6' : '#2a5162'}
                 strokeWidth={activeLayers.has(node.layer) ? '1.6' : '0.7'}
                 strokeDasharray={activeLayers.has(node.layer) ? '0' : '4 9'}
-                opacity={activeLayers.has(node.layer) ? 0.72 : 0.28}
+                opacity={activeLayers.has(node.layer) ? 0.36 + clarity * 0.46 : 0.14 + clarity * 0.18}
               />
             ))}
           </svg>
           <div className="absolute left-1/2 top-1/2 flex h-28 w-28 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-hydra-corrected/40 bg-hydra-corrected/12 text-center font-display text-xs uppercase tracking-[0.18em] text-hydra-corrected shadow-[0_0_42px_rgba(43,227,214,0.2)]">
             Hydra grid
           </div>
-          {hydraExperience.signalNodes.map((node) => {
+          {hydraExperience.signalNodes.map((node, index) => {
             const active = activeLayers.has(node.layer);
             return (
               <div
@@ -71,20 +81,30 @@ export default function HydraActivationGrid({ reduceMotion }: HydraActivationGri
                     ? 'h-6 w-6 border-hydra-corrected bg-hydra-corrected/30 shadow-[0_0_24px_rgba(43,227,214,0.35)]'
                     : 'h-4 w-4 border-white/20 bg-white/8'
                 }`}
-                style={{ left: `${node.x}%`, top: `${node.y}%` }}
+                style={{
+                  left: `${50 + (node.x - 50) * (1 - clarity * 0.18)}%`,
+                  top: `${50 + (node.y - 50) * (1 - clarity * 0.18)}%`,
+                  transitionDelay: `${index * 45}ms`,
+                }}
                 title={node.label}
               />
             );
           })}
           <div className="absolute bottom-4 left-4 right-4 grid gap-2 sm:grid-cols-4">
-            {['0 min', '15 min', '30 min', 'earlier action'].map((label, index) => (
+            {hydraExperience.leadTimeMarkers.map((label, index) => (
               <div
                 key={label}
                 className={`rounded-md border px-3 py-2 text-center text-xs uppercase tracking-[0.12em] ${
                   index === 0
                     ? 'border-amber-200/24 bg-amber-200/10 text-amber-100'
-                    : 'border-hydra-corrected/26 bg-hydra-corrected/10 text-hydra-corrected'
+                      : 'border-hydra-corrected/26 bg-hydra-corrected/10 text-hydra-corrected'
                 }`}
+                style={{
+                  opacity: reduceMotion ? 1 : 0.42 + Math.max(0, clarity - index * 0.12) * 0.75,
+                  transform: reduceMotion ? undefined : `translateY(${(1 - clarity) * (8 + index * 2)}px)`,
+                  transition: 'opacity 360ms ease, transform 360ms ease',
+                  transitionDelay: `${index * 80}ms`,
+                }}
               >
                 {label}
               </div>
@@ -105,6 +125,9 @@ export default function HydraActivationGrid({ reduceMotion }: HydraActivationGri
                 route {state}
               </span>
             ))}
+          </div>
+          <div className="absolute right-4 top-4 rounded-full border border-white/14 bg-[#06131f]/72 px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-[#bdd4e4] backdrop-blur-md">
+            focus a capability
           </div>
         </div>
 

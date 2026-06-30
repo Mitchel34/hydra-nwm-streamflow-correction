@@ -6,6 +6,7 @@ import { hydraExperience, SignalLayerKey } from '@/lib/hydra-experience-content'
 
 interface SignalParticlesLayerProps {
   reduceMotion: boolean;
+  signalVisibility: number;
 }
 
 type LayerState = Record<SignalLayerKey, boolean>;
@@ -23,9 +24,13 @@ function layerTone(layer: SignalLayerKey) {
   return 'border-hydra-corrected/40 bg-hydra-corrected/12 text-[#dffffb]';
 }
 
-export default function SignalParticlesLayer({ reduceMotion }: SignalParticlesLayerProps) {
+export default function SignalParticlesLayer({
+  reduceMotion,
+  signalVisibility,
+}: SignalParticlesLayerProps) {
   const [enabledLayers, setEnabledLayers] = useState<LayerState>(() => getInitialLayers());
   const [activeSignal, setActiveSignal] = useState(hydraExperience.signalNodes[0].id);
+  const activeLayerCount = Object.values(enabledLayers).filter(Boolean).length;
   const activeNode = useMemo(
     () => hydraExperience.signalNodes.find((node) => node.id === activeSignal) ?? hydraExperience.signalNodes[0],
     [activeSignal],
@@ -50,6 +55,12 @@ export default function SignalParticlesLayer({ reduceMotion }: SignalParticlesLa
           Each node is a different fragment of local flood context. Hydra-style decision support
           is about organizing those fragments while there is still time to act.
         </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-cyan-200/14 bg-white/[0.04] px-3 py-2 text-xs text-[#a9c2d3]">
+          <span className="font-display uppercase tracking-[0.16em] text-hydra-corrected">
+            Tap or focus a signal
+          </span>
+          <span>{activeLayerCount} active layers</span>
+        </div>
 
         <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {hydraExperience.signalLayers.map((layer) => (
@@ -82,8 +93,17 @@ export default function SignalParticlesLayer({ reduceMotion }: SignalParticlesLa
         </div>
       </motion.div>
 
-      <div className="relative min-h-[430px] overflow-hidden rounded-lg border border-cyan-200/18 bg-[#04111c]/88 p-4 shadow-[0_26px_90px_rgba(0,0,0,0.38)]">
+      <div
+        className="relative min-h-[430px] overflow-hidden rounded-lg border border-cyan-200/18 bg-[#04111c]/88 p-4 shadow-[0_26px_90px_rgba(0,0,0,0.38)] transition-[opacity,transform] duration-500"
+        style={{
+          opacity: 0.82 + signalVisibility * 0.18,
+          transform: `translateY(${(1 - signalVisibility) * 10}px)`,
+        }}
+      >
         <div className="absolute inset-0 hydra-signal-map" />
+        <div className="absolute left-4 top-4 rounded-full border border-hydra-corrected/26 bg-[#06131f]/72 px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-hydra-corrected backdrop-blur-md">
+          {activeLayerCount} / {hydraExperience.signalLayers.length} layers visible
+        </div>
         <div className="absolute inset-x-[12%] bottom-[18%] h-[22%] rounded-[50%] border border-cyan-100/12 bg-cyan-100/5" />
         <div className="absolute left-[18%] right-[15%] top-[58%] h-1 rotate-[-7deg] rounded-full bg-amber-100/24" />
         <svg className="absolute inset-0 h-full w-full opacity-40" aria-hidden="true">
@@ -124,6 +144,14 @@ export default function SignalParticlesLayer({ reduceMotion }: SignalParticlesLa
               }}
             >
               <span className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current hydra-signal-pulse" />
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute left-1/2 top-full mt-2 w-max max-w-32 -translate-x-1/2 rounded-md border border-white/14 bg-[#06131f]/92 px-2 py-1 text-center text-[0.64rem] leading-tight text-[#d7e8f4] shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur-md transition-opacity ${
+                  active ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                {node.label}
+              </span>
               <span className="sr-only">{node.detail}</span>
             </button>
           );

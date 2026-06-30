@@ -6,7 +6,10 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 interface RainFieldProps {
-  progress: number;
+  overallProgress: number;
+  stormIntensity: number;
+  waterPressure: number;
+  hydraClarity: number;
   reduceMotion: boolean;
 }
 
@@ -34,15 +37,23 @@ function createRainPositions(count: number) {
   return values;
 }
 
-function RainPoints({ progress }: { progress: number }) {
+function RainPoints({
+  stormIntensity,
+  waterPressure,
+  hydraClarity,
+}: {
+  stormIntensity: number;
+  waterPressure: number;
+  hydraClarity: number;
+}) {
   const pointsRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.PointsMaterial>(null);
-  const count = 820;
+  const count = 1120;
   const positions = useMemo(() => createRainPositions(count), [count]);
 
   useFrame((state) => {
-    const intensity = 0.35 + smoothstep(0.12, 0.58, progress) * 1.25;
-    const activationCalm = smoothstep(0.66, 0.82, progress) * 0.75;
+    const intensity = 0.45 + stormIntensity * 1.2 + waterPressure * 0.28;
+    const activationCalm = hydraClarity * 0.72;
     const speed = (5 + intensity * 9) * (1 - activationCalm);
 
     if (materialRef.current) {
@@ -77,33 +88,127 @@ function RainPoints({ progress }: { progress: number }) {
   );
 }
 
-function FloodRoad({ progress }: { progress: number }) {
+function RoadMarking({
+  z,
+  waterPressure,
+  hydraClarity,
+}: {
+  z: number;
+  waterPressure: number;
+  hydraClarity: number;
+}) {
+  return (
+    <mesh position={[0, 0.034, z]}>
+      <boxGeometry args={[0.055, 0.018, 0.58]} />
+      <meshStandardMaterial
+        color="#f2b46a"
+        emissive="#8c5b20"
+        emissiveIntensity={0.08 + hydraClarity * 0.08}
+        transparent
+        opacity={clamp(0.86 - waterPressure * 0.72 + hydraClarity * 0.32, 0.18, 0.92)}
+      />
+    </mesh>
+  );
+}
+
+function HeadlightBeam({
+  x,
+  rotation,
+  hydraClarity,
+}: {
+  x: number;
+  rotation: number;
+  hydraClarity: number;
+}) {
+  return (
+    <mesh position={[x, 0.22, 1.98]} rotation={[-1.1, 0, rotation]}>
+      <planeGeometry args={[1.1, 3.3, 1, 1]} />
+      <meshBasicMaterial
+        color="#f2b46a"
+        transparent
+        opacity={clamp(0.16 - hydraClarity * 0.1, 0.04, 0.16)}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </mesh>
+  );
+}
+
+function FloodRoad({
+  overallProgress,
+  waterPressure,
+  hydraClarity,
+}: {
+  overallProgress: number;
+  waterPressure: number;
+  hydraClarity: number;
+}) {
   const groupRef = useRef<THREE.Group>(null);
   const waterRef = useRef<THREE.Mesh>(null);
-  const activation = smoothstep(0.64, 0.82, progress);
-  const danger = smoothstep(0.34, 0.62, progress);
+  const roadMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const danger = clamp(waterPressure);
+  const activation = clamp(hydraClarity);
 
   useFrame((state) => {
     if (groupRef.current) {
-      groupRef.current.position.y = -1.7 + danger * 0.15;
-      groupRef.current.rotation.x = -0.83 + Math.sin(state.clock.elapsedTime * 0.22) * 0.02;
+      groupRef.current.position.y = -1.76 + danger * 0.18;
+      groupRef.current.rotation.x = -0.82 + Math.sin(state.clock.elapsedTime * 0.22) * 0.018;
     }
     if (waterRef.current) {
-      waterRef.current.position.y = -1.52 + danger * 0.48 - activation * 0.18;
-      waterRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.18) * 0.015;
+      waterRef.current.position.y = -1.52 + danger * 0.62 - activation * 0.22;
+      waterRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.18) * 0.018;
+      const material = waterRef.current.material as THREE.MeshStandardMaterial;
+      material.opacity = clamp(0.24 + danger * 0.42 - activation * 0.18, 0.18, 0.68);
+      material.emissiveIntensity = 0.05 + danger * 0.1 + activation * 0.18;
+    }
+    if (roadMaterialRef.current) {
+      roadMaterialRef.current.color.set(activation > 0.4 ? '#0c1b24' : '#111923');
+      roadMaterialRef.current.roughness = 0.72 - danger * 0.18;
     }
   });
 
   return (
-    <group ref={groupRef} position={[0, -1.7, -1.8]} rotation={[-0.83, 0, 0]}>
+    <group ref={groupRef} position={[0, -1.76, -1.8]} rotation={[-0.82, 0, 0]}>
+      <group position={[0, 0.58, -3.1]}>
+        <mesh position={[0, 0.18, -0.4]}>
+          <boxGeometry args={[7.4, 0.16, 0.16]} />
+          <meshStandardMaterial color="#263644" emissive="#0b1720" roughness={0.55} />
+        </mesh>
+        {[-3.25, -2.15, 2.15, 3.25].map((x) => (
+          <mesh key={x} position={[x, -0.15, -0.4]}>
+            <boxGeometry args={[0.12, 0.78, 0.13]} />
+            <meshStandardMaterial color="#1b2834" emissive="#071018" roughness={0.64} />
+          </mesh>
+        ))}
+        <mesh position={[0, 0.52, -0.58]}>
+          <boxGeometry args={[8.8, 0.08, 0.08]} />
+          <meshBasicMaterial color="#0a121a" transparent opacity={0.92} />
+        </mesh>
+      </group>
       <mesh position={[0, 0, 0]}>
         <planeGeometry args={[9, 6, 1, 1]} />
-        <meshStandardMaterial color="#111923" roughness={0.72} metalness={0.05} />
+        <meshStandardMaterial ref={roadMaterialRef} color="#111923" roughness={0.72} metalness={0.05} />
       </mesh>
-      {[-0.85, 0, 0.85].map((x) => (
-        <mesh key={x} position={[x, 0.02, 0.2]}>
-          <boxGeometry args={[0.035, 0.02, 5.4]} />
-          <meshStandardMaterial color={x === 0 ? '#f2b46a' : '#c7ddea'} emissive={x === 0 ? '#8c5b20' : '#526b78'} />
+      {[-0.85, 0.85].map((x) => (
+        <mesh key={x} position={[x, 0.032, 0.25]}>
+          <boxGeometry args={[0.035, 0.02, 5.35]} />
+          <meshStandardMaterial
+            color="#c7ddea"
+            emissive="#526b78"
+            transparent
+            opacity={clamp(0.74 - danger * 0.5 + activation * 0.24, 0.18, 0.8)}
+          />
+        </mesh>
+      ))}
+      {[-2.2, -1.35, -0.5, 0.35, 1.2, 2.05].map((z) => (
+        <RoadMarking key={z} z={z} waterPressure={danger} hydraClarity={activation} />
+      ))}
+      <HeadlightBeam x={-1.95} rotation={0.2} hydraClarity={activation} />
+      <HeadlightBeam x={1.95} rotation={-0.2} hydraClarity={activation} />
+      {[-4.2, 4.2].map((x) => (
+        <mesh key={x} position={[x, 0.11, -0.2]}>
+          <boxGeometry args={[0.08, 0.18, 5.5]} />
+          <meshStandardMaterial color="#1f3340" emissive={activation > 0.35 ? '#123d4f' : '#18130e'} />
         </mesh>
       ))}
       <mesh ref={waterRef} position={[0, -1.3, 0.15]} rotation={[0, 0, 0]}>
@@ -118,13 +223,71 @@ function FloodRoad({ progress }: { progress: number }) {
           opacity={0.28 + danger * 0.3 - activation * 0.12}
         />
       </mesh>
+      <mesh position={[0, 0.045, 2.4]}>
+        <planeGeometry args={[6.4, 0.22, 1, 1]} />
+        <meshBasicMaterial
+          color={activation > 0.5 ? '#2be3d6' : '#f2b46a'}
+          transparent
+          opacity={clamp(0.07 + danger * 0.13 + activation * 0.1 + Math.sin(overallProgress * Math.PI) * 0.02, 0.06, 0.26)}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
     </group>
   );
 }
 
-function SensorNetwork({ progress }: { progress: number }) {
+function SignalSphere({
+  position,
+  index,
+  signalVisibility,
+  hydraClarity,
+}: {
+  position: [number, number, number];
+  index: number;
+  signalVisibility: number;
+  hydraClarity: number;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const gridTarget = useMemo<[number, number, number]>(() => {
+    const angle = (index / 7) * Math.PI * 2;
+    return [Math.cos(angle) * 1.55, 1.2 + Math.sin(angle) * 0.48, -1.25];
+  }, [index]);
+
+  useFrame((state) => {
+    if (!meshRef.current) return;
+    const snap = smoothstep(0.18, 0.86, hydraClarity);
+    const pulse = Math.sin(state.clock.elapsedTime * 2.2 + index) * 0.07;
+    meshRef.current.position.set(
+      THREE.MathUtils.lerp(position[0], gridTarget[0], snap),
+      THREE.MathUtils.lerp(position[1], gridTarget[1], snap) + pulse,
+      THREE.MathUtils.lerp(position[2], gridTarget[2], snap),
+    );
+    meshRef.current.scale.setScalar(0.58 + signalVisibility * 0.42 + hydraClarity * 0.36 + pulse);
+  });
+
+  return (
+    <mesh ref={meshRef} position={position}>
+      <sphereGeometry args={[0.07, 24, 24]} />
+      <meshStandardMaterial
+        color={index % 2 === 0 ? '#2be3d6' : '#4da0ff'}
+        emissive={index % 2 === 0 ? '#2be3d6' : '#4da0ff'}
+        emissiveIntensity={0.42 + hydraClarity * 0.72}
+        transparent
+        opacity={clamp(0.2 + signalVisibility * 0.52 + hydraClarity * 0.28, 0.16, 0.96)}
+      />
+    </mesh>
+  );
+}
+
+function SensorNetwork({
+  signalVisibility,
+  hydraClarity,
+}: {
+  signalVisibility: number;
+  hydraClarity: number;
+}) {
   const groupRef = useRef<THREE.Group>(null);
-  const activation = smoothstep(0.62, 0.82, progress);
   const nodes = useMemo(
     () => [
       [-3.1, 1.3, -1.1],
@@ -140,11 +303,8 @@ function SensorNetwork({ progress }: { progress: number }) {
 
   useFrame((state) => {
     if (groupRef.current) {
-      groupRef.current.visible = activation > 0.02;
+      groupRef.current.visible = signalVisibility > 0.02 || hydraClarity > 0.02;
       groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.18) * 0.08;
-      groupRef.current.children.forEach((child, index) => {
-        child.scale.setScalar(0.6 + activation * (0.8 + Math.sin(state.clock.elapsedTime * 2.1 + index) * 0.08));
-      });
     }
   });
 
@@ -152,29 +312,31 @@ function SensorNetwork({ progress }: { progress: number }) {
     <group ref={groupRef} visible={false}>
       {nodes.map((position, index) => (
         <Float key={position.join('-')} speed={1.2 + index * 0.08} floatIntensity={0.12} rotationIntensity={0.06}>
-          <mesh position={position}>
-            <sphereGeometry args={[0.07, 24, 24]} />
-            <meshStandardMaterial
-              color={index % 2 === 0 ? '#2be3d6' : '#4da0ff'}
-              emissive={index % 2 === 0 ? '#2be3d6' : '#4da0ff'}
-              emissiveIntensity={0.7}
-              transparent
-              opacity={0.18 + activation * 0.78}
-            />
-          </mesh>
+          <SignalSphere
+            hydraClarity={hydraClarity}
+            index={index}
+            position={position}
+            signalVisibility={signalVisibility}
+          />
         </Float>
       ))}
     </group>
   );
 }
 
-function AtmosphericGrid({ progress }: { progress: number }) {
+function AtmosphericGrid({
+  hydraClarity,
+  waterPressure,
+}: {
+  hydraClarity: number;
+  waterPressure: number;
+}) {
   const gridRef = useRef<THREE.GridHelper>(null);
-  const activation = smoothstep(0.62, 0.84, progress);
+  const activation = clamp(hydraClarity);
 
   useFrame((state) => {
     if (gridRef.current) {
-      gridRef.current.position.y = -2.2 + activation * 1.25;
+      gridRef.current.position.y = -2.2 + activation * 1.25 + waterPressure * 0.22;
       gridRef.current.rotation.y = state.clock.elapsedTime * 0.03;
       const material = gridRef.current.material as THREE.Material & { opacity?: number };
       material.opacity = 0.06 + activation * 0.32;
@@ -191,19 +353,60 @@ function AtmosphericGrid({ progress }: { progress: number }) {
   );
 }
 
-function ExperienceScene({ progress }: { progress: number }) {
-  const activation = smoothstep(0.62, 0.84, progress);
+function LeadTimeRings({ hydraClarity }: { hydraClarity: number }) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.visible = hydraClarity > 0.04;
+      groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.18) * 0.05;
+      groupRef.current.scale.setScalar(0.74 + hydraClarity * 0.38);
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[0, 1.2, -1.28]} visible={false}>
+      {[0.72, 1.16, 1.62].map((radius, index) => (
+        <mesh key={radius} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[radius, 0.008, 8, 96]} />
+          <meshBasicMaterial
+            color={index === 0 ? '#f2b46a' : '#2be3d6'}
+            transparent
+            opacity={clamp(hydraClarity * (0.32 + index * 0.16), 0, 0.72)}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function ExperienceScene({
+  overallProgress,
+  stormIntensity,
+  waterPressure,
+  hydraClarity,
+}: {
+  overallProgress: number;
+  stormIntensity: number;
+  waterPressure: number;
+  hydraClarity: number;
+}) {
+  const activation = clamp(hydraClarity);
+  const signalVisibility = smoothstep(0.12, 0.62, overallProgress) * (1 - activation * 0.18) + activation * 0.55;
 
   return (
     <>
       <color attach="background" args={[activation > 0.4 ? '#031420' : '#06101a']} />
-      <ambientLight intensity={0.45 + activation * 0.25} />
-      <directionalLight position={[4, 6, 3]} intensity={1.1} color={activation > 0.35 ? '#9ff8ff' : '#a9c7dc'} />
-      <pointLight position={[-4, 1.2, 2]} intensity={1.5} color={activation > 0.45 ? '#2be3d6' : '#f2b46a'} />
-      <RainPoints progress={progress} />
-      <FloodRoad progress={progress} />
-      <SensorNetwork progress={progress} />
-      <AtmosphericGrid progress={progress} />
+      <ambientLight intensity={0.35 + activation * 0.34} />
+      <directionalLight position={[4, 6, 3]} intensity={0.92 + activation * 0.42} color={activation > 0.35 ? '#9ff8ff' : '#a9c7dc'} />
+      <pointLight position={[-4, 1.2, 2]} intensity={1.2 + stormIntensity * 0.58} color={activation > 0.45 ? '#2be3d6' : '#f2b46a'} />
+      <pointLight position={[3.6, -0.2, 2.7]} intensity={0.9 + waterPressure * 0.45} color="#f2b46a" />
+      <RainPoints hydraClarity={hydraClarity} stormIntensity={stormIntensity} waterPressure={waterPressure} />
+      <FloodRoad hydraClarity={hydraClarity} overallProgress={overallProgress} waterPressure={waterPressure} />
+      <SensorNetwork hydraClarity={hydraClarity} signalVisibility={signalVisibility} />
+      <AtmosphericGrid hydraClarity={hydraClarity} waterPressure={waterPressure} />
+      <LeadTimeRings hydraClarity={hydraClarity} />
       <Sparkles
         count={activation > 0.2 ? 70 : 24}
         scale={7}
@@ -216,7 +419,13 @@ function ExperienceScene({ progress }: { progress: number }) {
   );
 }
 
-export default function RainField({ progress, reduceMotion }: RainFieldProps) {
+export default function RainField({
+  overallProgress,
+  stormIntensity,
+  waterPressure,
+  hydraClarity,
+  reduceMotion,
+}: RainFieldProps) {
   if (reduceMotion) {
     return (
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(160deg,rgba(77,160,255,0.14),transparent_38%),linear-gradient(180deg,#051018,#07131f_55%,#031017)]" />
@@ -230,7 +439,12 @@ export default function RainField({ progress, reduceMotion }: RainFieldProps) {
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       >
-        <ExperienceScene progress={progress} />
+        <ExperienceScene
+          hydraClarity={hydraClarity}
+          overallProgress={overallProgress}
+          stormIntensity={stormIntensity}
+          waterPressure={waterPressure}
+        />
       </Canvas>
     </div>
   );

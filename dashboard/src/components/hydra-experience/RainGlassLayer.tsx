@@ -5,16 +5,13 @@ import { usePointerRipples } from './usePointerRipples';
 
 interface RainGlassLayerProps {
   reduceMotion: boolean;
-  progress: number;
+  stormIntensity: number;
+  fogOpacity: number;
+  hydraClarity: number;
 }
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
-}
-
-function smoothstep(edge0: number, edge1: number, value: number) {
-  const t = clamp((value - edge0) / (edge1 - edge0));
-  return t * t * (3 - 2 * t);
 }
 
 function seededUnit(index: number) {
@@ -22,7 +19,12 @@ function seededUnit(index: number) {
   return value - Math.floor(value);
 }
 
-export default function RainGlassLayer({ reduceMotion, progress }: RainGlassLayerProps) {
+export default function RainGlassLayer({
+  reduceMotion,
+  stormIntensity,
+  fogOpacity,
+  hydraClarity,
+}: RainGlassLayerProps) {
   const ripples = usePointerRipples(reduceMotion);
   const drops = useMemo(
     () =>
@@ -47,17 +49,20 @@ export default function RainGlassLayer({ reduceMotion, progress }: RainGlassLaye
     );
   }
 
-  const storm = smoothstep(0.08, 0.62, progress);
-  const clarity = smoothstep(0.66, 0.86, progress);
+  const storm = clamp(stormIntensity);
+  const clarity = clamp(hydraClarity);
 
   return (
     <div
       aria-hidden="true"
       className="pointer-events-none fixed inset-0 z-[18] overflow-hidden"
-      style={{ opacity: 0.45 + storm * 0.38 - clarity * 0.22 }}
+      style={{ opacity: clamp(0.34 + storm * 0.36 + fogOpacity * 0.2 - clarity * 0.24, 0.24, 0.82) }}
     >
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(174,225,247,0.05),transparent_34%),linear-gradient(110deg,transparent_0_32%,rgba(255,255,255,0.05)_32%_33%,transparent_33%_58%,rgba(43,227,214,0.04)_58%_59%,transparent_59%)] hydra-glass-rain-sheen" />
-      <div className="absolute inset-0 opacity-60 hydra-fog-drift" />
+      <div
+        className="absolute inset-0 bg-[linear-gradient(180deg,rgba(174,225,247,0.05),transparent_34%),linear-gradient(110deg,transparent_0_32%,rgba(255,255,255,0.05)_32%_33%,transparent_33%_58%,rgba(43,227,214,0.04)_58%_59%,transparent_59%)] hydra-glass-rain-sheen"
+        style={{ opacity: clamp(0.42 + storm * 0.34 - clarity * 0.22, 0.22, 0.78) }}
+      />
+      <div className="absolute inset-0 hydra-fog-drift" style={{ opacity: clamp(fogOpacity, 0.1, 0.72) }} />
       {drops.map((drop) => (
         <span
           key={drop.id}

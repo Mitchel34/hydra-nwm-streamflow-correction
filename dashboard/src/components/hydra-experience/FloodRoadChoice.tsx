@@ -124,6 +124,16 @@ export default function FloodRoadChoice({ reduceMotion }: FloodRoadChoiceProps) 
         <div className="absolute left-6 top-6 rounded-md border border-white/12 bg-black/28 px-3 py-2 text-xs uppercase tracking-[0.16em] text-[#bdd4e4] backdrop-blur">
           depth unknown
         </div>
+        <div className="absolute left-6 top-20 h-44 w-9 overflow-hidden rounded-full border border-white/16 bg-black/24 p-1 backdrop-blur">
+          <div className="relative h-full overflow-hidden rounded-full bg-white/8">
+            <div className="absolute inset-x-0 bottom-0 h-[64%] bg-[linear-gradient(180deg,rgba(43,227,214,0.16),rgba(34,87,100,0.88))]" />
+            <div className="absolute left-0 right-0 top-[36%] h-px bg-cyan-100/55 shadow-[0_0_12px_rgba(213,250,255,0.55)]" />
+            <div className="absolute left-1/2 top-2 h-[88%] w-px -translate-x-1/2 bg-white/20" />
+          </div>
+        </div>
+        <div className="absolute left-16 top-28 rounded-md border border-white/12 bg-black/24 px-2 py-1 text-[0.64rem] uppercase tracking-[0.14em] text-[#bdd4e4] backdrop-blur">
+          marker hidden
+        </div>
         <div
           className={`absolute right-6 top-6 rounded-md border px-3 py-2 text-xs uppercase tracking-[0.16em] backdrop-blur ${
             choice === 'turn'
