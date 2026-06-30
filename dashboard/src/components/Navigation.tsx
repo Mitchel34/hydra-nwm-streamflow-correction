@@ -60,7 +60,7 @@ export default function Navigation() {
           >
             {reduceMotion ? 'Motion: Reduced' : 'Motion: Full'}
           </button>
-          {navLinks.slice(1).map((link) => {
+          {navLinks.map((link) => {
             const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
             return (
               <Link

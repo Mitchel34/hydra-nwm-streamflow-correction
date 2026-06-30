@@ -114,6 +114,64 @@ body {
   box-shadow: 0 0 20px rgba(242, 180, 106, 0.4), 0 0 40px rgba(242, 180, 106, 0.24);
 }
 
+.hydra-experience-grid {
+  background-image:
+    linear-gradient(rgba(43, 227, 214, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(43, 227, 214, 0.12) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(180deg, transparent, black 18%, black 78%, transparent);
+}
+
+.hydra-waterline {
+  box-shadow:
+    0 -18px 55px rgba(55, 211, 235, 0.18),
+    inset 0 20px 80px rgba(183, 244, 255, 0.08);
+}
+
+.hydra-wave-crest {
+  animation: hydra-wave-drift 8s ease-in-out infinite alternate;
+}
+
+.hydra-water-texture {
+  background-image:
+    repeating-linear-gradient(8deg, rgba(255, 255, 255, 0.09) 0 1px, transparent 1px 18px),
+    repeating-linear-gradient(-14deg, rgba(43, 227, 214, 0.09) 0 1px, transparent 1px 22px);
+  background-size: 160px 80px;
+  animation: hydra-water-texture 10s linear infinite;
+}
+
+.hydra-glass-distortion {
+  background-image:
+    linear-gradient(120deg, transparent 0 22%, rgba(255, 255, 255, 0.06) 22% 23%, transparent 23% 52%, rgba(91, 196, 255, 0.06) 52% 53%, transparent 53%),
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(255, 255, 255, 0.025) 34px 35px);
+  mix-blend-mode: screen;
+  animation: hydra-glass-shift 7s ease-in-out infinite alternate;
+}
+
+.hydra-road-water {
+  animation: hydra-road-water 5.5s ease-in-out infinite alternate;
+}
+
+@keyframes hydra-wave-drift {
+  from { transform: translateX(-8%) translateY(0); }
+  to { transform: translateX(-28%) translateY(10px); }
+}
+
+@keyframes hydra-water-texture {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 160px 80px, -120px 44px; }
+}
+
+@keyframes hydra-glass-shift {
+  from { transform: translateX(-1.5%) skewX(-0.5deg); }
+  to { transform: translateX(1.5%) skewX(0.5deg); }
+}
+
+@keyframes hydra-road-water {
+  from { transform: translateY(0); filter: saturate(1); }
+  to { transform: translateY(-10px); filter: saturate(1.25); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

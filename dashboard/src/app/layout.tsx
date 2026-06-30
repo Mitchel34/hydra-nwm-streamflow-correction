@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Hydra | Evidence for Local NWM Streamflow Correction',
+  title: 'Hydra Experience | Many Signals. One Warning. More Time.',
   description:
-    'Public companion dashboard for a Hydra streamflow-correction study, showing gauge-informed NWM correction, input-source ablations, and completed ERA5 feature-sweep evidence.',
+    'Cinematic public education experience and evidence dashboard for Hydra, connecting flood timing, official safety guidance, local NWM correction, and ERA5 feature-sweep evidence.',
 };
 
 export default function RootLayout({
