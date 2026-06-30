@@ -315,3 +315,14 @@ export interface Era5SweepData {
   summary: Era5SweepRow[];
   impacts: Era5SweepImpactRow[];
 }
+
+export interface ManuscriptMetadata {
+  version: string;
+  date: string;
+  source_directory: string;
+  source_zip: string;
+  pdf: string;
+  status: string;
+  evidence_sources: string[];
+  guardrails: string[];
+}

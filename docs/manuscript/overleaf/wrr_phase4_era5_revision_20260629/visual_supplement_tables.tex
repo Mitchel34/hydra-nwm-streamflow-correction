@@ -1,0 +1,59 @@
+%% Supplemental visual/reproducibility tables moved from the main WRR manuscript.
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+
+\graphicspath{{figures/}}
+
+\begin{document}
+
+\section*{Supplemental Tables}
+
+These tables preserve reproducibility and statistical support while keeping the main manuscript focused on the site context, primary performance, input ablation, conceptual workflow, and event-scale behavior.
+
+\input{locks/table_temporal_split.tex}
+
+\input{locks/table_training_config.tex}
+
+\input{locks/table_significance.tex}
+
+\section*{Supplemental ERA5 Feature Evidence}
+
+The following tables summarize the completed 216-run confirmatory Hydra ERA5 feature sweep. They support the main-text ERA5 discussion but should be interpreted as predictive sensitivity, not causal attribution.
+
+\input{locks/table_era5_hydra_sweep_summary.tex}
+
+\input{locks/table_era5_hydra_drop_impacts.tex}
+
+\section*{Supplemental ERA5 Diagnostic Figures}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{era5_feature_target_relationships.pdf}
+\caption{Exploratory feature association with NWM bias and absolute error. Values are diagnostic associations, not causal effects.}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{era5_feature_redundancy_heatmap.pdf}
+\caption{Exploratory pairwise Spearman redundancy among ERA5-Land and time-derived features over the full model-ready record.}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{era5_feature_nonlinear_response.pdf}
+\caption{Exploratory binned nonlinear relationships between selected ERA5-Land features and test-period NWM error.}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{era5_feature_group_performance.pdf}
+\vspace{0.5em}
+\includegraphics[width=\linewidth]{era5_feature_leave_one_impact.pdf}
+\caption{Exploratory gradient-boosted residual-model ERA5 feature screen. This is not a Hydra architecture result and is retained only as diagnostic context.}
+\end{figure}
+
+\end{document}

@@ -1,0 +1,24 @@
+\begin{table}
+\centering
+\caption{Architecture sensitivity for the gauge-free surrogate (NWM+ERA5 only) from locked outputs.}
+\small
+\begin{tabular}{ll r r r r r}
+\toprule
+\textbf{Site} & \textbf{Configuration} & \textbf{RMSE} & \textbf{$\Delta$RMSE (\%)} & \textbf{NSE} & \textbf{KGE} & \textbf{PBIAS} \\
+\midrule
+Jefferson, NC & Hydra (NWM+ERA5-Land ablation) & 14.34 & 8.5 & 0.524 & 0.429 & -20.51 \\
+Jefferson, NC & Hydra + Causal Mask & 12.64 & 19.4 & 0.630 & 0.512 & -19.99 \\
+Jefferson, NC & Hydra + Non-Neg & 13.89 & 11.4 & 0.554 & 0.524 & -20.12 \\
+Jefferson, NC & Hydra + Causal + Non-Neg & 11.41 & 27.2 & 0.699 & 0.637 & -16.55 \\
+Galax, VA & Hydra (NWM+ERA5-Land ablation) & 60.61 & 21.8 & 0.553 & 0.685 & -10.99 \\
+Galax, VA & Hydra + Causal Mask & 63.27 & 18.4 & 0.513 & 0.601 & -11.44 \\
+Galax, VA & Hydra + Non-Neg & 62.40 & 19.5 & 0.526 & 0.593 & -13.58 \\
+Galax, VA & Hydra + Causal + Non-Neg & 66.86 & 13.8 & 0.456 & 0.505 & -18.81 \\
+Sugar Grove, NC & Hydra (NWM+ERA5-Land ablation) & 7.53 & 5.0 & 0.654 & 0.655 & -10.26 \\
+Sugar Grove, NC & Hydra + Causal Mask & 7.64 & 3.5 & 0.644 & 0.610 & -14.63 \\
+Sugar Grove, NC & Hydra + Non-Neg & 7.75 & 2.2 & 0.634 & 0.619 & -9.93 \\
+Sugar Grove, NC & Hydra + Causal + Non-Neg & 7.66 & 3.3 & 0.642 & 0.623 & -10.20 \\
+\bottomrule
+\end{tabular}
+\label{tab:ablation_arch}
+\end{table}

@@ -201,7 +201,9 @@ export default function FindingsPage() {
                   drop-feature, single-group, and drop-group configurations across three fixed seeds.
                   The largest losses occur when precipitation is removed at the New River sites,
                   making precipitation the clearest confirmatory predictive sensitivity in this
-                  gauge-free experiment.
+                  gauge-free experiment. The same summary table also shows that gauge-free ERA5
+                  corrections remain negatively biased, so RMSE, KGE, and PBIAS need to be read
+                  together.
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
                   {allEligibleEra5.map((row) => (

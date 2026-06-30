@@ -1,0 +1,4 @@
+site_id,site_name,rmse_nwm,rmse_hydra,rmse_improvement_pct,nse_nwm,nse_hydra,kge_nwm,kge_hydra,pbias_nwm,pbias_hydra
+03161000,"Jefferson, NC",15.68,8.57,45.3,0.431,0.830,0.369,0.676,-24.74,-5.76
+03164000,"Galax, VA",77.55,40.15,48.2,0.268,0.804,0.473,0.741,-13.98,-6.68
+03479000,"Sugar Grove, NC",7.92,3.48,56.0,0.617,0.926,0.682,0.896,0.58,0.16

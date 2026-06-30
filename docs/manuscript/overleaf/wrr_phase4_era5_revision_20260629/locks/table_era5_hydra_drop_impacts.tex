@@ -1,0 +1,22 @@
+\begin{table}
+\centering
+\caption{Largest confirmatory ERA5 feature-removal losses relative to the all-eligible gauge-free Hydra ERA5 feature set. Positive $\Delta$RMSE means that removing the feature or group increased error relative to the all-eligible configuration.}
+\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llrr}
+\toprule
+\textbf{Site} & \textbf{Removal experiment} & \textbf{$\Delta$RMSE (m$^3$ s$^{-1}$)} & \textbf{$\Delta SS_{\mathrm{RMSE}}$} \\
+\midrule
+Galax, VA & drop group: precipitation & 8.064 & -0.104 \\
+Galax, VA & drop feature: precip mm & 7.420 & -0.096 \\
+Galax, VA & drop group: seasonal time & 2.158 & -0.028 \\
+Galax, VA & drop feature: month sin & 1.705 & -0.022 \\
+Jefferson, NC & drop feature: precip mm & 1.506 & -0.096 \\
+Galax, VA & drop feature: month cos & 1.284 & -0.017 \\
+Galax, VA & drop group: temperature humidity & 1.111 & -0.014 \\
+Jefferson, NC & drop group: precipitation & 0.995 & -0.063 \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:era5_hydra_drop_impacts}
+\end{table}

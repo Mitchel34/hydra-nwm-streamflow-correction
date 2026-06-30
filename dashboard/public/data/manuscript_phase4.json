@@ -1,0 +1,22 @@
+{
+  "version": "Phase 4 ERA5 evidence revision",
+  "date": "2026-06-29",
+  "source_directory": "docs/manuscript/overleaf/wrr_phase4_era5_revision_20260629/",
+  "source_zip": "/docs/wrr_phase4_era5_revision_20260629_overleaf.zip",
+  "pdf": "/docs/hydra_phase4_manuscript.pdf",
+  "status": "source_bundle_available_pdf_requires_latex_compile",
+  "evidence_sources": [
+    "revision_artifacts/era5_feature_sweep/ERA5_HYDRA_SWEEP_CLAIM_GRAPH.md",
+    "revision_artifacts/era5_feature_sweep/tables/ERA5_HYDRA_SWEEP_SUMMARY.csv",
+    "revision_artifacts/era5_feature_sweep/tables/ERA5_HYDRA_SWEEP_IMPACTS.csv",
+    "dashboard/public/data/experiment_results.json",
+    "dashboard/public/data/rigorous_eval.json",
+    "dashboard/public/data/era5_sweep.json"
+  ],
+  "guardrails": [
+    "Gauge-informed Hydra is evaluated as local National Water Model correction, not a universal one-hour persistence replacement.",
+    "ERA5 feature-removal losses indicate predictive sensitivity, not hydrologic causality.",
+    "Confirmatory ERA5 claims use only features available through the 2019-2020 test period.",
+    "Regulated-site behavior is treated as a boundary condition because operation-aware inputs are not included."
+  ]
+}

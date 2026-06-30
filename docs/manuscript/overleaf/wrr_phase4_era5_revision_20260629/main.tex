@@ -1,0 +1,228 @@
+%% AGU Water Resources Research manuscript (Phase 4 ERA5 evidence integration)
+%% Derived from docs/manuscript/overleaf/wrr_vnext_submission_20260330/main.tex
+\PassOptionsToPackage{hidelinks}{hyperref}
+\documentclass{agujournal2019}
+\usepackage{soul}
+\linenumbers
+
+\journalname{Water Resources Research}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{booktabs}
+\usepackage{multirow}
+\setlength{\emergencystretch}{1em}
+
+% Self-contained figure path for the upload bundle.
+\graphicspath{{figures/}}
+
+% Auto-generated numeric locks from JSON outputs.
+\input{locks/locked_values.tex}
+
+\begin{document}
+
+\title{Information-Source Attribution in Local National Water Model Streamflow Correction}
+
+\authors{M. Carson\affil{1}, M. A. Javidian\affil{1}, W. P. Anderson Jr.\affil{2}}
+
+\affiliation{1}{Department of Computer Science, Appalachian State University, Boone, NC, USA}
+\affiliation{2}{Department of Geological and Environmental Sciences, Appalachian State University, Boone, NC, USA}
+
+\correspondingauthor{Mitchel Carson}{carsontm@appstate.edu}
+
+\begin{keypoints}
+\item Gauge-informed correction reduced national streamflow model error by 45.3 to 56.0 percent at three unregulated gauges
+\item Recent gauge observations provided most one-hour correction skill, and routed model output added information beyond weather
+\item A 216-run ERA5 feature sweep showed gauge-free gains were positive but smaller, with precipitation removals causing the largest losses
+\end{keypoints}
+
+\begin{abstract}
+National river models give broad streamflow guidance, but local errors can still limit flood awareness at individual mountain gauges. This study asks which information sources help most when correcting National Water Model (NWM) streamflow at one-hour lead time: recent gauge observations, the NWM hydrograph, or meteorological forcing. Prior work has shown that machine-learning post-processing can improve hydrologic forecasts, but less is known about how much skill comes from each input source and which meteorological variables justify inclusion. We tested a residual-correction model, called Hydra, at three unregulated southern Appalachian gauges using U.S. Geological Survey (USGS) discharge, NWM retrospective output, and European Centre for Medium-Range Weather Forecasts ERA5-Land forcing. The primary gauge-informed configuration reduced root mean square error (RMSE) by \LockPrimaryRMSEMinPct--\LockPrimaryRMSEMaxPct\% and raised Nash--Sutcliffe efficiency (NSE) to \LockJeffersonNSEHydra, \LockGalaxNSEHydra, and \LockSugarNSEHydra. Input ablations show that recent USGS flow history provides the strongest local state information, while retaining NWM adds \LockRemoveNWMDeltaMinPts--\LockRemoveNWMDeltaMaxPts\ percentage points of RMSE reduction beyond gauge-plus-meteorology alone. We then audited ERA5-Land feature availability, redundancy, and distribution shape before running a registered \LockERA5HydraSweepMetricRows-row gauge-free Hydra feature sweep. The all-eligible NWM-plus-ERA5-Land feature set reduced RMSE by \LockERA5AllEligibleMinPct--\LockERA5AllEligibleMaxPct\%, and precipitation removals produced the largest performance losses at the New River sites. The results show that local NWM correction is most effective when gauge telemetry is available, that NWM and meteorological context still add measurable information, and that feature sensitivity should be interpreted as predictive evidence rather than hydrologic causality.
+\end{abstract}
+
+\section*{Plain Language Summary}
+Large national river models are useful, but they can miss the timing or size of streamflow at a particular gauge. This study tested a correction method that learns the typical difference between observed streamflow and the National Water Model forecast, then adds that learned correction back to the model output. The main test used three unregulated mountain gauges where rainfall and runoff are closely connected. The corrected forecasts improved substantially at those sites. The most important input was recent observed flow at the same gauge, which tells the model the current river state. The National Water Model still helped because it carries basin-scale routing information that weather data alone did not provide. We also examined the weather and seasonal variables from ERA5-Land before using them in a larger feature sweep. That sweep showed that weather and seasonal context can improve a gauge-free NWM correction, but the gains are smaller than when recent gauge data are available. A fourth site below Watauga Dam was kept as a boundary case because dam releases affect flow in ways that rainfall, weather, and the current model inputs do not directly describe.
+
+\section{Introduction}
+River forecasts are most useful when they are reliable at the places where decisions are made. The NOAA National Water Model (NWM; \cite{gochis2020}) provides continental-scale streamflow guidance, but local errors can remain important at individual gauges, especially in steep southern Appalachian basins where hydrographs rise and fall quickly. These errors matter because emergency managers, infrastructure operators, and watershed scientists often need site-level guidance rather than only regional consistency.
+
+Machine-learning post-processing offers one way to reduce these local errors without discarding the physical model. Instead of replacing the NWM, a residual correction model can learn the remaining difference between observed and modeled discharge and add that correction back to the NWM hydrograph. Prior studies have shown the value of machine learning in hydrology and NWM post-processing \cite{nearing2021,frame2021,han2022}. Related work also shows that regulated rivers require information about reservoir storage, releases, or other operations if the dominant control on flow is not rainfall-runoff alone \cite{neisary2025}.
+
+The remaining question is not simply whether post-processing can improve a forecast. For operational use, the important question is which information source is responsible for the improvement. Recent gauge observations can be powerful at one-hour lead time because river flow is highly persistent. The NWM may still add useful basin-scale routing and runoff information. Meteorological forcing can describe storm timing and antecedent conditions, but it may not fully represent the current flow state. Separating these sources is necessary before a correction method can be interpreted scientifically or used honestly under different telemetry conditions.
+
+This study evaluates Hydra, a residual correction model for hourly NWM streamflow at four southern Appalachian gauges. Three unregulated gauges provide the primary scientific evidence. A fourth gauge below Watauga Dam is retained as a boundary-condition case, not as a basis for broad performance claims. The study asks three questions: (1) how much can gauge-informed residual correction improve NWM streamflow at unregulated sites, (2) how much skill is lost when recent gauge observations or NWM input are removed, and (3) what limits appear when the same feature set is considered near regulation or under one-hour persistence.
+
+The contribution is an evidence-first attribution of local correction skill. The manuscript first defines the sites, data sources, residual target, and experimental configurations. It then reports primary performance, input ablations, gauge-free surrogate behavior, statistical robustness, event-scale behavior, and the limits implied by persistence and regulation.
+
+\section{Study Design, Data, and Methods}
+\subsection{Study Sites and Data Sources}
+We selected four gauges in two nearby southern Appalachian river systems to hold climate and physiography relatively constant while comparing basin position and regulation status. Three gauges are unregulated and support the primary claims: South Fork New River near Jefferson, North Carolina; New River near Galax, Virginia; and Watauga River near Sugar Grove, North Carolina. The Watauga River at Elizabethton, Tennessee, lies downstream of Watauga Dam, operated by the Tennessee Valley Authority (TVA), and is retained only to mark the boundary of the current feature set. Other sites were outside the scope of this locked four-gauge case study; the design is a traceable testbed, not a regional site-screening sample.
+
+% LOCKED TABLE SOURCE: docs/manuscript/locks/table_sites.csv
+\input{locks/table_sites.tex}
+
+% LOCKED FIGURE SOURCE: docs/manuscript/locks/figure_lock.csv (fig_site_map)
+\begin{figure}
+\centering
+\includegraphics[width=\linewidth]{wrr_site_map.pdf}
+\caption{Study domain and gauge network. The map shows USGS gauge IDs and regulation status; matched NWM reach IDs are listed in Table~\ref{tab:sites}. Primary claims are evaluated on the three unregulated gauges, while the downstream regulated gauge is retained as a boundary-condition case.}
+\label{fig:site_map}
+\end{figure}
+
+Hourly observed discharge comes from the U.S. Geological Survey (USGS) National Water Information System (NWIS; \cite{usgsWaterData}). These observations define the residual target and provide recent gauge history when the gauge-informed configuration is used. Modeled discharge comes from the NWM v2.1 retrospective archive \cite{gochis2020}; each gauge is linked to the NWM reach identifier listed in Table~\ref{tab:sites}. The NWM was retained because it carries basin-integrated runoff and routing information that is not available from point gauge history or meteorological forcing alone. Meteorological input comes from the European Centre for Medium-Range Weather Forecasts (ECMWF) ERA5-Land reanalysis \cite{munozsabater2021}, chosen because it provides a consistent hourly forcing record across all sites.
+
+The broader ERA5-Land candidate set includes precipitation, 2-m temperature, 2-m dewpoint temperature, surface pressure, 10-m wind components, downward solar radiation, and volumetric soil moisture. Derived variables include vapor pressure deficit, relative humidity, wind speed, and cyclical time encodings. These variables represent storm input, atmospheric demand, seasonality, and antecedent wetness without introducing additional data products whose coverage or lineage would need separate verification.
+
+Because the advisor review asked whether the ERA5-Land variables were redundant or hydrologically justified, we added a feature-diagnostic analysis before interpreting feature sensitivity. The workflow follows a standard end-to-end machine-learning sequence: audit data availability, inspect distributions, quantify linear and rank relationships, visualize nonlinear binned responses, register controlled feature sets, train controlled models, and state only claims supported by generated artifacts. For each ERA5-Land or time-derived feature we computed missingness, skewness, Pearson correlation, Spearman rank correlation, covariance, mutual information, pairwise redundancy, and binned relationships to NWM bias and absolute NWM error.
+
+The data-quality audit determined which variables could support confirmatory 2019--2020 test-period claims. The registered Hydra ERA5 feature sweep uses only \LockERA5EligibleFeatureCount\ complete or test-period-available features: precipitation, 2-m temperature, volumetric soil moisture, sine and cosine day-of-year encodings, and sine and cosine month encodings. Dewpoint, surface pressure, radiation, wind speed, vapor pressure deficit, relative humidity, and hour-of-day encodings are retained only as exploratory diagnostics because they were unavailable or missing in the test period. This eligibility rule prevents missing features from becoming manuscript evidence.
+
+All sources are aligned to hourly timestamps and discharge units of m$^3$ s$^{-1}$. USGS flow values reported in cubic feet per second are converted to m$^3$ s$^{-1}$ before merging. The model-ready construction uses inner joins for observed-flow targets, drops rows without required target or NWM values, forward-fills only short temperature and soil-moisture gaps, and excludes remaining rows with selected missing meteorological predictors. Normalization statistics are fit on the training period only. The chronological split uses training from 2010--2017, validation in 2018, and testing from 2019--2020, which prevents future information from entering model development.
+
+\subsection{Residual Target and Hydra Model}
+Hydra is used here as a residual corrector, not as a replacement for the NWM. Let $t$ be an hourly timestamp, $Q_{\mathrm{obs}}(t)$ be observed USGS discharge in m$^3$ s$^{-1}$, and $Q_{\mathrm{NWM}}(t)$ be NWM discharge in m$^3$ s$^{-1}$. The physical residual is
+\begin{linenomath*}
+\begin{equation}
+R(t)=Q_{\mathrm{obs}}(t)-Q_{\mathrm{NWM}}(t).
+\end{equation}
+\end{linenomath*}
+This equation says that the model target is the NWM error at that hour. A positive residual means the NWM is too low; a negative residual means the NWM is too high.
+
+Training uses an inverse hyperbolic sine transform to stabilize low-flow and high-flow behavior:
+\begin{linenomath*}
+\begin{equation}
+z=\operatorname{asinh}(x), \qquad x=\sinh(z),
+\end{equation}
+\end{linenomath*}
+where $x$ is discharge or residual in m$^3$ s$^{-1}$ and $z$ is the transformed value. This transform behaves like a logarithm for large magnitudes but remains defined near zero and for negative residuals. Metrics are reported after returning predictions to discharge units.
+
+Hydra predicts a transformed residual from a \LockSeqLenHours-hour input window. The corrected discharge is reconstructed as
+\begin{linenomath*}
+\begin{equation}
+\hat{Q}_{\mathrm{corr}}(t)=Q_{\mathrm{NWM}}(t)+\hat{R}(t),
+\end{equation}
+\end{linenomath*}
+where $\hat{R}(t)$ is the predicted residual in m$^3$ s$^{-1}$ and $\hat{Q}_{\mathrm{corr}}(t)$ is the corrected discharge. In plain terms, the learned error is added back to the NWM hydrograph so the final output remains anchored to the physics-based forecast.
+
+The model pipeline combines feature reweighting, a gated recurrent unit (GRU; \cite{cho2014}), transformer attention \cite{vaswani2017}, multi-scale temporal extraction, and a residual prediction head. Feature reweighting lets storm-relevant inputs receive more influence when hydrographs change rapidly. The GRU tracks recent continuity in flow state, while attention can revisit earlier hours in the one-week window. Multi-scale extraction summarizes short, intermediate, and longer event behavior before the prediction head estimates the residual. Figure~\ref{fig:architecture} is a conceptual summary of this pipeline. The repository run label for this implementation is \texttt{hydra\_v3}, but the manuscript uses the scientific name Hydra because earlier internal versions are not part of the claim.
+
+% LOCKED FIGURE SOURCE: docs/manuscript/locks/figure_lock.csv (fig_architecture)
+\begin{figure}
+\centering
+\includegraphics[width=0.79\linewidth,height=0.72\textheight,keepaspectratio]{wrr_architecture.pdf}
+\caption{Conceptual Hydra residual-correction pipeline for the gauge-informed configuration. Lagged USGS observations, NWM retrospective streamflow, and ERA5-Land forcing pass through feature reweighting, temporal encoding, multi-scale extraction, and fusion before the residual prediction head reconstructs corrected discharge on the NWM baseline.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Experimental Configurations and Evaluation}
+The experiments isolate the contribution of each information source. The primary gauge-informed configuration uses lagged USGS observations, NWM discharge, and ERA5-Land forcing. The USGS+ERA5-Land ablation removes NWM from the gauge-informed feature set and is interpreted as an information-source ablation because it predicts streamflow directly rather than reconstructing a residual on an NWM baseline. The gauge-free surrogate uses NWM and ERA5-Land without recent USGS observations. This last configuration is not claimed to be a full operational system; it is a lower-skill test of what remains when real-time gauge telemetry is unavailable.
+
+The Phase 4 ERA5 feature sweep is a separate confirmatory experiment within the gauge-free NWM-plus-ERA5 setting. It contains \LockERA5HydraSweepMetricRows\ completed metric rows across the three primary gauges, three fixed random seeds, all-eligible and reduced feature sets, hydrologic feature groups, drop-group experiments, single-feature tests, and drop-feature tests. Every sweep row uses the same chronological train/validation/test split and reports RMSE, MAE, NSE, KGE, PBIAS, and RMSE skill relative to raw NWM. These runs test predictive sensitivity to ERA5 feature choices; they do not establish hydrologic causality.
+
+Training uses the locked repository configuration, including the \LockSeqLenHours-hour input window described above, for all reported claims.
+
+Evaluation uses root mean square error (RMSE), Nash--Sutcliffe efficiency (NSE; \cite{nash1970}), Kling--Gupta efficiency (KGE; \cite{gupta2009}), percent bias (PBIAS), and RMSE skill score ($SS_{\mathrm{RMSE}}$). RMSE has units of m$^3$ s$^{-1}$ and measures the typical size of discharge error. NSE and KGE are dimensionless measures of hydrograph agreement, with larger values indicating better performance. PBIAS reports mean bias as a percentage, with values closer to zero indicating lower overall bias. RMSE skill score is
+\begin{linenomath*}
+\begin{equation}
+SS_{\mathrm{RMSE}}=1-\frac{\mathrm{RMSE}_{\mathrm{corr}}}{\mathrm{RMSE}_{\mathrm{NWM}}},
+\end{equation}
+\end{linenomath*}
+so positive values indicate improvement over raw NWM. Statistical robustness is evaluated with moving-block bootstrap intervals and Diebold--Mariano (DM) tests \cite{diebold1995}, which are appropriate because hourly errors are serially correlated.
+
+\section{Results}
+\subsection{Gauge-Informed Performance and Input Attribution}
+The primary gauge-informed configuration substantially improves NWM streamflow at the three unregulated gauges (Table~\ref{tab:primary_results}). RMSE decreases by \LockPrimaryRMSEMinPct\% at Jefferson, \LockGalaxRMSEGainPct\% at Galax, and \LockSugarRMSEGainPct\% at Sugar Grove, with an overall range of \LockPrimaryRMSEMinPct--\LockPrimaryRMSEMaxPct\%. Corrected NSE values are \LockJeffersonNSEHydra, \LockGalaxNSEHydra, and \LockSugarNSEHydra, compared with raw NWM NSE values of 0.431, 0.268, and 0.617. KGE improves at all three sites, and PBIAS moves closer to zero.
+
+% LOCKED TABLE SOURCE: docs/manuscript/locks/table_primary_results.csv
+\input{locks/table_primary_results.tex}
+
+The ablation results identify why the primary configuration works (Table~\ref{tab:input_ablation}). Removing recent USGS observations produces the lowest-skill configuration, with RMSE reductions of \LockOperationalRMSEMinPct--\LockOperationalRMSEMaxPct\%. This shows that recent gauge history supplies the strongest estimate of current river state at one-hour lead time. Retaining NWM also matters: removing NWM from the gauge-informed feature set lowers RMSE reduction by \LockRemoveNWMDeltaMinPts\ percentage points at Jefferson, 22.4 percentage points at Galax, and \LockRemoveNWMDeltaMaxPts\ percentage points at Sugar Grove. The corrected hydrograph therefore does not come from gauge persistence alone; the NWM contributes additional basin-scale information beyond local observations and ERA5-Land forcing.
+
+% LOCKED TABLE SOURCE: docs/manuscript/locks/table_input_ablation.csv
+\input{locks/table_input_ablation.tex}
+
+\subsection{ERA5-Land Feature Audit and Confirmatory Sweep}
+The feature audit clarifies why ERA5-Land forcing should be interpreted as supporting context rather than as the dominant one-hour state signal. Across the pooled three-site 2010--2020 model-ready record, precipitation, 2-m temperature, soil moisture, and the day/month seasonal encodings are complete, but dewpoint, pressure, radiation, wind speed, vapor pressure deficit, relative humidity, and hour-of-day encodings are missing for 48.491\% of rows and are unavailable throughout the 2019--2020 test period (Figure~\ref{fig:era5_feature_distribution}). Those missing fields are therefore excluded from confirmatory Hydra feature-sweep claims. Distribution diagnostics show that precipitation is strongly right-skewed (skewness 7.484), while vapor pressure deficit, wind speed, and radiation are also positively skewed (1.637, 1.550, and 1.066). This supports using transformations or robust scaling rather than assuming normally distributed meteorological inputs.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.94\linewidth]{era5_feature_distribution_skewness.pdf}
+\caption{Exploratory pooled ERA5-Land and time-derived feature diagnostics. The upper panel shows skewness over the full model-ready record, and the lower panel shows missing rows by chronological split. These diagnostics determine which variables can support confirmatory feature-ablation claims and which require qualification.}
+\label{fig:era5_feature_distribution}
+\end{figure}
+
+Correlation and redundancy diagnostics show both hydrologic signal and duplication. Soil moisture has the strongest mean absolute Spearman association with NWM bias and absolute error among the ERA5-Land features (0.186), followed by seasonal timing variables and precipitation (0.088). These correlations are modest, so they should not be interpreted as causal explanations. The redundancy matrix shows expected duplicate information: day-of-year and month encodings are nearly redundant ($r_s \approx 0.970$), temperature and vapor pressure deficit are strongly related ($r_s=0.948$), and vapor pressure deficit is strongly inversely related to relative humidity ($r_s=-0.918$). These relationships justify hydrologically interpretable feature groups while avoiding claims that each individual ERA5-Land column contributes independent information. In the manuscript logic, these diagnostics are hypothesis-generating: they explain why the feature sets were constructed, while the retrained Hydra sweep provides the confirmatory performance evidence.
+
+The completed \LockERA5HydraSweepMetricRows-row Hydra ERA5 feature sweep confirms that ERA5-Land features have measurable but lower-skill value in the gauge-free NWM-plus-ERA5 setting (Table~\ref{tab:era5_hydra_sweep_summary}). The all-eligible feature set reduced RMSE by \LockERA5AllEligibleJeffersonPct\% at Jefferson, \LockERA5AllEligibleGalaxPct\% at Galax, and \LockERA5AllEligibleSugarPct\% at Sugar Grove. The reduced nonredundant feature set improved Jefferson to \LockERA5ReducedJeffersonPct\% RMSE reduction, but was lower at Galax (\LockERA5ReducedGalaxPct\%) and similar at Sugar Grove (\LockERA5ReducedSugarPct\%). This site dependence is important: removing redundant variables can help where the redundant variables add noise, but it is not uniformly better across basins. The table also shows that gauge-free ERA5 corrections remain negatively biased in PBIAS at all three sites, so meteorological context improves RMSE without fully removing systematic underprediction.
+
+% LOCKED TABLE SOURCE: revision_artifacts/era5_feature_sweep/tables/ERA5_HYDRA_SWEEP_SUMMARY.csv
+\input{locks/table_era5_hydra_sweep_summary.tex}
+
+Feature-removal experiments identify precipitation as the largest confirmatory predictive sensitivity in the sweep (Figure~\ref{fig:era5_hydra_group_ablation}). The largest performance loss occurs at Galax when the precipitation group is removed ($\Delta$RMSE = \LockERA5LargestDropRMSE\ m$^3$ s$^{-1}$), followed by removing precipitation alone ($\Delta$RMSE = \LockERA5SecondDropRMSE\ m$^3$ s$^{-1}$). Seasonal timing is the next strongest Galax loss ($\Delta$RMSE = \LockERA5ThirdDropRMSE\ m$^3$ s$^{-1}$). At Jefferson, precipitation removals are also among the largest losses, while Sugar Grove shows much smaller sensitivity because raw NWM is already stronger there. These patterns are hydrologically plausible: precipitation represents storm forcing, soil moisture and seasonal timing represent antecedent wetness and seasonal runoff regime, and temperature can proxy evapotranspiration and snow/rain-season effects. They remain predictive sensitivities, not causal proof that a variable physically controls the residual.
+
+\begin{figure}
+\centering
+\includegraphics[width=\linewidth]{era5_hydra_feature_group_ablation.pdf}
+\caption{Confirmatory Hydra ERA5 feature-group ablation summary from the completed registered sweep. Bars show mean RMSE reduction relative to raw NWM for selected gauge-free NWM-plus-ERA5 feature sets across three fixed seeds. These results quantify predictive sensitivity to feature groups; they do not establish hydrologic causality.}
+\label{fig:era5_hydra_group_ablation}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\linewidth]{era5_hydra_metric_panel.pdf}
+\caption{Confirmatory Hydra ERA5 metric panel for the strongest gauge-free feature configurations in the registered sweep. The panels compare RMSE reduction, KGE, and PBIAS by site, showing that feature choices affect error magnitude, hydrograph agreement, and bias differently.}
+\label{fig:era5_hydra_metric_panel}
+\end{figure}
+
+\subsection{Gauge-Free Surrogate, Significance, and Persistence}
+The locked input-ablation table and the Phase 4 ERA5 sweep answer related but different questions. Table~\ref{tab:input_ablation} compares information sources and shows that the base gauge-free surrogate reduces RMSE by 8.5\% at Jefferson, 21.8\% at Galax, and 5.0\% at Sugar Grove. The registered ERA5 sweep then asks which eligible meteorological and seasonal variables matter within that gauge-free setting. Both views lead to the same practical conclusion: NWM plus ERA5-Land can improve raw NWM when gauge data are absent, but the gains remain much smaller than the gauge-informed corrections. The base gauge-free gains are significant relative to raw NWM under the implemented moving-block bootstrap and Diebold--Mariano workflow, but they should not be interpreted as equivalent to telemetry-informed nowcasting.
+
+The significance results support the NWM-correction claim but do not imply that Hydra is superior to every one-hour baseline. Separate persistence checks show that one-hour flow persistence has lower RMSE than the primary Hydra configuration at all three unregulated sites. That result is a useful limitation: at a one-hour point horizon, recent measured flow can be extremely hard to improve upon. The contribution here is therefore best framed as residual correction and input attribution for the NWM, not as a universal replacement for persistence nowcasting.
+
+\subsection{Event Behavior and Boundary Conditions}
+Event-scale plots show where corrections become visually important (Figure~\ref{fig:hydrograph_panel}). During selected high-flow windows, the corrected trajectories move closer to observed discharge than raw NWM at the three unregulated gauges. Locked high-flow summaries show RMSE reductions from 46.8 to 26.8 m$^3$ s$^{-1}$ at Jefferson, 233.4 to 125.6 m$^3$ s$^{-1}$ at Galax, and 24.2 to 10.9 m$^3$ s$^{-1}$ at Sugar Grove. These values support large absolute event-scale corrections, but the evidence does not support the stronger claim that relative skill gains are always largest during high flows.
+
+% LOCKED FIGURE SOURCE: docs/manuscript/locks/figure_lock.csv (fig_hydrograph_panel)
+\begin{figure}
+\centering
+\includegraphics[width=\linewidth]{wrr_hydrograph_panel.pdf}
+\caption{Hydrograph comparison panels for representative high-flow and typical-flow windows at the three unregulated gauges in the test period. Lines show observed discharge, raw NWM, and the gauge-informed corrected trajectory; the P10--P90 band is a residual-based interval around the corrected trajectory. The figure supports large absolute event-scale corrections, not a claim that relative gains are largest during high flows.}
+\label{fig:hydrograph_panel}
+\end{figure}
+
+The regulated Watauga site defines a separate boundary condition. Because Watauga Dam releases are not included as covariates, the model inputs cannot directly represent operational decisions that may control downstream discharge. The present manuscript therefore does not use the regulated site to claim general performance. Instead, it treats regulation as a scope limit and as evidence that future extensions need operations-aware inputs before the approach can be generalized to controlled rivers.
+
+\section{Discussion}
+\subsection{What the Ablations Mean}
+The ablation study is the central result. It shows that local streamflow correction at one-hour lead time is mainly a state-estimation problem. Recent USGS observations encode the current channel and basin response directly, so removing them sharply reduces skill. This finding is scientifically important because it prevents overinterpreting the correction model as if all improvement came from architecture alone.
+
+At the same time, NWM input adds measurable information beyond gauge history and meteorology. The \LockRemoveNWMDeltaMinPts--\LockRemoveNWMDeltaMaxPts\ percentage-point losses when NWM is removed from the gauge-informed configuration show that the baseline model still carries useful routed-flow structure. Hydra is therefore best interpreted as a local correction layer that uses observed state when available while preserving useful information from the national model.
+
+The ERA5-Land diagnostics and confirmatory sweep refine this interpretation. Precipitation is the clearest meteorological sensitivity in the Hydra feature-removal experiments, which is hydrologically plausible because it represents storm input. Soil moisture and seasonal encodings help describe antecedent wetness and seasonal runoff regime, but the correlation and redundancy analysis shows that several variables carry overlapping information. The reduced nonredundant feature set improves Jefferson but not Galax, which shows that redundancy screening can help at one site without becoming a universal rule. KGE and PBIAS do not always move in the same direction as RMSE, so feature choices should be discussed by metric rather than collapsed into a single importance ranking. The defensible conclusion is therefore not that every ERA5-Land feature is independently important, but that a compact, hydrologically interpretable meteorological context supports NWM correction while recent gauge observations remain the dominant one-hour state information.
+
+\subsection{Use Conditions and Limits}
+The gauge-free surrogate and ERA5 sweep help define realistic use conditions. When recent gauge data are unavailable, NWM and eligible ERA5-Land features still support modest correction, but the improvement is smaller and more site-dependent than the gauge-informed result. This distinction matters for deployment because telemetry availability changes what information the model can know at forecast time.
+
+The persistence result further narrows the claim. At one-hour lead time, persistence can be an exceptionally strong point-prediction baseline. Rather than weakening the study, this finding clarifies what the method contributes: an evidence-based correction of NWM error and an attribution of that correction across input sources. Longer lead times, event-aware objectives, and operational products that require consistency with NWM hydrographs remain separate questions.
+
+The regulated-site boundary is also important. A model that sees rainfall, weather, NWM discharge, and gauge history cannot reliably infer every management decision below a dam. Extending this approach to regulated basins will require reservoir storage, release schedules, power-generation operations, or other infrastructure covariates. The recent release of NWM NextGen also creates a natural future comparison, but no manuscript-ready NextGen result is present in the verified artifacts for this study.
+
+\section{Conclusions}
+Hydra improves local NWM streamflow correction at three unregulated southern Appalachian gauges when recent gauge observations, NWM output, and ERA5-Land forcing are available. The verified test-period gains are substantial: RMSE reductions of \LockPrimaryRMSEMinPct--\LockPrimaryRMSEMaxPct\% and corrected NSE values of 0.804--\LockSugarNSEHydra. The ablation study shows why those gains occur. Recent gauge observations provide the strongest one-hour state information, NWM adds routed basin-scale information beyond gauge-plus-meteorology, and a gauge-free surrogate remains positive but lower skill. The completed ERA5 feature sweep adds a second layer of evidence: eligible meteorological and seasonal variables improve gauge-free correction by \LockERA5AllEligibleMinPct--\LockERA5AllEligibleMaxPct\%, with precipitation removals producing the largest losses at the New River sites.
+
+The study's scope is equally important. The results are based on three unregulated gauges in one region, one-hour persistence remains a strong baseline, and downstream regulation requires operations-aware inputs that are not included here. The practical conclusion is therefore specific: residual correction can make NWM guidance more locally useful where the dominant controls on error are represented in the inputs, but broader transfer and regulated-river deployment require additional evidence.
+
+\section*{Open Research}
+USGS streamflow observations are available through USGS Water Data for the Nation (\url{https://waterdata.usgs.gov}). NWM retrospective products are available through the NOAA NWM archive (\url{https://registry.opendata.aws/nwm-archive/}). ERA5-Land reanalysis is distributed through the Copernicus Climate Data Store (\url{https://cds.climate.copernicus.eu}).
+
+Code, locked manuscript artifacts, and figure-generation workflows are maintained in the Hydra repository (\url{https://github.com/Mitchel34/hydra-nwm-streamflow-correction}). The release corresponding to the submitted manuscript will archive the manuscript source, lock files, and figure manifests used for this version.
+
+\acknowledgments
+The author thanks Dr.\ Mohammad Ali Javidian (first reader) and Dr.\ William P. Anderson (second reader) for their guidance, feedback, and review of this manuscript. This research received no external funding. The author declares no conflicts of interest.
+
+\noindent\textbf{Author Contributions (CRediT):} Mitchel Carson: Conceptualization, Methodology, Software, Formal Analysis, Investigation, Data Curation, Writing---Original Draft, Visualization. Dr.\ Mohammad Ali Javidian: Supervision, Writing---Review \& Editing. Dr.\ William P. Anderson: Writing---Review \& Editing.
+
+\bibliography{refs}
+
+\end{document}

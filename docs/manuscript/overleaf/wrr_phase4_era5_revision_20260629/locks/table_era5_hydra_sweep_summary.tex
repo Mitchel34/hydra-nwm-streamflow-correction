@@ -1,0 +1,20 @@
+\begin{table}
+\centering
+\caption{Confirmatory gauge-free Hydra ERA5 feature sweep summary. Values are means across three fixed seeds for each site and feature set. RMSE is in m$^3$ s$^{-1}$; $SS_{\mathrm{RMSE}}$ is the RMSE reduction relative to raw NWM. These rows summarize the completed 216-run registered sweep and are interpreted as predictive sensitivity, not hydrologic causality.}
+\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llrrrr}
+\toprule
+\textbf{Site} & \textbf{Feature set} & \textbf{RMSE} & \textbf{$SS_{\mathrm{RMSE}}$ (\%)} & \textbf{KGE} & \textbf{PBIAS (\%)} \\
+\midrule
+Jefferson, NC & All eligible ERA5 + time & 13.12 & 16.4 & 0.534 & -19.32 \\
+Jefferson, NC & Reduced nonredundant & 12.21 & 22.1 & 0.633 & -15.96 \\
+Galax, VA & All eligible ERA5 + time & 65.81 & 15.1 & 0.567 & -10.99 \\
+Galax, VA & Reduced nonredundant & 69.39 & 10.5 & 0.480 & -19.71 \\
+Sugar Grove, NC & All eligible ERA5 + time & 7.66 & 3.3 & 0.657 & -8.67 \\
+Sugar Grove, NC & Reduced nonredundant & 7.67 & 3.2 & 0.650 & -9.15 \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:era5_hydra_sweep_summary}
+\end{table}

@@ -6,6 +6,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ErrorBar,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -80,6 +81,17 @@ export default function Era5EvidencePage() {
   }, []);
 
   const allEligible = useMemo(() => data?.headline.all_eligible ?? [], [data]);
+  const reducedRows = useMemo(
+    () => data?.summary.filter((row) => row.config === 'reduced_nonredundant') ?? [],
+    [data],
+  );
+  const summaryRows = useMemo(() => {
+    const reducedBySite = new Map(reducedRows.map((row) => [row.site_id, row]));
+    return allEligible.map((allRow) => ({
+      all: allRow,
+      reduced: reducedBySite.get(allRow.site_id) ?? null,
+    }));
+  }, [allEligible, reducedRows]);
 
   const impactRows = useMemo(() => {
     if (!data) return [];
@@ -168,6 +180,7 @@ export default function Era5EvidencePage() {
                   site: row.site_label,
                   site_id: row.site_id,
                   value: row.ss_rmse_mean * 100,
+                  ci: row.ss_rmse_ci95_half_width * 100,
                   kge: row.kge_mean,
                   pbias: row.pbias_mean,
                 }))}>
@@ -184,6 +197,7 @@ export default function Era5EvidencePage() {
                     labelStyle={{ color: '#e6f3fb' }}
                   />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    <ErrorBar dataKey="ci" width={4} stroke="#e6f3fb" />
                     {allEligible.map((row) => (
                       <Cell key={row.site_id} fill={SITE_COLORS[row.site_id] ?? '#2be3d6'} />
                     ))}
@@ -191,6 +205,9 @@ export default function Era5EvidencePage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            <p className="mt-2 text-xs text-[#8fb4cc]">
+              Error bars show the 95% half-width reported from the three fixed sweep seeds.
+            </p>
           </div>
 
           <div className="surface-panel rounded-xl p-5">
@@ -221,6 +238,59 @@ export default function Era5EvidencePage() {
               </ul>
             </div>
           </div>
+        </section>
+
+        <section className="surface-panel rounded-xl p-5">
+          <div className="mb-4">
+            <h2 className="font-display text-xl text-white">Manuscript Summary Table</h2>
+            <p className="mt-1 max-w-3xl text-sm text-[#8fb4cc]">
+              Native dashboard version of the Phase 4 manuscript table comparing the all-eligible
+              ERA5 feature set with the reduced nonredundant set. Values are means across three
+              fixed seeds.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-[#8fb4cc]">
+                <tr>
+                  <th className="py-2 text-left">Site</th>
+                  <th className="py-2 text-left">Feature set</th>
+                  <th className="py-2 text-right">RMSE reduction</th>
+                  <th className="py-2 text-right">KGE</th>
+                  <th className="py-2 text-right">PBIAS</th>
+                  <th className="py-2 text-right">Seeds</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summaryRows.flatMap(({ all, reduced }) => [all, reduced].filter(Boolean)).map((row) => {
+                  const typedRow = row!;
+                  return (
+                    <tr key={`${typedRow.site_id}-${typedRow.config}`} className="border-t border-[#1f3447]">
+                      <td className="py-2 text-[#c7ddea]">{typedRow.site_label}</td>
+                      <td className="py-2 text-[#c7ddea]">{typedRow.config_label}</td>
+                      <td className="py-2 text-right font-mono text-hydra-corrected">
+                        {(typedRow.ss_rmse_mean * 100).toFixed(1)}%
+                      </td>
+                      <td className="py-2 text-right font-mono text-[#c7ddea]">
+                        {typedRow.kge_mean.toFixed(3)}
+                      </td>
+                      <td className="py-2 text-right font-mono text-[#c7ddea]">
+                        {typedRow.pbias_mean.toFixed(2)}%
+                      </td>
+                      <td className="py-2 text-right font-mono text-[#c7ddea]">
+                        {typedRow.n_seeds}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-[#8fb4cc]">
+            Negative PBIAS values mean the corrected gauge-free model remains low-biased on average.
+            This is why the manuscript discusses RMSE, KGE, and PBIAS together rather than using a
+            single feature-importance ranking.
+          </p>
         </section>
 
         <section className="surface-panel rounded-xl p-5">

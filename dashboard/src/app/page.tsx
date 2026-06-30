@@ -193,7 +193,7 @@ export default function HomePage() {
               {
                 title: 'Manuscript',
                 href: '/manuscript',
-                description: 'View or download the Phase 4 manuscript PDF when the compiled source is available.',
+                description: 'Open the Phase 4 manuscript source bundle and the compiled PDF when local LaTeX output is available.',
               },
             ].map((item) => (
               <Link key={item.href} href={item.href} className="group">

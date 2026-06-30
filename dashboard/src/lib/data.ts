@@ -7,6 +7,7 @@ import {
   DashboardData,
   Era5SweepData,
   ExperimentResult,
+  ManuscriptMetadata,
   RigorousEvalData,
   TimeSeriesPoint,
   VersionComparisonRow,
@@ -190,6 +191,19 @@ export async function fetchRigorousEval(): Promise<RigorousEvalData | null> {
 export async function fetchEra5Sweep(): Promise<Era5SweepData | null> {
   try {
     const response = await fetch('/data/era5_sweep.json');
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch metadata for the public manuscript source/PDF assets.
+ */
+export async function fetchManuscriptMetadata(): Promise<ManuscriptMetadata | null> {
+  try {
+    const response = await fetch('/data/manuscript_phase4.json');
     if (!response.ok) return null;
     return await response.json();
   } catch {

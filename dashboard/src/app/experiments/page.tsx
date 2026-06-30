@@ -179,7 +179,7 @@ export default function ExperimentsPage() {
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-[#2a445b] bg-[#0a1822] px-4 py-6 text-sm text-[#6a8fa6] text-center">
-              Primary experiment (hydra_v3_usgs_nwm_era5) results not available.
+              Primary gauge-informed Hydra results are not available in the exported dashboard data.
             </div>
           )}
         </section>
