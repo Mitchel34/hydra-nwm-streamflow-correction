@@ -7,6 +7,7 @@ import { hydraExperience } from '@/lib/hydra-experience-content';
 
 interface BeforeAfterHydraProps {
   reduceMotion: boolean;
+  exitTransition: number;
 }
 
 function ComparisonList({ title, items, tone }: { title: string; items: string[]; tone: string }) {
@@ -25,8 +26,9 @@ function ComparisonList({ title, items, tone }: { title: string; items: string[]
   );
 }
 
-export default function BeforeAfterHydra({ reduceMotion }: BeforeAfterHydraProps) {
+export default function BeforeAfterHydra({ reduceMotion, exitTransition }: BeforeAfterHydraProps) {
   const [divider, setDivider] = useState(52);
+  const exit = Math.min(1, Math.max(0, exitTransition));
 
   return (
     <div className="space-y-8">
@@ -167,7 +169,18 @@ export default function BeforeAfterHydra({ reduceMotion }: BeforeAfterHydraProps
       </div>
 
       <div className="relative overflow-hidden rounded-lg border border-hydra-corrected/28 bg-[#031d27]/82 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.34)] backdrop-blur-md">
-        <div className="absolute inset-0 opacity-50 hydra-experience-grid" />
+        <div
+          className="absolute inset-0 hydra-experience-grid"
+          style={{
+            opacity: 0.28 + exit * 0.48,
+            transform: reduceMotion ? undefined : `scale(${1.04 - exit * 0.04})`,
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-hydra-corrected/70 to-transparent"
+          style={{ opacity: 0.35 + exit * 0.65 }}
+        />
         <div className="relative z-10 max-w-4xl">
           <p className="font-display text-xs uppercase tracking-[0.24em] text-hydra-corrected">
             {hydraExperience.evidenceBridge.eyebrow}
@@ -185,11 +198,17 @@ export default function BeforeAfterHydra({ reduceMotion }: BeforeAfterHydraProps
       </div>
 
       <div className="grid gap-4 md:grid-cols-5">
-        {hydraExperience.ctas.map((cta) => (
+        {hydraExperience.ctas.map((cta, index) => (
           <Link
             key={cta.href}
             href={cta.href}
             className="group rounded-lg border border-cyan-200/18 bg-[#071420]/78 p-4 transition-colors hover:border-hydra-corrected/45 hover:bg-[#092131]"
+            style={{
+              opacity: reduceMotion ? 1 : 0.68 + Math.max(0, exit - index * 0.06) * 0.42,
+              transform: reduceMotion ? undefined : `translateY(${(1 - exit) * (10 + index * 2)}px)`,
+              transition: 'opacity 320ms ease, transform 320ms ease, border-color 180ms ease, background 180ms ease',
+              transitionDelay: `${index * 45}ms`,
+            }}
           >
             <h3 className="font-display text-base text-white group-hover:text-hydra-corrected">
               {cta.label}

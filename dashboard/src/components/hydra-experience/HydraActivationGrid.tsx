@@ -3,19 +3,39 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { hydraExperience } from '@/lib/hydra-experience-content';
+import type { SignalLayerKey } from '@/lib/hydra-experience-content';
 
 interface HydraActivationGridProps {
   reduceMotion: boolean;
   hydraClarity: number;
+  activeSignalLayers: SignalLayerKey[];
 }
 
-export default function HydraActivationGrid({ reduceMotion, hydraClarity }: HydraActivationGridProps) {
+const causeEffectPath: Array<{
+  label: string;
+  layer: SignalLayerKey;
+  x: number;
+  y: number;
+}> = [
+  { label: 'Rain', layer: 'rainfall', x: 14, y: 32 },
+  { label: 'Gauge', layer: 'gauge', x: 32, y: 44 },
+  { label: 'Terrain', layer: 'terrain', x: 50, y: 36 },
+  { label: 'Road risk', layer: 'roads', x: 68, y: 54 },
+  { label: 'Action', layer: 'response', x: 86, y: 42 },
+];
+
+export default function HydraActivationGrid({
+  reduceMotion,
+  hydraClarity,
+  activeSignalLayers,
+}: HydraActivationGridProps) {
   const [activeCapability, setActiveCapability] = useState(hydraExperience.hydraSignals[0].name);
   const capability =
     hydraExperience.hydraSignals.find((signal) => signal.name === activeCapability) ??
     hydraExperience.hydraSignals[0];
   const activeLayers = new Set(capability.layers);
   const clarity = Math.min(1, Math.max(0, hydraClarity));
+  const selectedLayers = new Set(activeSignalLayers);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.76fr_1.24fr] lg:items-center">
@@ -67,6 +87,23 @@ export default function HydraActivationGrid({ reduceMotion, hydraClarity }: Hydr
                 opacity={activeLayers.has(node.layer) ? 0.36 + clarity * 0.46 : 0.14 + clarity * 0.18}
               />
             ))}
+            {causeEffectPath.slice(0, -1).map((step, index) => {
+              const next = causeEffectPath[index + 1];
+              const active = selectedLayers.has(step.layer) || selectedLayers.has(next.layer);
+              return (
+                <line
+                  key={`${step.label}-${next.label}`}
+                  x1={`${step.x}%`}
+                  y1={`${step.y}%`}
+                  x2={`${next.x}%`}
+                  y2={`${next.y}%`}
+                  stroke={active ? '#f2b46a' : '#2be3d6'}
+                  strokeDasharray={active ? '0' : '5 10'}
+                  strokeWidth={active ? '2.2' : '1.2'}
+                  opacity={0.22 + clarity * (active ? 0.72 : 0.38)}
+                />
+              );
+            })}
           </svg>
           <div className="absolute left-1/2 top-1/2 flex h-28 w-28 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-hydra-corrected/40 bg-hydra-corrected/12 text-center font-display text-xs uppercase tracking-[0.18em] text-hydra-corrected shadow-[0_0_42px_rgba(43,227,214,0.2)]">
             Hydra grid
@@ -88,6 +125,30 @@ export default function HydraActivationGrid({ reduceMotion, hydraClarity }: Hydr
                 }}
                 title={node.label}
               />
+            );
+          })}
+          {causeEffectPath.map((step, index) => {
+            const active = selectedLayers.has(step.layer);
+            return (
+              <div
+                key={step.label}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-md border px-2 py-1 text-[0.62rem] uppercase tracking-[0.14em] transition-all ${
+                  active
+                    ? 'border-amber-200/45 bg-amber-200/14 text-amber-100 shadow-[0_0_22px_rgba(242,180,106,0.22)]'
+                    : 'border-hydra-corrected/24 bg-hydra-corrected/8 text-hydra-corrected'
+                }`}
+                style={{
+                  left: `${step.x}%`,
+                  top: `${step.y}%`,
+                  opacity: reduceMotion ? 1 : 0.48 + Math.max(0, clarity - index * 0.08) * 0.68,
+                  transform: reduceMotion
+                    ? 'translate(-50%, -50%)'
+                    : `translate(-50%, calc(-50% + ${(1 - clarity) * 10}px))`,
+                  transitionDelay: `${index * 80}ms`,
+                }}
+              >
+                {step.label}
+              </div>
             );
           })}
           <div className="absolute bottom-4 left-4 right-4 grid gap-2 sm:grid-cols-4">

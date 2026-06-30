@@ -156,6 +156,43 @@ Limitations and source/licensing notes:
 - Sound remains a minimal procedural Web Audio tone, not a full ambient soundtrack. It is off by default and stops when reduced motion is enabled.
 - The automated browser script remains a one-off validation command rather than a committed Playwright test suite.
 
+## Premium Cinematic Upgrade
+
+Implemented: 2026-06-30
+
+This pass converted the latest Hydra Experience into a more unified storm simulation. The low-water crossing now acts as the hero object, warning stages drive the whole environment, signal controls affect visible layers, the interface flood moment is more physical, Hydra activation interrupts the flood, and the final section reads as leaving the simulation for the evidence chain.
+
+Implementation details:
+
+- Added a single cinematic state model through `useCinematicSceneController`: `warningStage`, `rainIntensity`, `waterline`, `uiSubmersion`, `activeSignalLayers`, `hydraIntervention`, `audioMood`, and `exitTransition`.
+- Connected Flood Watch, Flood Warning, and Flash Flood Warning cards to environment state so selecting or focusing them changes rain density, waterline, fog, color pressure, and audio mood.
+- Made rain-to-data interaction concrete by lifting signal-layer state into `HydraExperienceScene` and passing active layers to the R3F storm scene, signal map, and Hydra decision grid.
+- Reworked signal controls from generic pills into map-like layer toggles with swatches, active counts, rainfall streaks, gauge marker, terrain contours, drainage paths, forecast cone, roads overlay, sensor cue, and response tag.
+- Strengthened the flooded-interface sequence with a higher water mask, submerged text blur/refraction, floating drift, route/data meters, and a reduced-motion static fallback.
+- Expanded procedural Web Audio from a single tone into opt-in rain noise, warning pulse, low-pass underwater muffling, distant thunder, and a calmer Hydra activation tone. Audio remains off by default and is stopped when reduced motion is selected.
+- Moved Skip, Motion, Sound, and Exit into a compact cinematic tray with accessible labels and mobile-specific shorter visual labels.
+- Hid the decorative hero tagline on mobile so the fixed tray does not cover intentional content.
+- Added an ordered cause-effect path in Hydra activation: rain -> gauge -> terrain/drainage -> road risk -> action.
+- Preserved existing research routes and the final links to Findings, ERA5 Evidence, Experiments, Model, and Manuscript.
+
+Validation after this premium pass:
+
+- `npm run lint`: passed with four pre-existing unused-variable warnings in untouched dashboard components.
+- `./node_modules/.bin/tsc --noEmit --pretty false`: passed.
+- `npm run build`: passed.
+- Production route checks returned 200 for `/`, `/analysis`, `/era5`, `/experiments`, `/model`, and `/manuscript`.
+- Full headless browser validation passed for landing load, nonblank canvas render, Begin Experience scroll, warning-stage selection, signal-layer toggles, road decision status, Hydra capability focus, comparison-slider keyboard operation, opt-in sound, reduced-motion audio stop, and no captured console/page errors.
+- Focused final browser validation passed after the mobile tray fix.
+- Canvas-pixel validation passed on the hero WebGL layer. Final run stats: `samples=56448`, `nonDark=28946`, `bright=1559`.
+- Desktop and mobile screenshots were captured under `output/playwright/hydra-premium-20260630/`.
+
+Guardrails:
+
+- Safety copy remains sourced to NWS flood watch/warning guidance, NWS Turn Around Don't Drown guidance, and Ready.gov floods guidance through `hydra-experience-content.ts`.
+- The page continues to state that Hydra is educational decision support and does not issue official warnings or guarantee safety.
+- No language was added claiming Hydra prevents floods, replaces official authorities, beats persistence, proves causal feature effects, or acts as an operational alerting product.
+- No external code, shaders, videos, map tiles, textures, or proprietary reference assets were introduced.
+
 ## Future Enhancements
 
 - Optional shader-based water distortion after profiling.

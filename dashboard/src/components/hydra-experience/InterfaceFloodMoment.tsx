@@ -7,6 +7,7 @@ import { usePointerRipples } from './usePointerRipples';
 interface InterfaceFloodMomentProps {
   progress: number;
   reduceMotion: boolean;
+  uiSubmersion: number;
 }
 
 function clamp(value: number, min = 0, max = 1) {
@@ -18,11 +19,15 @@ function smoothstep(edge0: number, edge1: number, value: number) {
   return t * t * (3 - 2 * t);
 }
 
-export default function InterfaceFloodMoment({ progress, reduceMotion }: InterfaceFloodMomentProps) {
+export default function InterfaceFloodMoment({
+  progress,
+  reduceMotion,
+  uiSubmersion,
+}: InterfaceFloodMomentProps) {
   const ripples = usePointerRipples(reduceMotion, 220);
-  const danger = reduceMotion ? 0.58 : smoothstep(0.38, 0.64, progress);
+  const danger = reduceMotion ? 0.58 : Math.max(smoothstep(0.38, 0.64, progress), uiSubmersion);
   const activation = reduceMotion ? 0 : smoothstep(0.66, 0.84, progress);
-  const waterHeight = clamp(20 + danger * 55 - activation * 28, 18, 76);
+  const waterHeight = clamp(20 + danger * 58 - activation * 28, 18, 80);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.86fr_1.14fr] lg:items-center">
@@ -60,6 +65,11 @@ export default function InterfaceFloodMoment({ progress, reduceMotion }: Interfa
       <div className="relative min-h-[520px] overflow-hidden rounded-lg border border-cyan-200/18 bg-[#06131f]/88 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.42)] backdrop-blur-md">
         <div className="absolute inset-0 opacity-50 hydra-experience-grid" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,16,24,0.1),rgba(3,10,16,0.35)_54%,rgba(3,10,16,0.82))]" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 hydra-interface-distortion"
+          style={{ opacity: clamp(danger * 0.44 - activation * 0.18, 0, 0.5) }}
+        />
         <div className="relative grid gap-4 sm:grid-cols-2">
           {['Rainfall rate', 'Gauge rise', 'Drainage stress', 'Road access'].map((label, index) => (
             <motion.div
@@ -75,7 +85,8 @@ export default function InterfaceFloodMoment({ progress, reduceMotion }: Interfa
               transition={{ duration: 3.2 + index * 0.35, repeat: Infinity, ease: 'easeInOut' }}
               className="rounded-lg border border-white/12 bg-black/24 p-4 hydra-submerged-card"
               style={{
-                filter: `saturate(${1 - danger * 0.22}) blur(${danger * 0.35}px)`,
+                filter: `saturate(${1 - danger * 0.32}) blur(${danger * 0.55}px)`,
+                transform: reduceMotion ? undefined : `translateY(${Math.sin(index + danger * 3) * danger * -7}px)`,
               }}
             >
               <div className="font-display text-xs uppercase tracking-[0.2em] text-[#8fb4cc]">
@@ -94,7 +105,12 @@ export default function InterfaceFloodMoment({ progress, reduceMotion }: Interfa
           ))}
         </div>
 
-        <div className="relative mt-5 rounded-lg border border-white/12 bg-black/22 p-4">
+        <div
+          className="relative mt-5 rounded-lg border border-white/12 bg-black/22 p-4"
+          style={{
+            filter: `blur(${danger * 0.25}px)`,
+          }}
+        >
           <div className="grid gap-3 sm:grid-cols-3">
             {['route visibility', 'data clarity', 'action time'].map((label, index) => (
               <div key={label}>
@@ -104,7 +120,7 @@ export default function InterfaceFloodMoment({ progress, reduceMotion }: Interfa
                 <div className="mt-2 h-2 rounded-full bg-white/10">
                   <div
                     className="h-full rounded-full bg-hydra-corrected"
-                    style={{ width: `${Math.max(18, 88 - danger * 52 - index * 10)}%` }}
+                    style={{ width: `${Math.max(12, 88 - danger * 62 - index * 10)}%` }}
                   />
                 </div>
               </div>
@@ -119,6 +135,7 @@ export default function InterfaceFloodMoment({ progress, reduceMotion }: Interfa
         >
           <div className="absolute -top-6 left-0 h-16 w-[180%] hydra-wave-crest bg-[radial-gradient(ellipse_at_center,rgba(225,251,255,0.56),rgba(43,227,214,0.22)_36%,transparent_70%)]" />
           <div className="absolute inset-0 hydra-water-texture opacity-70" />
+          <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_0_24%,rgba(255,255,255,0.08)_24%_25%,transparent_25%_58%,rgba(43,227,214,0.08)_58%_59%,transparent_59%)]" />
         </div>
 
         {ripples.map((ripple) => (

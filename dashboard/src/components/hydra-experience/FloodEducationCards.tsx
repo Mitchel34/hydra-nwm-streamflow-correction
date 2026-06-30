@@ -1,19 +1,31 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { hydraExperience, safetySources } from '@/lib/hydra-experience-content';
+import { hydraExperience, safetySources, WarningStageKey } from '@/lib/hydra-experience-content';
 
 interface FloodEducationCardsProps {
   reduceMotion: boolean;
+  activeStage: WarningStageKey;
+  onStageChange: (stage: WarningStageKey) => void;
+  rainIntensity: number;
+  waterline: number;
 }
 
-export default function FloodEducationCards({ reduceMotion }: FloodEducationCardsProps) {
+export default function FloodEducationCards({
+  reduceMotion,
+  activeStage,
+  onStageChange,
+  rainIntensity,
+  waterline,
+}: FloodEducationCardsProps) {
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       {hydraExperience.educationCards.map((card, index) => {
         const source = safetySources[card.source];
-        const waterHeight = 18 + index * 19;
-        const rainOpacity = 0.18 + index * 0.22;
+        const active = activeStage === card.stage;
+        const stage = hydraExperience.warningStages[card.stage];
+        const waterHeight = 18 + index * 19 + (active ? waterline * 12 : 0);
+        const rainOpacity = 0.18 + index * 0.22 + (active ? rainIntensity * 0.18 : 0);
         const label = index === 0 ? 'possible' : index === 1 ? 'expected' : 'act now';
         return (
           <motion.article
@@ -22,7 +34,13 @@ export default function FloodEducationCards({ reduceMotion }: FloodEducationCard
             whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-12% 0px' }}
             transition={{ duration: 0.55, delay: index * 0.1 }}
-            className="relative min-h-[330px] overflow-hidden rounded-lg border border-cyan-200/20 bg-[#071420]/82 p-5 shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-md"
+            onMouseEnter={() => onStageChange(card.stage)}
+            onFocus={() => onStageChange(card.stage)}
+            className={`relative min-h-[330px] overflow-hidden rounded-lg border p-5 shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-md transition-all ${
+              active
+                ? 'border-amber-200/48 bg-[#12202a]/90 shadow-[0_24px_90px_rgba(242,180,106,0.18)]'
+                : 'border-cyan-200/20 bg-[#071420]/82'
+            }`}
           >
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-300/70 via-cyan-300/80 to-transparent" />
             <div
@@ -47,6 +65,18 @@ export default function FloodEducationCards({ reduceMotion }: FloodEducationCard
               </p>
               <h3 className="mt-3 font-display text-xl text-white">{card.title}</h3>
               <p className="mt-3 text-sm leading-relaxed text-[#bdd4e4]">{card.body}</p>
+              <button
+                type="button"
+                aria-pressed={active}
+                onClick={() => onStageChange(card.stage)}
+                className={`mt-5 rounded-md border px-3 py-2 text-left text-xs uppercase tracking-[0.16em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 ${
+                  active
+                    ? 'border-amber-200/55 bg-amber-200/14 text-amber-100'
+                    : 'border-white/12 bg-white/5 text-[#a9c2d3] hover:border-amber-200/34'
+                }`}
+              >
+                Scene state: {stage.sceneLabel}
+              </button>
               <div className="mt-auto pt-6">
                 <div className="mb-3 flex items-center justify-between gap-3 text-[0.65rem] uppercase tracking-[0.18em] text-[#8fb4cc]">
                   <span>Storm stage</span>

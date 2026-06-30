@@ -4,14 +4,30 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Sparkles } from '@react-three/drei';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import type { SignalLayerKey, WarningStageKey } from '@/lib/hydra-experience-content';
 
 interface RainFieldProps {
   overallProgress: number;
   stormIntensity: number;
+  rainIntensity: number;
   waterPressure: number;
+  waterline: number;
   hydraClarity: number;
+  warningStage: WarningStageKey;
+  activeSignalLayers: SignalLayerKey[];
   reduceMotion: boolean;
 }
+
+const signalLayerOrder: SignalLayerKey[] = [
+  'rainfall',
+  'gauge',
+  'drainage',
+  'roads',
+  'forecast',
+  'terrain',
+  'sensor',
+  'response',
+];
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
@@ -38,11 +54,11 @@ function createRainPositions(count: number) {
 }
 
 function RainPoints({
-  stormIntensity,
+  rainIntensity,
   waterPressure,
   hydraClarity,
 }: {
-  stormIntensity: number;
+  rainIntensity: number;
   waterPressure: number;
   hydraClarity: number;
 }) {
@@ -52,7 +68,7 @@ function RainPoints({
   const positions = useMemo(() => createRainPositions(count), [count]);
 
   useFrame((state) => {
-    const intensity = 0.45 + stormIntensity * 1.2 + waterPressure * 0.28;
+    const intensity = 0.45 + rainIntensity * 1.34 + waterPressure * 0.28;
     const activationCalm = hydraClarity * 0.72;
     const speed = (5 + intensity * 9) * (1 - activationCalm);
 
@@ -136,29 +152,33 @@ function HeadlightBeam({
 
 function FloodRoad({
   overallProgress,
-  waterPressure,
+  waterline,
   hydraClarity,
+  warningStage,
 }: {
   overallProgress: number;
-  waterPressure: number;
+  waterline: number;
   hydraClarity: number;
+  warningStage: WarningStageKey;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const waterRef = useRef<THREE.Mesh>(null);
   const roadMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
-  const danger = clamp(waterPressure);
+  const danger = clamp(waterline);
   const activation = clamp(hydraClarity);
+  const flashPressure = warningStage === 'flash' ? 0.2 : 0;
 
   useFrame((state) => {
     if (groupRef.current) {
       groupRef.current.position.y = -1.76 + danger * 0.18;
       groupRef.current.rotation.x = -0.82 + Math.sin(state.clock.elapsedTime * 0.22) * 0.018;
+      groupRef.current.scale.setScalar(1.08 + danger * 0.08 - activation * 0.03);
     }
     if (waterRef.current) {
-      waterRef.current.position.y = -1.52 + danger * 0.62 - activation * 0.22;
+      waterRef.current.position.y = -1.52 + danger * 0.7 + flashPressure - activation * 0.22;
       waterRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.18) * 0.018;
       const material = waterRef.current.material as THREE.MeshStandardMaterial;
-      material.opacity = clamp(0.24 + danger * 0.42 - activation * 0.18, 0.18, 0.68);
+      material.opacity = clamp(0.24 + danger * 0.48 - activation * 0.18, 0.18, 0.74);
       material.emissiveIntensity = 0.05 + danger * 0.1 + activation * 0.18;
     }
     if (roadMaterialRef.current) {
@@ -224,7 +244,7 @@ function FloodRoad({
         />
       </mesh>
       <mesh position={[0, 0.045, 2.4]}>
-        <planeGeometry args={[6.4, 0.22, 1, 1]} />
+        <planeGeometry args={[7.4, 0.28, 1, 1]} />
         <meshBasicMaterial
           color={activation > 0.5 ? '#2be3d6' : '#f2b46a'}
           transparent
@@ -242,11 +262,13 @@ function SignalSphere({
   index,
   signalVisibility,
   hydraClarity,
+  active,
 }: {
   position: [number, number, number];
   index: number;
   signalVisibility: number;
   hydraClarity: number;
+  active: boolean;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const gridTarget = useMemo<[number, number, number]>(() => {
@@ -263,7 +285,7 @@ function SignalSphere({
       THREE.MathUtils.lerp(position[1], gridTarget[1], snap) + pulse,
       THREE.MathUtils.lerp(position[2], gridTarget[2], snap),
     );
-    meshRef.current.scale.setScalar(0.58 + signalVisibility * 0.42 + hydraClarity * 0.36 + pulse);
+    meshRef.current.scale.setScalar((active ? 0.58 : 0.36) + signalVisibility * 0.42 + hydraClarity * 0.36 + pulse);
   });
 
   return (
@@ -274,7 +296,7 @@ function SignalSphere({
         emissive={index % 2 === 0 ? '#2be3d6' : '#4da0ff'}
         emissiveIntensity={0.42 + hydraClarity * 0.72}
         transparent
-        opacity={clamp(0.2 + signalVisibility * 0.52 + hydraClarity * 0.28, 0.16, 0.96)}
+        opacity={active ? clamp(0.2 + signalVisibility * 0.52 + hydraClarity * 0.28, 0.16, 0.96) : 0.14}
       />
     </mesh>
   );
@@ -283,9 +305,11 @@ function SignalSphere({
 function SensorNetwork({
   signalVisibility,
   hydraClarity,
+  activeSignalLayers,
 }: {
   signalVisibility: number;
   hydraClarity: number;
+  activeSignalLayers: SignalLayerKey[];
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const nodes = useMemo(
@@ -297,6 +321,7 @@ function SensorNetwork({
       [2.85, 1.65, -1.25],
       [0.75, 2.35, -1.7],
       [-2.5, 2.3, -1.6],
+      [2.35, 2.45, -1.55],
     ] as [number, number, number][],
     [],
   );
@@ -313,6 +338,7 @@ function SensorNetwork({
       {nodes.map((position, index) => (
         <Float key={position.join('-')} speed={1.2 + index * 0.08} floatIntensity={0.12} rotationIntensity={0.06}>
           <SignalSphere
+            active={activeSignalLayers.includes(signalLayerOrder[index] ?? 'sensor')}
             hydraClarity={hydraClarity}
             index={index}
             position={position}
@@ -384,27 +410,48 @@ function LeadTimeRings({ hydraClarity }: { hydraClarity: number }) {
 function ExperienceScene({
   overallProgress,
   stormIntensity,
+  rainIntensity,
   waterPressure,
+  waterline,
   hydraClarity,
+  warningStage,
+  activeSignalLayers,
 }: {
   overallProgress: number;
   stormIntensity: number;
+  rainIntensity: number;
   waterPressure: number;
+  waterline: number;
   hydraClarity: number;
+  warningStage: WarningStageKey;
+  activeSignalLayers: SignalLayerKey[];
 }) {
   const activation = clamp(hydraClarity);
-  const signalVisibility = smoothstep(0.12, 0.62, overallProgress) * (1 - activation * 0.18) + activation * 0.55;
+  const signalVisibility =
+    smoothstep(0.12, 0.62, overallProgress) * (1 - activation * 0.18) +
+    activation * 0.55 +
+    clamp(activeSignalLayers.length / signalLayerOrder.length) * 0.14;
+  const alertTint = warningStage === 'flash' ? '#f2b46a' : warningStage === 'warning' ? '#d7f2ff' : '#a9c7dc';
 
   return (
     <>
       <color attach="background" args={[activation > 0.4 ? '#031420' : '#06101a']} />
       <ambientLight intensity={0.35 + activation * 0.34} />
-      <directionalLight position={[4, 6, 3]} intensity={0.92 + activation * 0.42} color={activation > 0.35 ? '#9ff8ff' : '#a9c7dc'} />
+      <directionalLight position={[4, 6, 3]} intensity={0.92 + activation * 0.42 + waterline * 0.24} color={activation > 0.35 ? '#9ff8ff' : alertTint} />
       <pointLight position={[-4, 1.2, 2]} intensity={1.2 + stormIntensity * 0.58} color={activation > 0.45 ? '#2be3d6' : '#f2b46a'} />
       <pointLight position={[3.6, -0.2, 2.7]} intensity={0.9 + waterPressure * 0.45} color="#f2b46a" />
-      <RainPoints hydraClarity={hydraClarity} stormIntensity={stormIntensity} waterPressure={waterPressure} />
-      <FloodRoad hydraClarity={hydraClarity} overallProgress={overallProgress} waterPressure={waterPressure} />
-      <SensorNetwork hydraClarity={hydraClarity} signalVisibility={signalVisibility} />
+      <RainPoints hydraClarity={hydraClarity} rainIntensity={rainIntensity} waterPressure={waterPressure} />
+      <FloodRoad
+        hydraClarity={hydraClarity}
+        overallProgress={overallProgress}
+        warningStage={warningStage}
+        waterline={waterline}
+      />
+      <SensorNetwork
+        activeSignalLayers={activeSignalLayers}
+        hydraClarity={hydraClarity}
+        signalVisibility={signalVisibility}
+      />
       <AtmosphericGrid hydraClarity={hydraClarity} waterPressure={waterPressure} />
       <LeadTimeRings hydraClarity={hydraClarity} />
       <Sparkles
@@ -422,8 +469,12 @@ function ExperienceScene({
 export default function RainField({
   overallProgress,
   stormIntensity,
+  rainIntensity,
   waterPressure,
+  waterline,
   hydraClarity,
+  warningStage,
+  activeSignalLayers,
   reduceMotion,
 }: RainFieldProps) {
   if (reduceMotion) {
@@ -435,15 +486,19 @@ export default function RainField({
   return (
     <div className="pointer-events-none fixed inset-0 -z-10">
       <Canvas
-        camera={{ position: [0, 0.25, 6.4], fov: 48 }}
+        camera={{ position: [0, 0.12, 5.9], fov: 45 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       >
         <ExperienceScene
+          activeSignalLayers={activeSignalLayers}
           hydraClarity={hydraClarity}
           overallProgress={overallProgress}
+          rainIntensity={rainIntensity}
           stormIntensity={stormIntensity}
+          warningStage={warningStage}
           waterPressure={waterPressure}
+          waterline={waterline}
         />
       </Canvas>
     </div>

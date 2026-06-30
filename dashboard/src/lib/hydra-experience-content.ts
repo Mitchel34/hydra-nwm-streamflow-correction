@@ -7,6 +7,7 @@ export interface SafetySource {
 }
 
 export interface FloodEducationCard {
+  stage: WarningStageKey;
   eyebrow: string;
   title: string;
   body: string;
@@ -35,6 +36,15 @@ export type SignalLayerKey =
   | 'forecast'
   | 'sensor'
   | 'response';
+
+export type WarningStageKey = 'watch' | 'warning' | 'flash';
+
+export interface WarningStageConfig {
+  key: WarningStageKey;
+  shortLabel: string;
+  sceneLabel: string;
+  intensity: number;
+}
 
 export interface ExperienceSignalNode {
   id: string;
@@ -112,6 +122,26 @@ export const hydraExperience = {
     'Rising surface line',
   ],
   leadTimeMarkers: ['0 min', '15 min', '30 min', 'earlier action'],
+  warningStages: {
+    watch: {
+      key: 'watch',
+      shortLabel: 'Watch',
+      sceneLabel: 'Possible flooding',
+      intensity: 0.18,
+    },
+    warning: {
+      key: 'warning',
+      shortLabel: 'Warning',
+      sceneLabel: 'Expected or happening',
+      intensity: 0.56,
+    },
+    flash: {
+      key: 'flash',
+      shortLabel: 'Flash warning',
+      sceneLabel: 'Act immediately',
+      intensity: 0.92,
+    },
+  } satisfies Record<WarningStageKey, WarningStageConfig>,
   evidenceBridge: {
     eyebrow: 'Evidence bridge',
     title: 'The experience shows the problem. The findings show the evidence chain.',
@@ -236,6 +266,7 @@ export const hydraExperience = {
   ] satisfies ExperienceSignalNode[],
   educationCards: [
     {
+      stage: 'watch',
       eyebrow: 'Flood Watch',
       title: 'Conditions are favorable.',
       body:
@@ -243,6 +274,7 @@ export const hydraExperience = {
       source: 'nwsWatchWarning',
     },
     {
+      stage: 'warning',
       eyebrow: 'Flood Warning',
       title: 'Flooding is expected or happening.',
       body:
@@ -250,6 +282,7 @@ export const hydraExperience = {
       source: 'nwsWatchWarning',
     },
     {
+      stage: 'flash',
       eyebrow: 'Flash Flood Warning',
       title: 'Act immediately.',
       body:
