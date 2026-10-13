@@ -14,12 +14,18 @@ Version 2 adds:
 
 import argparse
 import copy
-import json 
+import hashlib
+import json
 import math
 import os
+import platform
 import random
+import subprocess
+import sys
 import time
 from contextlib import nullcontext
+from pathlib import Path
+from types import ModuleType
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -33,17 +39,6 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     Ranger = None
 
-from modeling.models.hydra_temporal import HydraTemporalModel as HydraTemporalV2
-from modeling.models.hydra_temporal_v1 import HydraTemporalModel as HydraTemporalV1
-from modeling.models.hydra_temporal_v3 import HydraTemporalV3
-from modeling.models.gru_simple import SimpleGRUModel
-from modeling.training.data_utils import (
-    build_split_dataset,
-    load_data,
-    prepare_site_data,
-    validate_single_site,
-)
-
 # Optional TensorBoard for gradient tracking
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -53,6 +48,85 @@ except ImportError:
     SummaryWriter = None
 
 EPS = 1e-6
+TRANSFORM_CLAMP = 10.0
+
+
+def _file_sha256(path: str | Path) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _git_provenance() -> Dict[str, Any]:
+    root = Path(__file__).resolve().parents[2]
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        dirty = bool(
+            subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        )
+    except (OSError, subprocess.CalledProcessError):
+        commit = None
+        dirty = None
+    return {"commit": commit, "dirty_worktree": dirty}
+
+
+def load_source_module(module_name: str, path: Path) -> ModuleType:
+    """Load local source through pathlib to avoid importlib stalls on macOS metadata."""
+    cached = sys.modules.get(module_name)
+    if cached is not None:
+        return cached
+    module = ModuleType(module_name)
+    module.__file__ = str(path)
+    module.__package__ = module_name.rpartition(".")[0]
+    sys.modules[module_name] = module
+    source = path.read_text()
+    exec(compile(source, str(path), "exec"), module.__dict__)
+    return module
+
+
+def load_training_helpers() -> tuple[Any, Any, Any, Any]:
+    module = load_source_module(
+        "modeling.training.data_utils",
+        Path(__file__).resolve().with_name("data_utils.py"),
+    )
+    return (
+        module.build_split_dataset,
+        module.load_data,
+        module.prepare_site_data,
+        module.validate_single_site,
+    )
+
+
+def load_model_class(model_arch: str) -> type[nn.Module]:
+    arch = model_arch.lower()
+    models_dir = Path(__file__).resolve().parents[1] / "models"
+    if arch == "hydra_v3":
+        module = load_source_module("modeling.models.hydra_temporal_v3", models_dir / "hydra_temporal_v3.py")
+        return module.HydraTemporalV3
+    if arch == "hydra_v2":
+        module = load_source_module("modeling.models.hydra_temporal", models_dir / "hydra_temporal.py")
+        return module.HydraTemporalModel
+    if arch == "hydra_v1":
+        module = load_source_module("modeling.models.hydra_temporal_v1", models_dir / "hydra_temporal_v1.py")
+        return module.HydraTemporalModel
+    if arch == "gru_simple":
+        module = load_source_module("modeling.models.gru_simple", models_dir / "gru_simple.py")
+        return module.SimpleGRUModel
+    raise ValueError(f"Unsupported model_arch '{model_arch}'. Choose 'hydra_v3', 'hydra_v2', 'hydra_v1', or 'gru_simple'.")
 
 
 def transform_target(x: torch.Tensor) -> torch.Tensor:
@@ -60,7 +134,7 @@ def transform_target(x: torch.Tensor) -> torch.Tensor:
 
 
 def inverse_transform(x: torch.Tensor) -> torch.Tensor:
-    return torch.sinh(x)
+    return torch.sinh(torch.clamp(x, -TRANSFORM_CLAMP, TRANSFORM_CLAMP))
 
 
 def transform_np(x: np.ndarray) -> np.ndarray:
@@ -68,7 +142,7 @@ def transform_np(x: np.ndarray) -> np.ndarray:
 
 
 def inverse_transform_np(x: np.ndarray) -> np.ndarray:
-    return np.sinh(x)
+    return np.sinh(np.clip(x, -TRANSFORM_CLAMP, TRANSFORM_CLAMP))
 
 
 def _has_gaussian_heads(outputs: Dict[str, torch.Tensor]) -> bool:
@@ -76,7 +150,11 @@ def _has_gaussian_heads(outputs: Dict[str, torch.Tensor]) -> bool:
     return required.issubset(outputs.keys())
 
 
-def _unpack_predictions(outputs: Dict[str, torch.Tensor], y_nwm: torch.Tensor) -> Tuple[
+def _unpack_predictions(
+    outputs: Dict[str, torch.Tensor],
+    y_nwm: torch.Tensor,
+    target_mode: str = "residual",
+) -> Tuple[
     torch.Tensor,
     torch.Tensor,
     torch.Tensor,
@@ -87,21 +165,28 @@ def _unpack_predictions(outputs: Dict[str, torch.Tensor], y_nwm: torch.Tensor) -
 ]:
     has_gaussian = _has_gaussian_heads(outputs)
     if has_gaussian:
-        pred_res_t = outputs["residual_mean"]
-        pred_res_raw = inverse_transform(pred_res_t)
+        pred_head_t = outputs["residual_mean"]
+        pred_head_raw = inverse_transform(pred_head_t)
         logvar_res = outputs["residual_logvar"]
         logvar_corr = outputs["corrected_logvar"]
     elif "residual" in outputs:
-        pred_res_raw = outputs["residual"]
-        pred_res_t = transform_target(pred_res_raw)
+        pred_head_raw = outputs["residual"]
+        pred_head_t = transform_target(pred_head_raw)
         logvar_res = None
         logvar_corr = None
     else:
         raise KeyError("Model outputs must contain residual predictions")
 
-    corr_from_res = outputs.get("corrected", y_nwm + pred_res_raw)
+    if target_mode == "direct":
+        corr_from_res = pred_head_raw
+        pred_res_raw = corr_from_res - y_nwm
+    elif target_mode == "residual":
+        pred_res_raw = pred_head_raw
+        corr_from_res = outputs.get("corrected", y_nwm + pred_res_raw)
+    else:
+        raise ValueError(f"Unsupported target_mode '{target_mode}'")
     pred_corr_t = transform_target(corr_from_res)
-    return pred_res_raw, pred_res_t, corr_from_res, pred_corr_t, has_gaussian, logvar_res, logvar_corr
+    return pred_res_raw, pred_head_t, corr_from_res, pred_corr_t, has_gaussian, logvar_res, logvar_corr
 
 
 def _safe_mean(arr: np.ndarray) -> float:
@@ -285,6 +370,10 @@ def train_eval(
     loss_auto_norm: bool = False,
     no_nwm: bool = False,
     include_usgs: bool = False,
+    device_override: str = "auto",
+    output_dir: str = "data/clean/modeling",
+    artifacts_dir: str = "local_only/artifacts",
+    deterministic_algorithms: bool = False,
 ) -> None:
     torch.set_float32_matmul_precision("medium")
     if seed is not None:
@@ -293,6 +382,7 @@ def train_eval(
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
+    torch.use_deterministic_algorithms(deterministic_algorithms, warn_only=True)
     quantiles = list(quantiles) if quantiles else []
     if quantiles and quantile_weights and len(quantile_weights) != len(quantiles):
         raise ValueError("quantile_weights must match the number of quantile levels")
@@ -303,6 +393,9 @@ def train_eval(
         if final is None:
             return start
         return float(start + (final - start) * progress)
+
+    build_split_dataset, load_data, prepare_site_data, validate_single_site = load_training_helpers()
+
     df = load_data(data_path)
     validate_single_site(df)
     prepared = prepare_site_data(
@@ -321,6 +414,27 @@ def train_eval(
     )
     dynamic_cols = prepared.dynamic_cols
     static_cols = prepared.static_cols
+    source_paths = {
+        "training": Path(__file__).resolve(),
+        "data_utils": Path(__file__).resolve().with_name("data_utils.py"),
+        "model": Path(__file__).resolve().parents[1] / "models" / {
+            "hydra_v3": "hydra_temporal_v3.py",
+            "hydra_v2": "hydra_temporal.py",
+            "hydra_v1": "hydra_temporal_v1.py",
+            "gru_simple": "gru_simple.py",
+        }[model_arch.lower()],
+    }
+    run_provenance = {
+        "git": _git_provenance(),
+        "input_path": data_path,
+        "input_sha256": _file_sha256(data_path),
+        "source_sha256": {name: _file_sha256(path) for name, path in source_paths.items()},
+        "python": platform.python_version(),
+        "torch": str(torch.__version__),
+        "numpy": np.__version__,
+        "pandas": pd.__version__,
+        "platform": platform.platform(),
+    }
 
     if no_nwm:
         if include_usgs:
@@ -333,19 +447,33 @@ def train_eval(
     if not static_cols:
         print("Warning: proceeding without static metadata features.")
 
-    train_ds, _ = build_split_dataset(prepared, "train", augment=augment)
-    val_ds, _ = build_split_dataset(prepared, "val", augment=False)
-    test_ds, _ = build_split_dataset(prepared, "test", augment=False)
+    train_ds, train_target_df = build_split_dataset(prepared, "train", augment=augment)
+    val_ds, val_target_df = build_split_dataset(prepared, "val", augment=False)
+    test_ds, test_target_df = build_split_dataset(prepared, "test", augment=False)
 
     if train_ds is None or test_ds is None or len(train_ds) == 0 or len(test_ds) == 0:
         raise ValueError("Insufficient data to build sequences")
 
-    if torch.cuda.is_available():
+    requested_device = (device_override or "auto").lower()
+    if requested_device == "auto" and torch.cuda.is_available():
         device = torch.device("cuda")
-    elif torch.backends.mps.is_available():
+    elif requested_device == "auto" and torch.backends.mps.is_available():
         device = torch.device("mps")
-    else:
+    elif requested_device == "auto":
         device = torch.device("cpu")
+    elif requested_device == "cuda":
+        if not torch.cuda.is_available():
+            raise ValueError("--device cuda requested, but CUDA is not available")
+        device = torch.device("cuda")
+    elif requested_device == "mps":
+        if not torch.backends.mps.is_available():
+            raise ValueError("--device mps requested, but MPS is not available")
+        device = torch.device("mps")
+    elif requested_device == "cpu":
+        device = torch.device("cpu")
+    else:
+        raise ValueError(f"Unsupported device override: {device_override}")
+    print(f"[INFO] Using torch device: {device}")
 
     if device.type == "mps":
         use_amp = False
@@ -357,7 +485,7 @@ def train_eval(
     train_shuffle = True
     if event_oversample_factor > 0 and len(train_ds) > 0:
         # Compute per-sequence weight based on target-timestep flow magnitude
-        usgs_vals = train_ds.usgs[train_ds.seq_len:train_ds.seq_len + len(train_ds)]
+        usgs_vals = train_ds.usgs[train_ds.target_indices]
         q90 = float(np.quantile(usgs_vals[np.isfinite(usgs_vals)], 0.90))
         q75 = float(np.quantile(usgs_vals[np.isfinite(usgs_vals)], 0.75))
         sample_weights = np.ones(len(train_ds), dtype=np.float64)
@@ -386,8 +514,9 @@ def train_eval(
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
 
     arch = model_arch.lower()
+    model_class = load_model_class(arch)
     if arch == "hydra_v3":
-        model = HydraTemporalV3(
+        model = model_class(
             input_dim=len(dynamic_cols),
             static_dim=len(static_cols),
             d_model=d_model,
@@ -402,7 +531,7 @@ def train_eval(
             use_causal_mask=use_causal_mask,
         )
     elif arch == "hydra_v2":
-        model = HydraTemporalV2(
+        model = model_class(
             input_dim=len(dynamic_cols),
             static_dim=len(static_cols),
             d_model=d_model,
@@ -417,7 +546,7 @@ def train_eval(
             use_causal_mask=use_causal_mask,
         )
     elif arch == "hydra_v1":
-        model = HydraTemporalV1(
+        model = model_class(
             input_dim=len(dynamic_cols),
             static_dim=len(static_cols),
             d_model=d_model,
@@ -431,7 +560,7 @@ def train_eval(
             patch_size=max(1, patch_size),
         )
     elif arch == "gru_simple":
-        model = SimpleGRUModel(
+        model = model_class(
             input_dim=len(dynamic_cols),
             static_dim=len(static_cols),
             hidden_size=d_model,
@@ -440,9 +569,6 @@ def train_eval(
             quantiles=quantiles if quantiles else None,
             nwm_index=0 if not no_nwm else -1,
         )
-    else:
-        raise ValueError(f"Unsupported model_arch '{model_arch}'. Choose 'hydra_v3', 'hydra_v2', 'hydra_v1', or 'gru_simple'.")
-
     if use_compile:
         try:
             model = torch.compile(model)  # type: ignore[attr-defined]
@@ -466,13 +592,13 @@ def train_eval(
         except Exception as e:
             print(f"[WARNING] Ranger init failed ({e}); falling back to AdamW")
             use_ranger = False
-            optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=5e-5)
+            optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=5e-5, foreach=False)
         if use_ranger:
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
         else:
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
     else:
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=5e-5)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=5e-5, foreach=False)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
     amp_enabled = use_amp and device.type in ("cuda", "mps")
@@ -534,26 +660,27 @@ def train_eval(
             with autocast_ctx:
                 outputs = model(xb, sb if sb.numel() else None)
 
-                y_res_t = transform_target(y_res)
+                y_target = y_usgs if target_mode == "direct" else y_res
+                y_target_t = transform_target(y_target)
                 y_usgs_t = transform_target(y_usgs)
 
                 (
                     pred_res_raw,
-                    pred_res_t,
+                    pred_target_t,
                     corr_from_res,
                     pred_corr_t,
                     has_gaussian_heads,
                     logvar_res,
                     logvar_corr,
-                ) = _unpack_predictions(outputs, y_nwm)
+                ) = _unpack_predictions(outputs, y_nwm, target_mode)
 
                 corr_weights = flow_weighting(y_usgs, flow_emphasis)
                 if has_gaussian_heads and logvar_res is not None and logvar_corr is not None:
-                    loss_res = gaussian_nll(pred_res_t, logvar_res, y_res_t).mean()
+                    loss_res = gaussian_nll(pred_target_t, logvar_res, y_target_t).mean()
                     corr_nll = gaussian_nll(pred_corr_t, logvar_corr, y_usgs_t)
                     loss_corr = (corr_nll * corr_weights).mean()
                 else:
-                    loss_res = mse(pred_res_t, y_res_t)
+                    loss_res = mse(pred_target_t, y_target_t)
                     corr_mse = (pred_corr_t - y_usgs_t) ** 2
                     loss_corr = (corr_mse * corr_weights).mean()
 
@@ -601,6 +728,12 @@ def train_eval(
                     q_pred_raw = inverse_transform(outputs["quantiles"])
                     quantile_loss_val = quantile_pinball(q_pred_raw, y_usgs, quantiles_tensor, quantile_weight_tensor)
                     loss = loss + normalizer("quantile", quantile_loss_val, weight_quantile)
+
+                if not torch.isfinite(loss):
+                    raise FloatingPointError(
+                        f"Non-finite training loss at epoch {epoch + 1}, batch {batch_idx + 1}, "
+                        f"target_mode={target_mode}."
+                    )
 
             if scaler:
                 scaler.scale(loss).backward()
@@ -656,25 +789,26 @@ def train_eval(
                     y_nwm = y_nwm.to(device)
 
                     outputs = model(xb, sb if sb.numel() else None)
-                    y_res_t = transform_target(y_res)
+                    y_target = y_usgs if target_mode == "direct" else y_res
+                    y_target_t = transform_target(y_target)
                     y_usgs_t = transform_target(y_usgs)
                     (
                         pred_res_raw,
-                        pred_res_t,
+                        pred_target_t,
                         corr_from_res,
                         pred_corr_t,
                         has_gaussian_heads,
                         logvar_res,
                         logvar_corr,
-                    ) = _unpack_predictions(outputs, y_nwm)
+                    ) = _unpack_predictions(outputs, y_nwm, target_mode)
 
                     corr_weights = flow_weighting(y_usgs, flow_emphasis)
                     if has_gaussian_heads and logvar_res is not None and logvar_corr is not None:
-                        loss_res = gaussian_nll(pred_res_t, logvar_res, y_res_t).mean()
+                        loss_res = gaussian_nll(pred_target_t, logvar_res, y_target_t).mean()
                         corr_nll = gaussian_nll(pred_corr_t, logvar_corr, y_usgs_t)
                         loss_corr = (corr_nll * corr_weights).mean()
                     else:
-                        loss_res = mse(pred_res_t, y_res_t)
+                        loss_res = mse(pred_target_t, y_target_t)
                         corr_mse = (pred_corr_t - y_usgs_t) ** 2
                         loss_corr = (corr_mse * corr_weights).mean()
 
@@ -706,6 +840,11 @@ def train_eval(
                         q_pred_raw = inverse_transform(outputs["quantiles"])
                         loss = loss + weight_quantile * quantile_pinball(
                             q_pred_raw, y_usgs, quantiles_tensor, quantile_weight_tensor
+                        )
+
+                    if not torch.isfinite(loss):
+                        raise FloatingPointError(
+                            f"Non-finite validation loss at epoch {epoch + 1}, target_mode={target_mode}."
                         )
 
                     val_running += loss.item() * len(xb)
@@ -782,7 +921,7 @@ def train_eval(
                 y_nwm = y_nwm.to(device)
 
                 outputs = model(xb, sb if sb.numel() else None)
-                corr_from_res = _unpack_predictions(outputs, y_nwm)[2]
+                corr_from_res = _unpack_predictions(outputs, y_nwm, target_mode)[2]
                 diff = (corr_from_res - y_usgs).detach().cpu().numpy()
                 flows = y_usgs.detach().cpu().numpy()
                 bias_diffs.append(diff)
@@ -868,7 +1007,7 @@ def train_eval(
             y_nwm = y_nwm.to(device)
 
             outputs = model(xb, sb if sb.numel() else None)
-            pred_res_raw, _, corr_from_res, _, _, _, _ = _unpack_predictions(outputs, y_nwm)
+            pred_res_raw, _, corr_from_res, _, _, _, _ = _unpack_predictions(outputs, y_nwm, target_mode)
             corrected_raw = corr_from_res
 
             preds_res.append(pred_res_raw.cpu().numpy())
@@ -885,7 +1024,7 @@ def train_eval(
     true_usgs = np.concatenate(targets_usgs)
     nwm_vals = np.concatenate(targets_nwm)
 
-    corrected_from_res = nwm_vals + pred_residual
+    corrected_from_res = pred_corrected if target_mode == "direct" else nwm_vals + pred_residual
     corrected_pred = pred_corrected
 
     baseline_metrics = compute_hydro_metrics(nwm_vals, true_usgs)
@@ -917,12 +1056,13 @@ def train_eval(
     print(f"Residual RMSE: {rmse_res:.3f}")
     print(f"ΔRMSE% (Corrected vs Baseline): {rel_improve:.2f}%")
 
-    out_dir = "data/clean/modeling"
+    out_dir = output_dir
     os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(artifacts_dir, exist_ok=True)
     np.save(os.path.join(out_dir, f"{output_prefix}_pred_residual.npy"), pred_residual)
     np.save(os.path.join(out_dir, f"{output_prefix}_true_residual.npy"), true_residual)
 
-    timestamps = prepared.df.loc[prepared.split_masks.test, "timestamp"].to_numpy()
+    timestamps = test_target_df["timestamp"].to_numpy()
     aligned_len = min(len(timestamps), len(corrected_pred))
     result_df = pd.DataFrame(
         {
@@ -967,6 +1107,17 @@ def train_eval(
         "rmse_residual": None if np.isnan(rmse_res) else float(rmse_res),
         "rmse_improvement_pct": None if np.isnan(rel_improve) else float(rel_improve),
         "output_prefix": output_prefix,
+        "study_task": "retrospective_target_valid_time_correction",
+        "nwm_product": "NWM v2.1 retrospective CHRTOUT",
+        "target_mode": target_mode,
+        "seed": seed,
+        "dynamic_features": dynamic_cols,
+        "sequence_length_records": int(seq_len),
+        "sequence_continuity": "exactly hourly",
+        "train_target_count": int(len(train_target_df)),
+        "validation_target_count": int(len(val_target_df)),
+        "test_target_count": int(len(test_target_df)),
+        "provenance": run_provenance,
     }
     if quantile_metrics:
         metrics_payload["quantiles"] = quantile_metrics
@@ -974,6 +1125,44 @@ def train_eval(
 
     with open(os.path.join(out_dir, f"{output_prefix}_metrics.json"), "w") as fh:
         json.dump(metrics_payload, fh, indent=2)
+
+    checkpoint_path = os.path.join(artifacts_dir, f"{output_prefix}_model.pt")
+    model_config_path = os.path.join(artifacts_dir, f"{output_prefix}_model_config.json")
+    torch.save(model.state_dict(), checkpoint_path)
+    model_config = {
+        "model_version": arch,
+        "seq_len": int(seq_len),
+        "d_model": int(d_model),
+        "num_heads": int(num_heads),
+        "num_layers": int(num_layers),
+        "conv_depth": int(conv_depth),
+        "dropout": float(dropout),
+        "quantiles": [float(q) for q in quantiles],
+        "include_usgs": bool(include_usgs),
+        "no_nwm": bool(no_nwm),
+        "use_causal_mask": bool(use_causal_mask),
+        "patch_size": int(patch_size),
+        "data_path": data_path,
+        "output_prefix": output_prefix,
+        "device": str(device),
+        "deterministic_algorithms": deterministic_algorithms,
+        "seed": seed,
+        "target_mode": target_mode,
+        "study_task": "retrospective_target_valid_time_correction",
+        "nwm_product": "NWM v2.1 retrospective CHRTOUT",
+        "dynamic_features": dynamic_cols,
+        "train_start": train_start,
+        "train_end": train_end,
+        "val_start": val_start,
+        "val_end": val_end,
+        "test_start": test_start,
+        "test_end": test_end,
+        "provenance": run_provenance,
+    }
+    with open(model_config_path, "w") as fh:
+        json.dump(model_config, fh, indent=2)
+    print(f"[INFO] Saved checkpoint: {checkpoint_path}")
+    print(f"[INFO] Saved model config: {model_config_path}")
 
     return metrics_payload
 
@@ -1069,13 +1258,26 @@ if __name__ == "__main__":
     parser.add_argument("--no-compile", action="store_true")
     parser.add_argument("--no-augment", action="store_true")
     parser.add_argument("--no-ranger", action="store_true")
+    parser.add_argument(
+        "--device",
+        choices=["auto", "cpu", "cuda", "mps"],
+        default=os.environ.get("HYDRA_TRAIN_DEVICE", "auto"),
+        help="Torch device override. Default auto preserves CUDA/MPS/CPU auto-selection.",
+    )
     parser.add_argument("--output-prefix", default="hydra_v2")
+    parser.add_argument("--output-dir", default="data/clean/modeling")
+    parser.add_argument("--artifacts-dir", default="local_only/artifacts")
     parser.add_argument(
         "--rolling-config",
         default=None,
         help="Optional JSON file containing rolling-origin windows (train/val/test ranges).",
     )
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument(
+        "--deterministic-algorithms",
+        action="store_true",
+        help="Request deterministic Torch algorithms. Fixed seeds are recorded independently.",
+    )
     parser.add_argument(
         "--model-arch",
         choices=["hydra_v3", "hydra_v2", "hydra_v1", "gru_simple"],
@@ -1203,6 +1405,10 @@ if __name__ == "__main__":
             loss_auto_norm=args.loss_auto_norm,
             no_nwm=args.no_nwm,
             include_usgs=args.include_usgs,
+            device_override=args.device,
+            output_dir=args.output_dir,
+            artifacts_dir=args.artifacts_dir,
+            deterministic_algorithms=args.deterministic_algorithms,
         )
 
     if args.rolling_config:

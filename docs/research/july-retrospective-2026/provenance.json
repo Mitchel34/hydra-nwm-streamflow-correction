@@ -1,0 +1,105 @@
+{
+  "study_task": "retrospective_target_valid_time_correction",
+  "nwm_product": "NWM v2.1 retrospective CHRTOUT",
+  "run_count_recorded": 27,
+  "seeds": [
+    42,
+    314,
+    2718
+  ],
+  "historical_source_versions": [
+    {
+      "git_commit": "ab42521c2ad55a878f9245d4f2ee6af71838219d",
+      "dirty_worktree": true,
+      "source_sha256": {
+        "training": "8a43dc61e29998d502cff1fef7b361e9e3e25d357549925b57a09a480663302d",
+        "data_utils": "5b323739e215c80e5e14c0755475bb05d776c882e3a8add9bceee4fe92958528",
+        "model": "28abc9c33715b4b1a467335692a1c23c087d159e9dc8ac3d70fb8381e34b12b5"
+      },
+      "python": "3.12.13",
+      "torch": "2.6.0"
+    }
+  ],
+  "sources": [
+    {
+      "source_relative_path": "revision_artifacts/repaired_wrr_20260709/repaired_seed_aggregated_metrics.csv",
+      "source_sha256": "ab18293758b91df07416d526e75c0e5b85235543e72f28cfe192db3c0bc8097a",
+      "packet_path": "metrics.csv"
+    },
+    {
+      "source_relative_path": "revision_artifacts/repaired_wrr_20260709/repaired_input_ablation.csv",
+      "source_sha256": "eaf3bd835bc0b8c522f53ab10bb801178112466f3d033b5ec64e87aa2cf7fe06",
+      "packet_path": "input_ablation.csv"
+    },
+    {
+      "source_relative_path": "revision_artifacts/repaired_wrr_20260709/repaired_persistence_baselines.csv",
+      "source_sha256": "e36978aeac47dab52da0f8f67e9b697d8e923cf5ea2d43f62364d4eb19b1885a",
+      "packet_path": "persistence.csv"
+    },
+    {
+      "source_relative_path": "docs/manuscript/overleaf/wrr_repaired_retrospective_20260709/figures/input_source_attribution.png",
+      "source_sha256": "b67dda13d3064b107ba0a2d03682d8a1c4475dd9b9e20b4807ff0dcdc7a43678",
+      "packet_path": "figures/input_source_attribution.png"
+    }
+  ],
+  "source_run_manifest_sha256": "986a20c03123235700e026285be3d1459feb8171ff300a5f54a07d125bd6da3d",
+  "packet_files": [
+    {
+      "path": "README.md",
+      "sha256": "d7f9f28615d2a6a313d74d51b929be1a72079cfd650fad40d8091f1e446ba884",
+      "bytes": 4883
+    },
+    {
+      "path": "figures/input_source_attribution.png",
+      "sha256": "b67dda13d3064b107ba0a2d03682d8a1c4475dd9b9e20b4807ff0dcdc7a43678",
+      "bytes": 64521
+    },
+    {
+      "path": "input_ablation.csv",
+      "sha256": "eaf3bd835bc0b8c522f53ab10bb801178112466f3d033b5ec64e87aa2cf7fe06",
+      "bytes": 451
+    },
+    {
+      "path": "metrics.csv",
+      "sha256": "ab18293758b91df07416d526e75c0e5b85235543e72f28cfe192db3c0bc8097a",
+      "bytes": 3047
+    },
+    {
+      "path": "persistence.csv",
+      "sha256": "e36978aeac47dab52da0f8f67e9b697d8e923cf5ea2d43f62364d4eb19b1885a",
+      "bytes": 1082
+    }
+  ],
+  "historical_identifiers_freshly_verified": false,
+  "raw_data_or_predictions_revalidated": false,
+  "status": "Proposed saved-summary snapshot for independent review, not a complete reproducibility release.",
+  "current_helper_versions": [
+    {
+      "path": "scripts/evaluation/compute_persistence_baselines.py",
+      "sha256": "b17f068d0643421f80d46799d4b4c5746dec5d21a5dde5c20874372caee448cf",
+      "identity": "current preparation/repair; historical equality not asserted"
+    },
+    {
+      "path": "scripts/evaluation/compute_rigorous_eval.py",
+      "sha256": "97212a6327e97a1ea2036bfde4edfbeabfb87bc6b86ded16c07eabbdde5a027d",
+      "identity": "current preparation/repair; historical equality not asserted"
+    },
+    {
+      "path": "scripts/validate_july_retrospective_summary.py",
+      "sha256": "3b06c623d39445ca0f3843b5340533bf6aaf6c78c547358441e5e60c726876c3",
+      "identity": "current preparation/repair; historical equality not asserted"
+    },
+    {
+      "path": "tests/test_retrospective_contract.py",
+      "sha256": "14c80343fd1b0511c49c8e7f5a63eda6161eae56c1f24966e38bf0387a1a811e",
+      "identity": "current preparation/repair; historical equality not asserted"
+    }
+  ],
+  "bounded_contract_checks": {
+    "count": 9,
+    "status": "PASS",
+    "method": "Partial-module AST harness for unchanged candidate bootstrap functions; complete real trainer/data-utils/persistence modules. No pytest or SciPy-dependent paths.",
+    "research_data_used": false
+  },
+  "public_base_model_sha256_matches_recorded_model": true
+}

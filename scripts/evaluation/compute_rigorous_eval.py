@@ -45,7 +45,7 @@ SEASONS = {
 PEAK_SEPARATION_H = 24
 MIN_SAMPLES_FOR_CI = 100
 
-FILENAME_RE = re.compile(r"^exp_(.+?)_(\d{8})_eval\.csv$")
+FILENAME_RE = re.compile(r"^(?:exp_)?(.+?)_(\d{8})_eval\.csv$")
 
 # Legacy -> canonical experiment ID mapping (mirrors export_results_to_json.py)
 LEGACY_ID_MAP: dict[str, str] = {
@@ -74,10 +74,10 @@ LEGACY_ID_MAP: dict[str, str] = {
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
-def discover_eval_files() -> list[tuple[str, str, str]]:
+def discover_eval_files(eval_dir: str = EVAL_DIR) -> list[tuple[str, str, str]]:
     """Return list of (experiment, site_id, filepath) for unregulated sites."""
     results = []
-    for path in sorted(glob.glob(os.path.join(EVAL_DIR, "exp_*_eval.csv"))):
+    for path in sorted(glob.glob(os.path.join(eval_dir, "*_eval.csv"))):
         basename = os.path.basename(path)
         m = FILENAME_RE.match(basename)
         if not m:
@@ -243,6 +243,8 @@ def compute_regime_masks(df: pd.DataFrame) -> dict[str, np.ndarray]:
 
     # Rising/falling limb
     d_obs = np.diff(obs, prepend=obs[0])
+    hourly_from_previous = df.index.to_series().diff().eq(pd.Timedelta(hours=1)).to_numpy()
+    d_obs[~hourly_from_previous] = 0.0
     rising = d_obs > 0
     falling = d_obs < 0
 
@@ -269,15 +271,15 @@ def compute_peak_timing_error(df: pd.DataFrame) -> dict:
     nwm = df["nwm_cms"].values
     hydra = df["corrected_pred_cms"].values
 
+    timestamps = df.index.to_numpy(dtype="datetime64[ns]")
     q90 = np.quantile(obs, 0.90)
-    obs_peaks, _ = find_peaks(obs, height=q90, distance=PEAK_SEPARATION_H)
-
-    if len(obs_peaks) == 0:
-        return {"n_peaks": 0}
-
     search_window = 12  # +/- hours
 
-    def _timing_errors(sim: np.ndarray, obs_peak_indices: np.ndarray) -> list[float]:
+    def _timing_errors(
+        sim: np.ndarray,
+        obs_peak_indices: np.ndarray,
+        segment_timestamps: np.ndarray,
+    ) -> list[float]:
         errors = []
         for oi in obs_peak_indices:
             lo = max(0, oi - search_window)
@@ -292,14 +294,30 @@ def compute_peak_timing_error(df: pd.DataFrame) -> dict:
                 sim_peaks_global = sim_peaks_local + lo
                 closest = sim_peaks_global[np.argmin(np.abs(sim_peaks_global - oi))]
                 sim_peak_idx = closest
-            errors.append(float(sim_peak_idx - oi))
+            delta = segment_timestamps[sim_peak_idx] - segment_timestamps[oi]
+            errors.append(float(delta / np.timedelta64(1, "h")))
         return errors
 
-    nwm_errors = _timing_errors(nwm, obs_peaks)
-    hydra_errors = _timing_errors(hydra, obs_peaks)
+    gap_starts = np.flatnonzero(np.diff(timestamps) != np.timedelta64(1, "h")) + 1
+    segments = np.split(np.arange(len(df)), gap_starts)
+    nwm_errors: list[float] = []
+    hydra_errors: list[float] = []
+    for segment in segments:
+        if len(segment) < PEAK_SEPARATION_H:
+            continue
+        segment_obs = obs[segment]
+        obs_peaks, _ = find_peaks(segment_obs, height=q90, distance=PEAK_SEPARATION_H)
+        if len(obs_peaks) == 0:
+            continue
+        segment_times = timestamps[segment]
+        nwm_errors.extend(_timing_errors(nwm[segment], obs_peaks, segment_times))
+        hydra_errors.extend(_timing_errors(hydra[segment], obs_peaks, segment_times))
+
+    if not nwm_errors:
+        return {"n_peaks": 0}
 
     return {
-        "n_peaks": len(obs_peaks),
+        "n_peaks": len(nwm_errors),
         "median_abs_timing_nwm_h": round(float(np.median(np.abs(nwm_errors))), 1),
         "median_abs_timing_hydra_h": round(float(np.median(np.abs(hydra_errors))), 1),
         "mean_abs_timing_nwm_h": round(float(np.mean(np.abs(nwm_errors))), 1),
@@ -321,31 +339,60 @@ def moving_block_bootstrap(
     ci_level: float = CI_LEVEL,
     rng: np.random.Generator | None = None,
 ) -> dict:
-    """Circular moving block bootstrap for autocorrelated time series."""
+    """Resample continuous hourly blocks; withhold CIs if any input row is ineligible."""
     if rng is None:
         rng = np.random.default_rng(42)
 
+    if block_size < 1 or n_reps < 2 or not 0 < ci_level < 1:
+        raise ValueError("Require positive block_size, n_reps >= 2 and 0 < ci_level < 1")
     n = len(df)
-    if n < block_size * 2:
-        return {"value": None, "ci": None, "se": None}
-
+    if not n:
+        return {"value": None, "ci": None, "se": None, "n_samples": 0, "reason": "empty_population"}
     point_estimate = stat_fn(df)
+    if n < block_size * 2:
+        return {"value": round(point_estimate, 4), "ci": None, "se": None,
+                "n_samples": n, "reason": "insufficient_rows_for_block_bootstrap"}
+
+    timestamps = df.index.to_numpy(dtype="datetime64[ns]")
+    if block_size <= 1:
+        valid_starts = np.arange(n, dtype=np.int64)
+    else:
+        deltas = np.diff(timestamps)
+        bad = (deltas != np.timedelta64(1, "h")).astype(np.int64)
+        prefix_bad = np.concatenate(([0], np.cumsum(bad)))
+        candidates = np.arange(0, n - block_size + 1, dtype=np.int64)
+        bad_counts = prefix_bad[candidates + block_size - 1] - prefix_bad[candidates]
+        valid_starts = candidates[bad_counts == 0]
+    coverage_delta = np.zeros(n + 1, dtype=np.int64)
+    np.add.at(coverage_delta, valid_starts, 1)
+    np.add.at(coverage_delta, valid_starts + block_size, -1)
+    n_covered = int(np.count_nonzero(np.cumsum(coverage_delta)[:-1]))
+    support = {"n_samples": n, "n_covered_rows": n_covered,
+               "n_valid_blocks": int(len(valid_starts))}
+    if n_covered != n:
+        return {"value": round(point_estimate, 4), "ci": None, "se": None,
+                **support, "reason": "incomplete_block_population"}
 
     n_blocks = math.ceil(n / block_size)
     boot_stats = np.empty(n_reps)
 
     # Pre-generate all random start indices
-    starts = rng.integers(0, n, size=(n_reps, n_blocks))
+    starts = rng.choice(valid_starts, size=(n_reps, n_blocks), replace=True)
 
     for i in range(n_reps):
         indices = []
         for s in starts[i]:
-            block_indices = np.arange(s, s + block_size) % n  # circular
+            block_indices = np.arange(s, s + block_size)
             indices.append(block_indices)
         indices = np.concatenate(indices)[:n]
         boot_df = df.iloc[indices]
         boot_stats[i] = stat_fn(boot_df)
 
+    if not np.isfinite(point_estimate) or not np.all(np.isfinite(boot_stats)):
+        return {"value": round(point_estimate, 4) if np.isfinite(point_estimate) else None,
+                "ci": None, "se": None, **support,
+                "n_finite_replicates": int(np.isfinite(boot_stats).sum()),
+                "reason": "nonfinite_bootstrap_statistic"}
     alpha = 1.0 - ci_level
     ci_lo = float(np.nanpercentile(boot_stats, 100 * alpha / 2))
     ci_hi = float(np.nanpercentile(boot_stats, 100 * (1 - alpha / 2)))
@@ -355,14 +402,33 @@ def moving_block_bootstrap(
         "value": round(point_estimate, 4),
         "ci": [round(ci_lo, 4), round(ci_hi, 4)],
         "se": round(se, 4),
+        **support,
+        "n_finite_replicates": n_reps,
     }
+
+
+def regime_block_bootstrap(stat_fn, df, regime_mask, **kwargs):
+    """Resample the full time population, then select the fixed observed regime."""
+    selected = pd.Series(np.asarray(regime_mask, dtype=bool), index=df.index)
+    if not df.index.is_unique:
+        raise ValueError("Regime bootstrap requires unique source timestamps")
+    def selected_stat(sample):
+        subset = sample.loc[selected.reindex(sample.index).to_numpy()]
+        return stat_fn(subset) if len(subset) else float("nan")
+    result = moving_block_bootstrap(selected_stat, df, **kwargs)
+    result["n_regime_samples"] = int(selected.sum())
+    result["sampling_population"] = "full_window_before_regime_selection"
+    return result
 
 
 # ---------------------------------------------------------------------------
 # Diebold-Mariano test
 # ---------------------------------------------------------------------------
 def diebold_mariano_test(
-    e_hydra: np.ndarray, e_nwm: np.ndarray, h: int = 1
+    e_hydra: np.ndarray,
+    e_nwm: np.ndarray,
+    h: int = 1,
+    timestamps: np.ndarray | None = None,
 ) -> dict:
     """
     Diebold-Mariano test comparing forecast accuracy.
@@ -382,7 +448,14 @@ def diebold_mariano_test(
     gamma_sum = 0.0
     for k in range(1, bandwidth + 1):
         weight = 1.0 - k / (bandwidth + 1)  # Bartlett kernel
-        gamma_k = np.mean((d[k:] - d_mean) * (d[:-k] - d_mean))
+        pairs = (d[k:] - d_mean) * (d[:-k] - d_mean)
+        if timestamps is not None:
+            ts = pd.to_datetime(timestamps).to_numpy(dtype="datetime64[ns]")
+            continuous = (ts[k:] - ts[:-k]) == np.timedelta64(k, "h")
+            pairs = pairs[continuous]
+        if pairs.size == 0:
+            continue
+        gamma_k = np.mean(pairs)
         gamma_sum += 2 * weight * gamma_k
 
     hac_var = (gamma_0 + gamma_sum) / n
@@ -478,7 +551,11 @@ def evaluate_window(
     peak_timing = compute_peak_timing_error(df)
 
     # --- DM test ---
-    dm = diebold_mariano_test(df["hydra_error"].values, df["nwm_error"].values)
+    dm = diebold_mariano_test(
+        df["hydra_error"].values,
+        df["nwm_error"].values,
+        timestamps=df.index.to_numpy(),
+    )
 
     result: dict[str, Any] = {
         "headline": {
@@ -547,8 +624,7 @@ def evaluate_window(
         for regime_key, struct_key in [("high", "high_flow"), ("low", "low_flow")]:
             regime_mask = masks.get(regime_key)
             if regime_mask is not None and np.sum(regime_mask) >= MIN_SAMPLES_FOR_CI:
-                regime_df = df.loc[regime_mask]
-                boot_regime = moving_block_bootstrap(_make_ss_rmse_fn(), regime_df, rng=rng)
+                boot_regime = regime_block_bootstrap(_make_ss_rmse_fn(), df, regime_mask, rng=rng)
                 result["error_structure"][struct_key]["ss_rmse"] = boot_regime
 
     return result
@@ -667,9 +743,10 @@ def _worker(args: tuple) -> tuple[str, str, dict]:
 def evaluate_all(
     do_bootstrap: bool = True,
     parallel: int = 1,
+    eval_dir: str = EVAL_DIR,
 ) -> dict:
     """Evaluate all experiment-site combinations and aggregate."""
-    files = discover_eval_files()
+    files = discover_eval_files(eval_dir=eval_dir)
     print(f"Found {len(files)} eval CSVs for {len(UNREGULATED_SITES)} unregulated sites")
 
     # results[experiment][site_id] = {...}
@@ -702,6 +779,7 @@ def evaluate_all(
         "generated_at": datetime.utcnow().isoformat(),
         "bootstrap": {
             "block_size": BLOCK_SIZE,
+            "block_unit": "continuous hourly rows",
             "n_reps": BOOTSTRAP_REPS if do_bootstrap else 0,
             "ci_level": CI_LEVEL,
         },
@@ -759,13 +837,14 @@ def main():
         "--parallel", type=int, default=1,
         help="Number of parallel workers (default: 1)",
     )
+    parser.add_argument("--eval-dir", default=EVAL_DIR, help="Directory containing evaluation CSV files")
     args = parser.parse_args()
 
     do_bootstrap = not args.skip_bootstrap
     print(f"Bootstrap: {'ON (reps={BOOTSTRAP_REPS})' if do_bootstrap else 'OFF (--skip-bootstrap)'}")
     print(f"Parallel workers: {args.parallel}")
 
-    output = evaluate_all(do_bootstrap=do_bootstrap, parallel=args.parallel)
+    output = evaluate_all(do_bootstrap=do_bootstrap, parallel=args.parallel, eval_dir=args.eval_dir)
 
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
     with open(args.output, "w") as f:
