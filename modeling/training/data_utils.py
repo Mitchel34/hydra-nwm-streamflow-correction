@@ -32,7 +32,7 @@ STATIC_NUMERIC: List[str] = []
 
 
 class SeqDataset(Dataset):
-    """Sliding-window sequence dataset used by training and latent extraction."""
+    """Sliding-window dataset containing only continuous hourly sequences."""
 
     def __init__(
         self,
@@ -41,6 +41,7 @@ class SeqDataset(Dataset):
         residual: np.ndarray,
         usgs: np.ndarray,
         nwm: np.ndarray,
+        timestamps: np.ndarray,
         seq_len: int,
         augment: bool = False,
     ) -> None:
@@ -50,15 +51,35 @@ class SeqDataset(Dataset):
         self.residual = residual.astype(np.float32)
         self.usgs = usgs.astype(np.float32)
         self.nwm = nwm.astype(np.float32)
-        self.length = max(len(self.dyn) - seq_len, 0)
+        self.timestamps = pd.to_datetime(timestamps).to_numpy(dtype="datetime64[ns]")
+        expected_len = len(self.dyn)
+        if any(len(values) != expected_len for values in (self.residual, self.usgs, self.nwm, self.timestamps)):
+            raise ValueError("Sequence arrays and timestamps must have identical lengths")
+        if self.static.size and len(self.static) != expected_len:
+            raise ValueError("Static features and dynamic features must have identical lengths")
+        self.target_indices = self._continuous_target_indices()
+        self.length = len(self.target_indices)
         self.augment = augment
+
+    def _continuous_target_indices(self) -> np.ndarray:
+        """Return targets preceded by exactly ``seq_len`` one-hour intervals."""
+
+        if len(self.timestamps) <= self.seq_len:
+            return np.empty(0, dtype=np.int64)
+        deltas = np.diff(self.timestamps)
+        one_hour = np.timedelta64(1, "h")
+        bad = (deltas != one_hour).astype(np.int64)
+        prefix_bad = np.concatenate(([0], np.cumsum(bad)))
+        candidates = np.arange(self.seq_len, len(self.timestamps), dtype=np.int64)
+        bad_counts = prefix_bad[candidates] - prefix_bad[candidates - self.seq_len]
+        return candidates[bad_counts == 0]
 
     def __len__(self) -> int:
         return self.length
 
     def __getitem__(self, idx: int):
-        j = idx + self.seq_len
-        seq = self.dyn[idx:j]
+        j = int(self.target_indices[idx])
+        seq = self.dyn[j - self.seq_len:j]
         if self.augment and np.random.rand() < 0.5:
             seq = seq + np.random.normal(0.0, 0.05, size=seq.shape).astype(np.float32)
         static_vec = self.static[j] if self.static.size else np.zeros(0, dtype=np.float32)
@@ -226,9 +247,18 @@ def resolve_split_masks(
 ) -> SplitMasks:
     """Resolve chronological train/val/test masks for a dataframe."""
 
+    def _start_bound(value: str) -> pd.Timestamp:
+        return pd.Timestamp(value)
+
+    def _inclusive_end_bound(value: str) -> pd.Timestamp:
+        timestamp = pd.Timestamp(value)
+        if isinstance(value, str) and len(value.strip()) == 10 and timestamp == timestamp.normalize():
+            return timestamp + pd.Timedelta(days=1) - pd.Timedelta(nanoseconds=1)
+        return timestamp
+
     if all(ts is not None for ts in (train_start, train_end)):
-        train_start_ts = pd.Timestamp(train_start)
-        train_end_ts = pd.Timestamp(train_end)
+        train_start_ts = _start_bound(train_start)
+        train_end_ts = _inclusive_end_bound(train_end)
     else:
         start = df["timestamp"].min()
         train_start_ts = start
@@ -238,15 +268,15 @@ def resolve_split_masks(
     if train_mask.sum() <= seq_len:
         raise ValueError("Training window shorter than sequence length")
 
-    val_start_ts = pd.Timestamp(val_start) if val_start is not None else None
-    val_end_ts = pd.Timestamp(val_end) if val_end is not None else None
+    val_start_ts = _start_bound(val_start) if val_start is not None else None
+    val_end_ts = _inclusive_end_bound(val_end) if val_end is not None else None
     if val_start_ts is not None and val_end_ts is not None:
         val_mask = (df["timestamp"] >= val_start_ts) & (df["timestamp"] <= val_end_ts)
     else:
         if val_days > 0:
-            val_start_ts = train_end_ts
+            val_start_ts = train_end_ts + pd.Timedelta(nanoseconds=1)
             val_end_ts = train_end_ts + pd.Timedelta(days=val_days)
-            val_mask = (df["timestamp"] >= val_start_ts) & (df["timestamp"] < val_end_ts)
+            val_mask = (df["timestamp"] >= val_start_ts) & (df["timestamp"] <= val_end_ts)
         else:
             val_mask = pd.Series(False, index=df.index)
             val_end_ts = None
@@ -254,8 +284,8 @@ def resolve_split_masks(
     if test_start is not None or test_end is not None:
         if not (test_start and test_end):
             raise ValueError("--test-start and --test-end must both be provided for custom evaluation windows.")
-        test_start_ts = pd.Timestamp(test_start)
-        test_end_ts = pd.Timestamp(test_end)
+        test_start_ts = _start_bound(test_start)
+        test_end_ts = _inclusive_end_bound(test_end)
         test_mask = (df["timestamp"] >= test_start_ts) & (df["timestamp"] <= test_end_ts)
     elif val_end_ts is not None:
         test_start_ts = None
@@ -268,6 +298,13 @@ def resolve_split_masks(
 
     if test_mask.sum() == 0:
         raise ValueError("No evaluation rows available after split")
+    overlap = (train_mask.astype(int) + val_mask.astype(int) + test_mask.astype(int)) > 1
+    if overlap.any():
+        overlap_times = df.loc[overlap, "timestamp"]
+        raise ValueError(
+            "Chronological split masks overlap; first overlapping timestamp is "
+            f"{overlap_times.iloc[0]}"
+        )
 
     return SplitMasks(
         train=train_mask,
@@ -363,34 +400,44 @@ def build_split_dataset(
     train_resid = site_data.residual[train_idx]
     train_usgs = site_data.usgs[train_idx]
     train_nwm = site_data.nwm[train_idx]
+    train_meta = df.loc[site_data.split_masks.train].reset_index(drop=True)
+    train_timestamps = train_meta["timestamp"].to_numpy()
 
     val_dyn = site_data.dyn_scaled[val_idx]
     val_static = site_data.static_scaled[val_idx] if static_cols else zero_static(int(val_idx.sum()))
     val_resid = site_data.residual[val_idx]
     val_usgs = site_data.usgs[val_idx]
     val_nwm = site_data.nwm[val_idx]
+    val_meta = df.loc[site_data.split_masks.val].reset_index(drop=True)
+    val_timestamps = val_meta["timestamp"].to_numpy()
 
     test_dyn = site_data.dyn_scaled[test_idx]
     test_static = site_data.static_scaled[test_idx] if static_cols else zero_static(int(test_idx.sum()))
     test_resid = site_data.residual[test_idx]
     test_usgs = site_data.usgs[test_idx]
     test_nwm = site_data.nwm[test_idx]
+    test_meta = df.loc[site_data.split_masks.test].reset_index(drop=True)
+    test_timestamps = test_meta["timestamp"].to_numpy()
+
+    def _aligned_targets(dataset: SeqDataset, metadata: pd.DataFrame) -> pd.DataFrame:
+        return metadata.iloc[dataset.target_indices].reset_index(drop=True)
 
     split_name = split.lower()
     if split_name == "train":
-        target_df = df.loc[site_data.split_masks.train].iloc[seq_len:].reset_index(drop=True)
         dataset = SeqDataset(
             train_dyn,
             train_static,
             train_resid,
             train_usgs,
             train_nwm,
+            train_timestamps,
             seq_len,
             augment=augment,
         )
+        target_df = _aligned_targets(dataset, train_meta)
     elif split_name == "val":
         if val_dyn.shape[0] == 0:
-            return None, df.loc[site_data.split_masks.val].iloc[0:0].reset_index(drop=True)
+            return None, val_meta.iloc[0:0].copy()
         tail_train = min(seq_len, train_dyn.shape[0])
         if tail_train < seq_len:
             raise ValueError("Training window shorter than sequence length")
@@ -403,16 +450,19 @@ def build_split_dataset(
         seed_resid = np.concatenate([train_resid[-tail_train:], val_resid])
         seed_usgs = np.concatenate([train_usgs[-tail_train:], val_usgs])
         seed_nwm = np.concatenate([train_nwm[-tail_train:], val_nwm])
-        target_df = df.loc[site_data.split_masks.val].reset_index(drop=True)
+        seed_timestamps = np.concatenate([train_timestamps[-tail_train:], val_timestamps])
+        seed_meta = pd.concat([train_meta.iloc[-tail_train:], val_meta], ignore_index=True)
         dataset = SeqDataset(
             seed_dyn,
             seed_static,
             seed_resid,
             seed_usgs,
             seed_nwm,
+            seed_timestamps,
             seq_len,
             augment=False,
         )
+        target_df = _aligned_targets(dataset, seed_meta)
     elif split_name == "test":
         history_dyn = train_dyn if val_dyn.shape[0] == 0 else np.concatenate([train_dyn, val_dyn], axis=0)
         history_static = (
@@ -433,27 +483,33 @@ def build_split_dataset(
         seed_resid = np.concatenate([history_resid[-tail_history:], test_resid])
         seed_usgs = np.concatenate([history_usgs[-tail_history:], test_usgs])
         seed_nwm = np.concatenate([history_nwm[-tail_history:], test_nwm])
-        target_df = df.loc[site_data.split_masks.test].reset_index(drop=True)
+        history_meta = train_meta if val_dyn.shape[0] == 0 else pd.concat([train_meta, val_meta], ignore_index=True)
+        history_timestamps = history_meta["timestamp"].to_numpy()
+        seed_timestamps = np.concatenate([history_timestamps[-tail_history:], test_timestamps])
+        seed_meta = pd.concat([history_meta.iloc[-tail_history:], test_meta], ignore_index=True)
         dataset = SeqDataset(
             seed_dyn,
             seed_static,
             seed_resid,
             seed_usgs,
             seed_nwm,
+            seed_timestamps,
             seq_len,
             augment=False,
         )
+        target_df = _aligned_targets(dataset, seed_meta)
     elif split_name == "all":
-        target_df = df.iloc[seq_len:].reset_index(drop=True)
         dataset = SeqDataset(
             site_data.dyn_scaled,
             site_data.static_scaled if static_cols else zero_static(len(df)),
             site_data.residual,
             site_data.usgs,
             site_data.nwm,
+            df["timestamp"].to_numpy(),
             seq_len,
             augment=False,
         )
+        target_df = _aligned_targets(dataset, df.reset_index(drop=True))
     else:
         raise ValueError(f"Unsupported split '{split}'. Choose train, val, test, or all.")
 
