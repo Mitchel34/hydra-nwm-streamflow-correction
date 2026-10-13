@@ -22,6 +22,9 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
 from configs.master_study_sites import MASTER_STUDY_SITES
+from data_acquisition_scripts.usgs_time_contract import (
+    parse_rdb, unique_observations, hourly_observations, ClockContractError,
+)
 
 # Set up logging
 logging.basicConfig(
@@ -167,72 +170,47 @@ UTC = pytz.UTC
 
 
 def fetch_range(site_id: str, start: str, end: str, collector: USGSCollector) -> pd.DataFrame:
+    """Convert provider clocks before any duplicate removal or hourly aggregation.
+
+    Callers must preserve response_text/response_url before accepting a dataset.
+    The offline versioned converter is the supported acquisition export path.
+    """
     url = NWIS_CSV.format(site=site_id, start=start, end=end)
-    r = collector.fetch_with_retry(url)
-    if r is None:
+    response = collector.fetch_with_retry(url)
+    if response is None:
         return pd.DataFrame()
-    # RDB format: skip comment lines (#) and metadata header (5-10 lines)
-    lines = [ln for ln in r.text.splitlines() if not ln.startswith("#")]
-    # Find header line (starts with 'agency_cd')
-    header_idx = next(i for i, ln in enumerate(lines) if ln.startswith("agency_cd"))
-    data = "\n".join(lines[header_idx:])
-    df = pd.read_csv(io.StringIO(data), sep="\t")
+    records, duplicates = unique_observations(parse_rdb(response.text))
+    if any(row['usgs_id'] != site_id for row in records):
+        raise ClockContractError('Response contains a different requested site')
+    frame = pd.DataFrame(records)
+    if frame.empty:
+        return frame
+    frame['timestamp_utc'] = pd.to_datetime(frame['timestamp_utc'], utc=True)
+    frame = frame.set_index('timestamp_utc').sort_index()
+    frame.attrs.update(response_text=response.text, response_url=url,
+                       exact_duplicates_removed=duplicates)
+    return frame
+
+def resample_hourly(df: pd.DataFrame, aggregation: str) -> pd.DataFrame:
+    """Explicit UTC interval/point sampling; no imputation or silent keep-last."""
     if df.empty:
         return df
-    # Standardize columns
-    # USGS RDB has columns: agency_cd, site_no, datetime, tz_cd, 00060, 00060_cd
-    col_flow = next(c for c in df.columns if c.endswith("00060"))
-    df = df.rename(columns={"site_no": "usgs_id", col_flow: "flow_cfs", "tz_cd": "tz"})
-    df = df[["usgs_id", "datetime", "tz", "flow_cfs"]]
-    # Parse times with timezone (USGS returns local TZ)
-    df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
-    # Convert to UTC
-    # Note: when tz is provided per-row, we cannot reliably localize; USGS returns ISO
-    df["timestamp_utc"] = pd.to_datetime(df["datetime"], utc=True)
-    # Numeric
-    df["flow_cfs"] = pd.to_numeric(df["flow_cfs"], errors="coerce")
-    df = df.dropna(subset=["timestamp_utc", "flow_cfs"]).copy()
-    df = df.set_index("timestamp_utc").sort_index()
-    return df
-
-
-def resample_hourly(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return df
-    idx = df.index
-    if getattr(idx, 'tz', None) is not None:
-        df = df.copy()
-        df.index = idx.tz_localize(None) if idx.tz is None else idx.tz_convert(None)
-    df = df[~df.index.duplicated(keep='last')]
-    hourly = df.resample("1h").mean(numeric_only=True)
-    # Add site_name and usgs_id back in from the first row of the original df
-    if not df.empty:
+    records = df.reset_index().to_dict('records')
+    for row in records:
+        row['timestamp_utc'] = row['timestamp_utc'].isoformat()
+    hourly = pd.DataFrame(hourly_observations(records, aggregation))
+    if not hourly.empty and 'site_name' in df.columns:
         hourly['site_name'] = df['site_name'].iloc[0]
-        hourly['usgs_id'] = df['usgs_id'].iloc[0]
-    hourly["quality"] = "avg"
-    hourly = hourly.dropna(subset=["flow_cfs"]).copy()
-    hourly.reset_index(inplace=True)
-    rename_col = 'timestamp_utc' if 'timestamp_utc' in hourly.columns else hourly.columns[0]
-    hourly.rename(columns={rename_col: "timestamp"}, inplace=True)
+    hourly.attrs = dict(df.attrs)
     return hourly
 
-
-def fetch_site(usgs_id: str, site_info: dict, start_date: str, end_date: str, collector: USGSCollector) -> pd.DataFrame:
-    """Fetches data for a single site and date range."""
-    logger.info(f"Fetching USGS {usgs_id} {site_info['name']} {start_date}..{end_date}")
-    
+def fetch_site(usgs_id: str, site_info: dict, start_date: str, end_date: str,
+               collector: USGSCollector, aggregation: str) -> pd.DataFrame:
     df = fetch_range(usgs_id, start_date, end_date, collector)
-    if not df.empty:
-        df["usgs_id"] = usgs_id
-        df["site_name"] = site_info["name"]
-        try:
-            df = df[~df.index.duplicated(keep='last')]
-            df.index = df.index.tz_convert(None)
-        except AttributeError:
-            pass
-        df = resample_hourly(df)
-    return df
-
+    if df.empty:
+        return df
+    df['site_name'] = site_info['name']
+    return resample_hourly(df, aggregation)
 
 def save_partition(df: pd.DataFrame, out_dir: str, site_id: str, year: int):
     os.makedirs(out_dir, exist_ok=True)
@@ -267,119 +245,12 @@ def _month_ranges(start_date: dt_date, end_date: dt_date):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch USGS streamflow data.")
-    parser.add_argument("--out-dir", default="data/raw/usgs", help="Output directory for CSV files.")
-    parser.add_argument("--sites", nargs="+", help="Optional list of site IDs to fetch.")
-    parser.add_argument("--start-date", help="Optional ISO start date YYYY-MM-DD to limit range.")
-    parser.add_argument("--end-date", help="Optional ISO end date YYYY-MM-DD to limit range.")
-    parser.add_argument("--skip-consolidate-site", action="store_true", help="Skip writing per-site consolidated CSVs.")
-    parser.add_argument("--consolidate-global", action="store_true", help="Write all-sites consolidated CSV across sites (off by default).")
-    args = parser.parse_args()
-
-    out_dir = args.out_dir
-    os.makedirs(out_dir, exist_ok=True)
-
-    # Determine which sites to fetch
-    if args.sites:
-        sites_to_fetch = {site_id: MASTER_STUDY_SITES[site_id] for site_id in args.sites if site_id in MASTER_STUDY_SITES}
-    else:
-        sites_to_fetch = MASTER_STUDY_SITES
-
-    # Define date ranges for acquisition
-    if args.start_date and args.end_date:
-        ranges = [(args.start_date, args.end_date)]
-        logger.info(f"Using custom range: {args.start_date}..{args.end_date}")
-    else:
-        ranges = [
-            ("2020-01-01", "2020-12-31"),
-            ("2021-01-01", "2021-12-31"),
-            ("2022-01-01", "2022-12-31"),
-            ("2023-01-01", "2023-12-31"),
-            ("2025-01-01", datetime.utcnow().strftime('%Y-%m-%d')),  # Up to today
-        ]
-    
-    collector = USGSCollector()
-
-    # Correctly iterate over items (site_id, site_info)
-    for usgs_id, site_info in sites_to_fetch.items():
-        for start, end in ranges:
-            year = int(start[:4])
-            start_date = datetime.strptime(start, "%Y-%m-%d").date()
-            end_date = datetime.strptime(end, "%Y-%m-%d").date()
-            year_frames = []
-            for m_start, m_end in _month_ranges(start_date, end_date):
-                m_s = m_start.isoformat()
-                m_e = m_end.isoformat()
-                try:
-                    # Pass the full site_info dictionary
-                    df = fetch_site(usgs_id, site_info, m_s, m_e, collector)
-                    if not df.empty:
-                        # Load data into memory and validate structure
-                        df = df.copy()  # Ensure data is in memory
-                        logger.debug(f"   ✅ {usgs_id} {m_s}..{m_e}: {len(df)} records")
-                    else:
-                        logger.warning(f"   ⚠️  {usgs_id} {m_s}..{m_e}: No data returned")
-                        continue
-                except requests.RequestException as req_error:
-                    logger.error(f"   ❌ Network error for {usgs_id} {m_s}..{m_e}: {req_error}")
-                    continue
-                except pd.errors.ParserError as parse_error:
-                    logger.error(f"   ❌ Data parsing error for {usgs_id} {m_s}..{m_e}: {parse_error}")
-                    continue
-                except Exception as e:
-                    logger.error(f"   ❌ Processing error for {usgs_id} {m_s}..{m_e}: {e}")
-                    continue
-                    
-                year_frames.append(df)
-                # Gentle throttle between month requests
-                time.sleep(0.5)
-            if year_frames:
-                try:
-                    year_df = pd.concat(year_frames, ignore_index=True)
-                    # De-duplicate in case of overlaps and validate data integrity
-                    year_df = year_df.drop_duplicates(subset=["timestamp"]).sort_values("timestamp")
-                    
-                    # Validate data quality
-                    valid_records = len(year_df.dropna(subset=['flow_cfs']))
-                    total_records = len(year_df)
-                    logger.info(f"   📊 {usgs_id} {year}: {valid_records}/{total_records} valid records")
-                    
-                    save_partition(year_df, out_dir, usgs_id, year)
-                except pd.errors.ParserError as parse_error:
-                    logger.error(f"   ❌ Failed to consolidate {usgs_id} {year}: {parse_error}")
-                except Exception as consolidation_error:
-                    logger.error(f"   ❌ Consolidation error for {usgs_id} {year}: {consolidation_error}")
-            else:
-                logger.warning(f"   ⚠️  No data collected for {usgs_id} {year}")
-
-    # Consolidated per-site files (optional)
-    if not args.skip_consolidate_site:
-        for usgs_id in sites_to_fetch.keys():
-            consolidate(out_dir, f"{usgs_id}_", f"{usgs_id}_consolidated.csv")
-    else:
-        logger.info("Skipping per-site consolidated files as requested")
-
-    # Global consolidated (off by default)
-    if args.consolidate_global:
-        all_files = [f for f in os.listdir(out_dir) if f.endswith('_consolidated.csv')]
-        frames = []
-        for f in all_files:
-            try:
-                frames.append(pd.read_csv(os.path.join(out_dir, f)))
-            except pd.errors.EmptyDataError:
-                logger.warning(f"Skipping empty file: {f}")
-                continue
-        if frames:
-            all_df = pd.concat(frames, ignore_index=True).sort_values(["usgs_id","timestamp"]).reset_index(drop=True)
-            all_df.to_csv(os.path.join(out_dir, 'usgs_streamflow_all_sites_2020_2023_2025.csv'), index=False)
-            logger.info(f"Saved all-sites consolidated CSV rows={len(all_df)}")
-        else:
-            logger.info("No per-site consolidated files found; skipping global consolidation")
-    else:
-        logger.info("Global all-sites consolidation disabled (default)")
-
-    logger.info("USGS streamflow acquisition complete")
-
+    raise SystemExit(
+        'Legacy bulk acquisition/export is disabled by the UTC repair. '
+        'Preserve NWIS IV responses and run scripts/convert_usgs_utc.py with '
+        '--rdb, a new --out-dir and explicit --aggregation. '
+        'Daily means and naive legacy CSVs cannot be substituted.'
+    )
 
 if __name__ == "__main__":
     main()

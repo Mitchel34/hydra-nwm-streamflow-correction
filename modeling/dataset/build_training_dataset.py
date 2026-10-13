@@ -25,6 +25,8 @@ Notes:
 
 import os
 import glob
+import hashlib
+import json
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Optional, Iterable
@@ -33,9 +35,13 @@ from datetime import datetime
 
 # Local config (study sites)
 import sys
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, project_root)
 from configs.master_study_sites import MASTER_STUDY_SITES
+from pathlib import Path
+from data_acquisition_scripts.usgs_time_contract import (
+    CONTRACT_VERSION, ClockContractError, validate_hourly_csv,
+)
 
 
 def _read_many_csv(patterns: List[str], usecols: Optional[List[str]] = None) -> Optional[pd.DataFrame]:
@@ -110,61 +116,48 @@ def load_nwm_hourly(raw_dir: str, nwm_version: str = 'v2') -> pd.DataFrame:
     return df[keep]
 
 
-def load_usgs_hourly(raw_dir: str, usgs_id: str) -> pd.DataFrame:
-    pats = [
-        os.path.join(raw_dir, 'usgs', usgs_id, '*.csv'),
-        os.path.join(raw_dir, 'usgs', f"*{usgs_id}*.csv"),
-    ]
-    df = _read_many_csv(pats)
-    if df is None or df.empty:
-        raise FileNotFoundError(f"No USGS CSVs found for {usgs_id}")
-    # Expect timestamp, flow_cms (or similar). Try common variants.
-    if 'timestamp' not in df.columns:
-        # Try typical column names
-        for c in ['datetime', 'time', 'date_time', 'time_utc']:
-            if c in df.columns:
-                df['timestamp'] = df[c]
-                break
-    # Normalize to naive UTC (no tz) for consistent merges
-    ts = pd.to_datetime(df['timestamp'], utc=True, errors='coerce')
-    df['timestamp'] = ts.dt.tz_localize(None)
+def load_usgs_hourly(raw_dir: str, usgs_id: str, corrected_dir: Optional[str] = None,
+                     aggregation: Optional[str] = None) -> pd.DataFrame:
+    """Accept only hash-bound, explicitly converted UTC observation versions.
 
-    # Identify flow column; support both cms and cfs (convert to cms)
-    flow_col = None
-    cms_candidates = ['flow_cms', 'discharge_cms', 'streamflow_cms', 'value_cms']
-    for c in cms_candidates:
-        if c in df.columns:
-            flow_col = c
-            unit = 'cms'
-            break
-    if flow_col is None:
-        if 'flow_cfs' in df.columns:
-            flow_col = 'flow_cfs'
-            unit = 'cfs'
-        elif 'value' in df.columns:
-            flow_col = 'value'
-            unit = 'unknown'
-        else:
-            raise ValueError(
-                "USGS CSV missing flow column (expected one of flow_cms/discharge_cms/streamflow_cms/value_cms/flow_cfs/value)"
-            )
-
-    out = df[['timestamp', flow_col]].copy()
-    if unit == 'cfs':
-        # Convert cubic feet per second to cubic meters per second
-        out['usgs_cms'] = pd.to_numeric(out[flow_col], errors='coerce') * 0.028316846592
-    else:
-        out['usgs_cms'] = pd.to_numeric(out[flow_col], errors='coerce')
-    out = out[['timestamp', 'usgs_cms']]
-    # Hourly expectation: if finer than hourly, resample; if coarser, upsample with no forward look
-    out = (
-        out.set_index('timestamp')
-           .sort_index()
-           .resample('1H').mean()
-           .reset_index()
-    )
+    Legacy raw_dir CSVs are intentionally not inferred to be UTC. Target-valid-time
+    inputs use exact hourly IV samples; interval means require a separate protocol.
+    """
+    if not corrected_dir or aggregation != 'exact':
+        raise ClockContractError('Supply a corrected version directory and exact IV aggregation')
+    root = Path(corrected_dir)
+    manifest_path = root / 'manifest.json'
+    if getattr(manifest_path.stat(), 'st_flags', 0) & 0x40000000:
+        raise ClockContractError('Refusing to hydrate corrected observation manifest')
+    manifest_bytes = manifest_path.read_bytes()
+    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    manifest = json.loads(manifest_bytes)
+    if (manifest.get('clock_contract') != CONTRACT_VERSION or manifest.get('aggregation') != aggregation
+            or manifest.get('daily_fallback') is not False):
+        raise ClockContractError('Invalid corrected observation manifest')
+    matches = [r for r in manifest.get('outputs', []) if r['site_id'] == usgs_id]
+    if len(matches) != 1:
+        raise ClockContractError('Expected one hash-bound output per site')
+    record = matches[0]
+    path = (root / record['path']).resolve()
+    if root.resolve() not in path.parents:
+        raise ClockContractError('Observation path escapes version directory')
+    if getattr(path.stat(), 'st_flags', 0) & 0x40000000:
+        raise ClockContractError('Refusing to hydrate corrected observations')
+    csv_bytes = path.read_bytes()
+    if hashlib.sha256(csv_bytes).hexdigest() != record['sha256']:
+        raise ClockContractError('Corrected observation hash mismatch')
+    rows = validate_hourly_csv(path, usgs_id, aggregation, content=csv_bytes)
+    if len(rows) != record['rows']:
+        raise ClockContractError('Corrected observation row count mismatch')
+    df = pd.DataFrame(rows)
+    out = pd.DataFrame({'timestamp': pd.to_datetime(df['timestamp'], utc=True).dt.tz_localize(None),
+                        'usgs_cms': pd.to_numeric(df['flow_cms'], errors='raise')})
+    out.attrs['source_files'] = [str(path), str(manifest_path)]
+    out.attrs['clock_contract'] = CONTRACT_VERSION
+    out.attrs['aggregation'] = aggregation
+    out.attrs['manifest_sha256'] = manifest_sha256
     return out
-
 
 def load_era5_features(raw_dir: str, site_name: str, site_id: Optional[str] = None, comid: Optional[int] = None) -> Optional[pd.DataFrame]:
     # ERA5 files likely live under data/raw/era5/<site>/*.csv, or per-site folders like data/raw/era5/<comid>/*.csv.
@@ -238,8 +231,12 @@ def build_dataset(
     end: Optional[str] = None,
     sites: Optional[Iterable[str]] = None,
     nwm_version: str = 'v2',
+    usgs_corrected_dir: Optional[str] = None,
+    usgs_aggregation: Optional[str] = None,
 ) -> pd.DataFrame:
-    os.makedirs(out_dir, exist_ok=True)
+    if not usgs_corrected_dir or usgs_aggregation != 'exact':
+        raise ClockContractError('Corrected UTC observations with exact IV aggregation are required')
+    os.makedirs(out_dir, exist_ok=False)  # new version only; preserve prior inputs
 
     # Load NWM (multi-site, hourly only)
     nwm = load_nwm_hourly(raw_dir, nwm_version=nwm_version)
@@ -249,6 +246,7 @@ def build_dataset(
         nwm = nwm[nwm['timestamp'] <= pd.to_datetime(end)]
 
     frames = []
+    usgs_manifest_hashes = set()
     target_sites = (
         {sid: MASTER_STUDY_SITES[sid] for sid in sites if sid in MASTER_STUDY_SITES}
         if sites
@@ -269,7 +267,10 @@ def build_dataset(
         if nwm_site.empty:
             continue
         # Load USGS hourly
-        usgs = load_usgs_hourly(raw_dir, usgs_id)
+        usgs = load_usgs_hourly(raw_dir, usgs_id, usgs_corrected_dir, usgs_aggregation)
+        usgs_manifest_hashes.add(usgs.attrs['manifest_sha256'])
+        if len(usgs_manifest_hashes) != 1:
+            raise ClockContractError('Sites used different corrected observation manifests')
         # Load ERA5 features (optional)
         era5 = load_era5_features(raw_dir, site_name, site_id=site_id, comid=comid)
         # Merge
@@ -325,6 +326,19 @@ def build_dataset(
     csv_sample_path = os.path.join(out_dir, f"hourly_training_{tag}_sample.csv")
     out.to_parquet(parquet_path, index=False)
     out.head(2000).to_csv(csv_sample_path, index=False)
+    clock_provenance = {
+        'status': 'USGS_clock_validated_NWM_and_ERA5_lineage_not_certified',
+        'usgs_clock_contract': CONTRACT_VERSION,
+        'usgs_aggregation': usgs_aggregation,
+        'usgs_manifest_sha256': next(iter(usgs_manifest_hashes)),
+        'output_parquet_sha256': hashlib.sha256(Path(parquet_path).read_bytes()).hexdigest(),
+        'rows': len(out),
+        'nwm_version': nwm_version,
+        'builder_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        'scientific_performance_verified': False,
+    }
+    with open(os.path.join(out_dir, 'clock_provenance.json'), 'x') as handle:
+        json.dump(clock_provenance, handle, indent=2)
     print(f"Saved: {parquet_path} (rows={len(out)})")
     print(f"Sample: {csv_sample_path}")
     return out
@@ -344,6 +358,8 @@ if __name__ == '__main__':
         choices=['v2', 'v3'],
         help='Retrospective NWM archive to load (default: v2)',
     )
+    ap.add_argument('--usgs-corrected-dir', required=True, help='Versioned UTC converter output with manifest')
+    ap.add_argument('--usgs-aggregation', required=True, choices=['exact'], help='Exact IV samples at UTC valid time')
     args = ap.parse_args()
     build_dataset(
         raw_dir=args.raw_dir,
@@ -352,4 +368,6 @@ if __name__ == '__main__':
         end=args.end,
         sites=args.sites,
         nwm_version=args.nwm_version,
+        usgs_corrected_dir=args.usgs_corrected_dir,
+        usgs_aggregation=args.usgs_aggregation,
     )
