@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "status": "INDEPENDENTLY_ACCEPTED_DATA_CANDIDATE_NO_CORRECTED_MODEL_RESULTS",
+  "review_date_UTC": "2026-10-14",
+  "public_summary_prepared_date_UTC": "2026-10-15",
+  "scope": "Original retrospective NWM2.1 three-gauge study; excludes reforecast/NextGen outcomes",
+  "findings": {
+    "candidate_rows": 289227,
+    "annual_candidate_shards": 33,
+    "soil_calendar_rows": 289296,
+    "annual_soil_shards": 33,
+    "whole_raw_soil_cells_independently_checked": 14657664,
+    "annual_preflight_cell_pairs_bitwise_exact": 128064,
+    "source_missing_soil_hours_recovered": 2184,
+    "old_carried_soil_rows_replaced": 27,
+    "temperature_precipitation_rows_restored": 2157,
+    "observation_nulls_preserved": 15133,
+    "common_preceding168h_eligible_rows": 248651,
+    "explicit_soil_tail_hours_outside_target": 69
+  },
+  "split_eligible_counts": {
+    "training_2010_2017": 175967,
+    "validation_2018": 22106,
+    "exploratory_test_2019_2020": 50578
+  },
+  "evidence_sha256": {
+    "candidate_manifest": "df648089a128a3d2bec236ae52e767bc92c62497082e972fe99c33845ea0b52e",
+    "independent_acceptance": "cd015849880412377027ae83f748c9ea7e626cf2f717fb45c6804047d27ed42b",
+    "independent_result": "4955ee2efcf9e100d06473797c210f62934de63867d8a2282e348f0a8ed83479",
+    "terminal_receipt": "804743227dfec7742a9b53ac0fc42935b49c6efe83f7961e9f5c549a52d3f9e9"
+  },
+  "corrected_model_training_or_evaluation_completed": false,
+  "historical_July_learned_claims": "QUARANTINED_NOT_REHABILITATED",
+  "full_raw_checks_reexecuted_for_publication": false,
+  "private_inputs_included": false
+}
