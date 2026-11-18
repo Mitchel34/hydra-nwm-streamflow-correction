@@ -1,13 +1,21 @@
 :root {
-  --page: #f6f8f9; --surface: #ffffff; --ink: #173547; --body: #253b46; --muted: #536570; --accent: #007d8a;
+  --page: #f6f8f9; --surface: #ffffff; --ink: #173547; --body: #253b46; --muted: #536570; --accent: #006b77;
   --rule: #d5dde0; --tint: #eaf2f4; --grid: #e1e0d9; --axis: #c3c2b7;
   --s-nwm: #898781; --s-persistence: #253b46; --s-simple: #b3a79a;
   --s-lstm: #2a78d6; --s-gru: #eb6834; --s-transformer: #1baf7a;
   --seed-1: #8ea7b5; --seed-2: #527485; --seed-3: #173547;
   color-scheme: light;
 }
+:root[data-theme="dark"] {
+  --page: #0f1518; --surface: #172026; --ink: #e8eef1; --body: #c9d4da; --muted: #93a4ad; --accent: #45b9c5;
+    --rule: #2a3840; --tint: #1d2a31; --grid: #2c373d; --axis: #44535b;
+    --s-nwm: #898781; --s-persistence: #e8eef1; --s-simple: #6f6a63;
+    --s-lstm: #3987e5; --s-gru: #d95926; --s-transformer: #199e70;
+    --seed-1: #dbe6eb; --seed-2: #93adba; --seed-3: #5f7c8c;
+    color-scheme: dark;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --page: #0f1518; --surface: #172026; --ink: #e8eef1; --body: #c9d4da; --muted: #93a4ad; --accent: #45b9c5;
     --rule: #2a3840; --tint: #1d2a31; --grid: #2c373d; --axis: #44535b;
     --s-nwm: #898781; --s-persistence: #e8eef1; --s-simple: #6f6a63;
@@ -95,3 +103,9 @@ footer { max-width: 1120px; margin: 0 auto; padding: 1rem 16px 2.5rem; color: va
 #tooltip strong { display: block; margin-bottom: .15rem; }
 #tooltip .row { display: flex; justify-content: space-between; gap: 1rem; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } #tooltip { transition: none; } }
+
+.report-theme { display:none; align-items:center; gap:.25rem; font-size:.8rem; margin-left:auto; color:var(--muted); }
+.js .report-theme { display:inline-flex; }
+.report-theme select { border:1px solid var(--rule); border-radius:6px; color:var(--ink); background:var(--surface); min-height:30px; }
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

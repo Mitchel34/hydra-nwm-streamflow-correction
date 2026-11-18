@@ -5,7 +5,7 @@
 --preview marks the page as a draft for the authors' review (a banner and a no-index tag).
 
 Reads evidence/evaluation-20261115/results.json and posthoc.json there and writes site/ (index.html,
-data.json, files/). Standard library only. No number on the site is typed by hand: charts, tables and the
+technical.html, data.json, files/). Standard library only. The scorecards, charts and the
 figures quoted in sentences are all computed here from those two files, whose hashes are recorded on the
 page. results.json is the frozen analysis; posthoc.json holds the descriptive numbers added after the
 independent review of the findings. The networks refit on the whole first year are the headline, as the
@@ -21,6 +21,8 @@ import math
 from pathlib import Path
 import shutil
 import sys
+
+from story import render as render_story
 
 HERE = Path(__file__).resolve().parent
 EVALUATION = "evidence/evaluation-20261115"
@@ -400,7 +402,8 @@ def table(headers, rows, caption=None):
     body = "".join("<tr>" + "".join(f"<th scope=\"row\">{esc(str(c))}</th>" if i == 0 else f"<td>{esc(str(c))}</td>" for i, c in enumerate(row)) + "</tr>"
                    for row in rows)
     cap = f"<caption>{esc(caption)}</caption>" if caption else ""
-    return f'<div class="table-wrap"><table>{cap}<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+    label = esc(caption or "Score table with columns " + ", ".join(str(h) for h in headers if h))
+    return f'<div class="table-wrap" tabindex="0" role="group" aria-label="{label}"><table>{cap}<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
 
 
 def listing(items):
@@ -481,7 +484,8 @@ def page(data, preview=False):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hydra: which data improve local National Water Model streamflow estimates</title>
+<title>HYDRA · Technical scorecards and reviewed findings</title>
+<script src="theme.js?v={version("theme.js")}"></script>
 <meta name="description" content="Neural residual corrections of National Water Model streamflow at three gauges, scored on a held-out year, with input-removal experiments. AGU 2026.">
 <link rel="stylesheet" href="styles.css?v={version("styles.css")}">{'<meta name="robots" content="noindex, nofollow">' if preview else ''}
 </head>
@@ -489,10 +493,11 @@ def page(data, preview=False):
 <a class="skip" href="#main">Skip to content</a>{'<p class="preview">Preview for the authors’ review. Not yet the public site.</p>' if preview else ''}
 <header class="top">
   <nav aria-label="Sections">
-    <a class="brand" href="#top">Hydra</a>
+    <a class="brand" href="./">← HYDRA study</a>
     <a href="#findings">Findings</a><a href="#nwm">Against NWM</a><a href="#simple">Against simple corrections</a>
     <a href="#inputs">Input removal</a><a href="#design">Refit and validation</a><a href="#verdicts">Verdicts</a><a href="#methods">Methods</a>
     <a href="#limits">Limits</a><a href="#files">Files</a>
+    <label class="report-theme">Theme <select data-theme-picker><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
   </nav>
 </header>
 <main id="main">
@@ -790,12 +795,13 @@ def main(campaign, preview=False):
     data = collect(campaign)
     site = HERE / "site"
     (site / "files").mkdir(parents=True, exist_ok=True)
-    (site / "index.html").write_text(page(data, preview))
+    (site / "index.html").write_text(render_story(data, preview))
+    (site / "technical.html").write_text(page(data, preview))
     (site / "data.json").write_text(json.dumps(data, indent=1, allow_nan=False) + "\n")
     shutil.copyfile(campaign / EVALUATION / "FINDINGS.md", site / "files" / "FINDINGS.md")
     shutil.copyfile(campaign / EVALUATION / "REPORT.md", site / "files" / "REPORT.md")
     shutil.copyfile(campaign / EVALUATION / "posthoc.json", site / "files" / "posthoc.json")
-    print(f"wrote {site} ({len(page(data, preview)):,} characters of HTML{', preview' if preview else ''})")
+    print(f"wrote {site} (study, technical scorecards and chart data)")
     print(json.dumps(data["quoted"], ensure_ascii=False))
 
 

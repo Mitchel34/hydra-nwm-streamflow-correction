@@ -66,14 +66,16 @@
     });
   }
   function buttons(target, options, current, label, onPick) {
-    target.textContent = "";
-    options.forEach(function (option) {
-      var button = document.createElement("button");
-      button.type = "button";
-      button.textContent = label(option);
+    options.forEach(function (option, index) {
+      var button = target.children[index];
+      if (!button) {
+        button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label(option);
+        button.addEventListener("click", function () { onPick(option); });
+        target.appendChild(button);
+      }
       button.setAttribute("aria-pressed", String(option === current));
-      button.addEventListener("click", function () { onPick(option); });
-      target.appendChild(button);
     });
   }
 

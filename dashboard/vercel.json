@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
-  "buildCommand": "node --check agu-hrrr/site/app.js",
+  "buildCommand": "node --check agu-hrrr/site/app.js && node --check agu-hrrr/site/theme.js && node --check agu-hrrr/site/story.js",
   "outputDirectory": "agu-hrrr/site",
   "cleanUrls": true,
   "redirects": [

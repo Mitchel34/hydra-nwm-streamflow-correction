@@ -17,7 +17,9 @@ The evaluation year had been scored in earlier work. The current campaign opened
 
 ## Website source and deployment
 
-The [site generator](dashboard/agu-hrrr/build_site.py), [browser charts](dashboard/agu-hrrr/site/app.js) and reviewed aggregate releases are in `dashboard/agu-hrrr/`. To inspect the committed site locally from the repository root, run:
+The homepage follows the study from Helene’s historical motivation through data preparation, architecture choices, the chronological split and results. Its Galax, Jefferson and Sugar Grove figures provide all 18 lead values in accessible tables. [Complete technical scorecards](dashboard/agu-hrrr/site/technical.html) · [Photography, affiliation marks and data sources](dashboard/agu-hrrr/SOURCES.md)
+
+The [site generator](dashboard/agu-hrrr/build_site.py), [narrative renderer](dashboard/agu-hrrr/story.py), [technical charts](dashboard/agu-hrrr/site/app.js) and reviewed aggregate releases are in `dashboard/agu-hrrr/`. To inspect the committed site locally from the repository root, run:
 
 ```sh
 python3 -m http.server 8000 --bind 127.0.0.1 --directory dashboard/agu-hrrr/site
