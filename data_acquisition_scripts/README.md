@@ -1,4 +1,6 @@
-# Data Acquisition Script Copies
+# Historical data acquisition scripts
+
+The quickstart below belongs to the earlier Watauga River project at Sugar Grove (USGS 03479000) and includes ERA5 weather. The AGU26 study used Jefferson, Galax and Sugar Grove, with HRRR as its sole weather source. Its documented acquisition path begins with existing gauge, NWM and basin-weather archives. [AGU26 source records and panel construction](../dashboard/agu-hrrr/SOURCES.md#archive-inputs-and-panel-construction)
 
 This folder contains direct copies of the core data acquisition modules from `src/data_collection/`.
 They are provided to make it easier to bootstrap a smaller repository focused on a limited set of
@@ -25,10 +27,9 @@ All collectors assume the root-level `requirements.txt` has been installed (nota
 - `usgs.py`
 - `land_use.py` (legacy NLCD helper, no longer part of the modeling pipeline)
 
-## Quickstart commands
+## Historical one-gauge quickstart
 
-Each collector exposes a CLI—these samples reproduce the Watauga (03479000) pulls documented in the
-main `README.md`:
+These archived examples show the collector commands for the Watauga workflow.
 
 ```bash
 # USGS hourly observations

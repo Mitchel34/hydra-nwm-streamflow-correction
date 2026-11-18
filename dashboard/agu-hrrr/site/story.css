@@ -67,6 +67,9 @@ h1 em{font:italic 400 1.1em/.75 Georgia,"Times New Roman",serif;letter-spacing:-
 .source-flow{margin:44px 0 22px}.source-flow article,.models article{padding-top:20px;border-top:1px solid var(--line)}
 .source-type,.role,.readout-label{color:var(--sub);letter-spacing:.08em}.source-flow h3{font-size:clamp(1.8rem,3vw,3rem);letter-spacing:-.055em;font-weight:530;margin:9px 0 13px}
 .source-flow p:not(.source-type),.models p,.timeline p,.team p{font-size:.91rem}.source-flow a,.team a{display:inline-block;margin-top:14px;font-size:.81rem;font-weight:600}
+.archive-path{max-width:78ch;margin:32px 0 23px}
+.archive-path h3{font-size:clamp(1.5rem,2.1vw,2.15rem);font-weight:560;letter-spacing:-.045em}
+.archive-path p{margin:11px 0;font-size:.96rem}
 details summary{color:var(--ink);cursor:pointer;font-size:.89rem;font-weight:620;padding:14px 0}
 details p{max-width:80ch;font-size:.9rem;margin:5px 0 13px}.method-detail{border-block:1px solid var(--line)}
 .model-intro{margin:clamp(48px,5.5vw,80px) 0 26px;max-width:760px}.model-intro h3,.timeline-head h3,.credit-intro h2{font-size:clamp(1.8rem,3.4vw,3.55rem);letter-spacing:-.055em;font-weight:550}

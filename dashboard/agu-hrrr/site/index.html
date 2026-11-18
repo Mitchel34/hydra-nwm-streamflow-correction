@@ -7,7 +7,7 @@
 <meta name="color-scheme" content="light dark">
 <script src="theme.js?v=671a075811"></script>
 <link rel="preload" href="media/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="story.css?v=15e01eeef6">
+<link rel="stylesheet" href="story.css?v=6cb73c09a9">
 <script defer src="story.js?v=cec1bd0fc6"></script>
 </head>
 <body>
@@ -46,7 +46,14 @@
     <article><p class="source-type">National forecast</p><h3>NWM</h3><p>Archived short-range streamflow supplies the starting forecast. The NWM issue time sets the clock, and its original hourly leads H1–H18 line up with their exact valid times.</p><a href="https://water.noaa.gov/about/nwm">NOAA National Water Model ↗</a></article>
     <article><p class="source-type">Basin weather &amp; soil</p><h3>HRRR</h3><p>One eligible HRRR forecast cycle supplies basin-average precipitation, temperature, humidity and snow. Its initial soil-moisture field adds catchment context.</p><a href="https://rapidrefresh.noaa.gov/hrrr/">NOAA High-Resolution Rapid Refresh ↗</a></article>
   </div>
-  <details class="method-detail"><summary>How archive records become training cases</summary><p>We matched each gauge with its NWM reach and its basin weather archive. We preserved issue times, native leads, units, source versions and quality masks. Weather comes from the latest admitted HRRR cycle at or before the NWM issue. Each forecast field must match the target hour. A missing lead stays missing.</p><p>Each site uses its own scales fitted on the training window. History, forecast support and observed targets stay inside their assigned interval. Paired models and input removals use the same eligible cases. Historical publication times and gauge revisions remain uncertain.</p></details>
+  <div class="archive-path" id="acquisition">
+    <h3>From the archives to a forecast panel</h3>
+    <p>We started with three USGS station CSVs, a BigQuery export of NWM short-range forecasts and a cache of basin averages from six-hourly HRRR forecast cycles. The source files retained gauge and reach identifiers, forecast clocks, quality flags and weather coverage.</p>
+    <p>Each row represents one gauge at one NWM issue hour. We joined its previous 168 hours of flow to the original NWM H1–H18 forecasts. We chose the latest eligible HRRR cycle issued at or before that NWM hour, matched its hourly weather by valid time and attached soil moisture from the start of the same cycle. Future gauge observations supplied the labels.</p>
+    <p>The three gauges and three periods produced nine panels with <strong>52,560 nominal gauge-hours</strong>, including incomplete and boundary rows. Historical forecast publication and the USGS revisions available at issue time remain unverified. The results describe the archived record.</p>
+    <a class="text-link" href="https://github.com/Mitchel34/hydra-nwm-streamflow-correction/blob/agu-hrrr-2026/dashboard/agu-hrrr/SOURCES.md#archive-inputs-and-panel-construction">Source files and construction records ↗</a>
+  </div>
+  <details class="method-detail"><summary>Which cases entered training and scoring?</summary><p>History, issued forecasts and verification had to stay inside their assigned period. Certain absent gauge-history slots could use an accepted earlier reading up to two hours old. Missing forecasts and missing or rejected labels kept their masks. Paired models and input removals used the same eligible cases.</p><p>Scales came from the training window at each gauge. For the final refits we rebuilt the first year as one continuous period, including NWM and HRRR source records at the former February split.</p></details>
   <div class="model-intro"><p class="kicker"><span class="dot"></span> Model design</p><h3>Three ways to learn a correction</h3><p>Every network adds a residual to NWM. The three families differ in how they represent history and the hours ahead. Each shares one training recipe across sites and learns separate weights at each gauge.</p></div>
   <div class="models">
     <article><h4>LSTM</h4><p>A recurrent encoder summarizes the past week. A decoder carries that memory from one forecast hour to the next.</p><small>AdamW LR 0.0003 · up to 200 epochs</small></article>

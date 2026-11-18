@@ -1,6 +1,6 @@
 # AGU HYDRA · Local correction of NWM streamflow forecasts
 
-This is the HRRR study accompanying AGU26 poster H51P-1404 by Mitchel Carson, Mohammad Ali Javidian and William P. Anderson Jr. We tested when locally trained neural networks improve National Water Model (NWM) forecasts and which inputs contribute to those gains. [Interactive results](https://www.hydramodel.ai/) · [Reviewed findings](dashboard/agu-hrrr/site/files/FINDINGS.md) · [Full scorecards](dashboard/agu-hrrr/site/files/REPORT.md) · [Chart data](dashboard/agu-hrrr/site/data.json)
+This is the HRRR study accompanying AGU26 poster H51P-1404 by Mitchel Carson, Mohammad Ali Javidian and William P. Anderson Jr. We tested when locally trained neural networks improve National Water Model (NWM) forecasts and which inputs contribute to those gains. [Interactive branch preview (Vercel sign-in)](https://hydra-nwm-streamflow-correc-git-1a5a58-mitchel-carsons-projects.vercel.app) · [Public findings](dashboard/agu-hrrr/site/files/FINDINGS.md) · [Full scorecards](dashboard/agu-hrrr/site/files/REPORT.md) · [Chart data](dashboard/agu-hrrr/site/data.json)
 
 ## Study design
 
@@ -8,6 +8,10 @@ This is the HRRR study accompanying AGU26 poster H51P-1404 by Mitchel Carson, Mo
 - **Training.** A sequence-to-sequence LSTM, GRU with convolutions, and temporal Transformer each predict a residual added to NWM. The study selected one recipe per architecture across the three sites and fitted the parameters separately at each gauge. The frozen AdamW learning rates and epoch caps were 0.0003 and 200 for the LSTM, 0.0001 and 100 for GRU+Conv, and 0.0003 and 100 for the Transformer.
 - **Input removal.** Three architectures × three gauges × three seeds (1729–1731) × nine input variants produced 243 development fits. Each full-input model has eight paired retrained variants removing soil moisture, all HRRR, gauge history, the NWM predictor, precipitation, temperature, humidity, or snow. Removing the NWM predictor retains NWM as the residual forecast anchor.
 - **Evaluation.** Development used May 2021–January 2022 for fitting and February–April 2022 for validation. Each combination was refitted on the full first year for its validation-selected epoch count. The 243 frozen refits were scored on eligible cases from May 2022–April 2023. Matching comparators were NWM, the latest eligible observed flow, a lead-specific mean-residual correction and a lead-specific affine regression.
+
+## Acquisition and panel construction
+
+The campaign joined three station discharge CSVs, a BigQuery-derived NWM short-range forecast export and archived six-hourly HRRR basin summaries. It assembled one row per gauge and nominal NWM issue hour, keeping the original leads, quality masks and observed verification separate. The construction receipt records nine site-by-period panels with 52,560 rows before eligibility filtering. The legacy one-gauge quickstart uses ERA5 and belongs to the previous study. [Current HRRR acquisition record](dashboard/agu-hrrr/SOURCES.md#archive-inputs-and-panel-construction) · [Historical quickstart](data_acquisition_scripts/README.md)
 
 ## What the forecasts showed
 
@@ -27,6 +31,6 @@ python3 -m http.server 8000 --bind 127.0.0.1 --directory dashboard/agu-hrrr/site
 
 Open `http://127.0.0.1:8000/`. Maintainers with the campaign checkout can regenerate the public tables and page using `python3 -B dashboard/agu-hrrr/build_site.py /path/to/hydra-campaign`. The production build serves the committed files and requires no research data or model execution.
 
-The existing Vercel project uses `dashboard` as its root directory. On this branch [vercel.json](dashboard/vercel.json) selects the static site, skips dependency installation, and validates the chart JavaScript before serving `agu-hrrr/site`. The poster’s GitHub QR opens this branch. `/study` is its readable shortcut on the deployed site.
+The existing Vercel project uses `dashboard` as its root directory. On this branch [vercel.json](dashboard/vercel.json) selects the static site, skips dependency installation, and validates the browser JavaScript before serving `agu-hrrr/site`. The poster’s GitHub QR opens this branch directly. The website QR opens the owner’s public production domain. The branch defines its own `/study` shortcut, which will reach the public domain when the owner promotes this site.
 
 The [prod branch](https://github.com/Mitchel34/hydra-nwm-streamflow-correction/tree/prod) preserves the previous dashboard and the separate historical research it presents.
