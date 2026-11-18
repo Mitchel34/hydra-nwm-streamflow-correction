@@ -32,6 +32,18 @@ These identifiers refer to the original project's local research records. The pu
 | Gauge-history treatment, `usgs_history_gap_policy.json` | `e650a60aefe9f922a95a7c17ae98eb2b07c55007e533821a0dfdab649280649f` |
 | First-year refit assembly, `refit_input_manifest.json` | `e91a44289fa86b428a6af5041faee772c6ca02c8f4f115e64d70afa07800a3f1` |
 
+## Full-input architecture diagrams
+
+The three diagrams trace the forward passes used in the 2026 study. The LSTM passes its gauge-history hidden and cell states to a recurrent forecast decoder. The GRU combines its history state with two width-three temporal convolutions over the issued forecast sequence. The temporal Transformer encodes 56 ordered three-hour patches, appends the projected initial soil state to memory and decodes 18 forecast queries. All three predict a signed residual for each native hour. The forecasting engine converts it to m³/s and adds it to the matching NWM value. The dashed arrows show this last addition. Network settings come from the executed campaign plans.
+
+| Frozen campaign record at commit `171a918964f101b5958bac286bcdbaf37a920fa5` | SHA-256 |
+| --- | --- |
+| Forward passes in `src/agu_hydra/models/architectures.py` | `d5cd1b1cf450121fb3e131fdc11516bb2945e20dcb7c37f4ab287e8bb44f2dac` |
+| Architecture specification in `docs/SELECTED_ARCHITECTURES.md` | `d4989b50c557454e00a87f74fcba4a359845dd887fbe9bf43bc97019893fb6f2` |
+| Family training recipes in `plans/frozen-recipes-20261110.json` | `216fe2fbf34247815956dbacb43dd196f27801bf346d6cb98f42b18dd2a66c2c` |
+| Development plan in `plans/ablate-20261110.json` | `9dcf0b4368c6b28d520a22d1cbf17c0b6f988b872bf7f550b335b959f2237cda` |
+| Refit plan in `plans/refit-20261114.json` | `3a4704d43ac441f82c677acae570079921d7248f686d90b25cee4683675f7dc7` |
+
 ## Photography
 
 - New River at Grandview, West Virginia. National Park Service photo by Dave Bieri. Used as regional scenery downstream of the study gauges. Locally resized WebP copies preserve the photograph and responsive crops are for display. [NPS source and photographer credit](https://www.nps.gov/places/grandview.htm) · [Agency image](https://www.nps.gov/common/uploads/cropped_image/primary/32A18302-B83B-5ED3-E6E4960F4647F044.jpg?width=2350&quality=90&mode=crop)

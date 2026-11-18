@@ -53,23 +53,113 @@
     });
   }
 
-  const hero = document.querySelector(".opening");
-  const picture = hero.querySelector(".hero-image");
-  const motion = matchMedia("(prefers-reduced-motion: no-preference) and (hover:hover) and (pointer:fine) and (min-width:651px)");
-  let visible = true, scheduled = false;
-  function paint() {
-    scheduled = false;
-    if (!motion.matches) { picture.style.removeProperty("--travel"); return; }
-    if (visible) picture.style.setProperty("--travel", Math.min(15, Math.max(0, -hero.getBoundingClientRect().top * .045)) + "px");
+  const tabs = Array.from(document.querySelectorAll(".model-tabs [role=tab]"));
+  const models = tabs.map(tab => document.getElementById(tab.getAttribute("aria-controls")));
+
+  function showModel(index) {
+    tabs.forEach((tab, i) => {
+      const selected = i === index;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      models[i].hidden = !selected;
+    });
+  }
+  function modelFromHash() {
+    return models.findIndex(model => "#" + model.id === location.hash);
+  }
+  tabs.forEach((tab, index) => {
+    models[index].setAttribute("role", "tabpanel");
+    models[index].setAttribute("aria-labelledby", tab.id);
+    models[index].tabIndex = 0;
+    tab.addEventListener("click", () => showModel(index));
+    tab.addEventListener("keydown", event => {
+      const targets = {
+        Home: 0, End: tabs.length - 1,
+        ArrowLeft: (index + tabs.length - 1) % tabs.length,
+        ArrowRight: (index + 1) % tabs.length
+      };
+      if (!Object.hasOwn(targets, event.key)) return;
+      event.preventDefault();
+      const next = targets[event.key];
+      showModel(next);
+      tabs[next].focus();
+    });
+  });
+  showModel(Math.max(0, modelFromHash()));
+  document.querySelector(".model-tabs").hidden = false;
+  window.addEventListener("hashchange", () => {
+    const index = modelFromHash();
+    if (index < 0) return;
+    showModel(index);
+    models[index].scrollIntoView({block: "start"});
+  });
+
+  const motion = matchMedia("screen and (prefers-reduced-motion: no-preference)");
+  const largePointerView = matchMedia("(hover: hover) and (pointer: fine) and (min-width: 651px)");
+  const scenes = Array.from(document.querySelectorAll("[data-parallax]"), element => ({
+    element, type: element.dataset.parallax,
+    layer: element.querySelector("[data-parallax-layer]") || element,
+    visible: true, current: null, target: 0
+  }));
+  let frame = 0, previousTime = 0, measure = true;
+  function draw(now) {
+    frame = 0;
+    const blend = previousTime ? 1 - Math.exp(-Math.min(now - previousTime, 80) / 65) : .23;
+    previousTime = now;
+    const active = scenes.filter(scene => scene.visible && (largePointerView.matches || scene.type === "section"));
+    if (measure) {
+      const viewport = document.documentElement.clientHeight;
+      for (const scene of active) {
+        const {top, height} = scene.element.getBoundingClientRect();
+        const progress = Math.max(-1, Math.min(1, (viewport - 2 * top - height) / (viewport + height)));
+        const bandTravel = largePointerView.matches ? 20 : 8;
+        const range = scene.type === "photo" ? Math.min(17, height * .05) : bandTravel;
+        scene.target = scene.type === "hero" ? Math.min(26, Math.max(0, -top * .065)) : range * progress;
+      }
+      measure = false;
+    }
+    let moving = false;
+    for (const scene of active) {
+      const offset = scene.current === null ? 0 : scene.target - scene.current;
+      const settling = Math.abs(offset) > .12;
+      scene.current = settling ? scene.current + offset * blend : scene.target;
+      scene.layer.style.setProperty("--travel", scene.current.toFixed(2) + "px");
+      if (scene.type === "section") scene.layer.style.setProperty("--glow-travel", (scene.current * .4).toFixed(2) + "px");
+      moving ||= settling;
+    }
+    if (moving) frame = requestAnimationFrame(draw);
+    else previousTime = 0;
   }
   function queue() {
-    if (!scheduled && visible && motion.matches) { scheduled = true; requestAnimationFrame(paint); }
+    measure = true;
+    if (!frame && motion.matches) frame = requestAnimationFrame(draw);
   }
-  if ("IntersectionObserver" in window) new IntersectionObserver(([entry]) => {
-    visible = entry.isIntersecting;
-    if (visible) queue();
-  }).observe(hero);
-  window.addEventListener("scroll", queue, {passive:true});
-  motion.addEventListener("change", paint);
-  paint();
+  function resetMotion() {
+    cancelAnimationFrame(frame);
+    frame = previousTime = 0;
+    for (const scene of scenes) {
+      scene.current = null;
+      scene.layer.style.removeProperty("--travel");
+      scene.layer.style.removeProperty("--glow-travel");
+    }
+    queue();
+  }
+  if ("IntersectionObserver" in window) {
+    const byElement = new Map(scenes.map(scene => [scene.element, scene]));
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        const scene = byElement.get(entry.target);
+        scene.visible = entry.isIntersecting;
+        if (!scene.visible) scene.current = null;
+      }
+      queue();
+    }, {rootMargin: "100px 0px"});
+    scenes.forEach(scene => observer.observe(scene.element));
+  }
+  window.addEventListener("scroll", queue, {passive: true});
+  window.addEventListener("resize", queue);
+  if ("ResizeObserver" in window) new ResizeObserver(queue).observe(document.querySelector("main"));
+  motion.addEventListener("change", resetMotion);
+  largePointerView.addEventListener("change", resetMotion);
+  queue();
 })();

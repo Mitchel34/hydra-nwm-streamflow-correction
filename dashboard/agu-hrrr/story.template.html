@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HYDRA · Local river forecasts in the Appalachians</title>
-<meta name="description" content="Explore when local corrections improve National Water Model forecasts at three Appalachian gauges, and what the HRRR input experiments reveal.">
+<meta name="description" content="Explore how three deep-learning models use local gauge readings and HRRR weather forecasts to correct National Water Model streamflow at three Appalachian gauges.">
 <meta name="color-scheme" content="light dark">@@ROBOTS@@
 <script src="theme.js?v=@@THEME_JS@@"></script>
 <link rel="preload" href="media/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
@@ -14,17 +14,17 @@
 <a class="skip" href="#main">Skip to research</a>
 <header class="mast"><div class="mast-inner">
   <a class="brand" href="./" aria-label="HYDRA home"><svg viewBox="0 0 33 30" aria-hidden="true"><path d="M1 9c6 0 8-6 13-6s6 5 11 5h7M1 16c6 0 8-6 13-6s6 5 11 5h7M1 23c6 0 8-6 13-6s6 5 11 5h7"/></svg>HYDRA</a>
-  <nav aria-label="Study navigation"><a href="#research">Study design</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a></nav>
-  <div class="nav-actions"><details class="mobile-nav"><summary>Menu</summary><div><a href="#research">Study design</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a><a href="#people">Study team</a></div></details><label class="appearance js-only"><span class="visually-hidden">Color theme</span><span aria-hidden="true">◐</span><select data-theme-picker><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+  <nav aria-label="Study navigation"><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a></nav>
+  <div class="nav-actions"><details class="mobile-nav"><summary>Menu</summary><div><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a><a href="#people">Study team</a><a class="menu-scorecards" href="technical.html">Scorecards ↗</a></div></details><label class="appearance js-only"><span class="visually-hidden">Color theme</span><span aria-hidden="true">◐</span><select data-theme-picker><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
   <a class="nav-data" href="technical.html">Scorecards <span aria-hidden="true">↗</span></a></div>
 </div></header>
 <main id="main">
-<section class="opening" aria-labelledby="hero-title">
-  <picture><source srcset="media/grandview-800.webp 800w, media/grandview-2048.webp 2048w" sizes="100vw"><img class="hero-image" src="media/grandview-2048.webp" width="2048" height="1152" alt="" fetchpriority="high"></picture>
+<section class="opening" data-parallax="hero" aria-labelledby="hero-title">
+  <picture><source srcset="media/grandview-800.webp 800w, media/grandview-2048.webp 2048w" sizes="100vw"><img class="hero-image" data-parallax-layer src="media/grandview-2048.webp" width="2048" height="1152" alt="" fetchpriority="high"></picture>
   <div class="shade"></div><div class="wrap hero-frame">
     <div class="hero-type"><p class="kicker hero-kicker"><span></span> AGU26 &nbsp;/&nbsp; HYDROLOGY</p>
     <h1 id="hero-title">A local forecast<br>for Appalachian<br><em>rivers.</em></h1>
-    <p class="hero-lead">Can recent gauge readings and HRRR weather forecasts improve the National Water Model’s next 18 hours of streamflow predictions?</p>
+    <p class="hero-lead">Can deep learning improve the National Water Model’s next 18 hourly streamflow predictions using a week of gauge readings and HRRR weather forecasts?</p>
     <div class="actions"><a class="cta" href="#evidence">Explore the results <span aria-hidden="true">↓</span></a><a class="hero-more" href="#research">Study design <span aria-hidden="true">↗</span></a></div></div>
     <p class="frame-credit">New River Gorge, West Virginia <span>Regional view · NPS / Dave Bieri</span></p>
   </div>
@@ -33,14 +33,18 @@
   <div class="signal-title"><h2 id="signals-heading">Squared error versus NWM</h2><p>Full-input refits · pooled over H1–H18 · range across three network families</p></div>
   <div class="signals"><div><h3>Jefferson <span>NC</span></h3><strong>@@JEFFERSON@@</strong><p>lower squared error</p></div><div><h3>Galax <span>VA</span></h3><strong>@@GALAX@@</strong><p>lower squared error</p></div><div><h3>Sugar Grove <span>NC</span></h3><strong><small>within</small> @@GROVE@@</strong><p>of the NWM benchmark</p></div></div>
 </div></section>
-<section class="chapter motivation" id="motivation"><div class="wrap two-col">
+<section class="chapter motivation" id="motivation">
+  <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
+  <div class="wrap two-col">
   <div class="chapter-text"><p class="kicker"><span class="dot"></span> The motivation</p><h2>Helene raised<br>the question.</h2>
-  <p>After Hurricane Helene hit the Appalachians in September 2024, we wanted to know how much local information could help a national river forecast.</p>
-  <p>The study tests an earlier period. We lacked matching native NWM forecast leads for Helene, so the storm contributes no cases to the results below.</p></div>
-  <figure class="storm"><img src="media/helene-1000.webp" loading="lazy" width="1000" height="561" alt="Curving cloud bands over the Gulf of Mexico below the curved horizon, photographed from the space station."><figcaption><strong>Helene from orbit</strong><span>25 September 2024 · NASA / ISS Expedition 72</span></figcaption></figure>
+  <p>Hurricane Helene’s flooding in the Appalachians in September 2024 motivated a question. Could machine learning use a river’s recent behavior to improve its national forecast?</p>
+  <p>We focused on May 2021 through April 2023, when archived National Water Model (NWM) forecasts were available with their original one- through 18-hour lead times. We used the first year to develop the models and the second to evaluate them.</p></div>
+  <figure class="storm" data-parallax="photo"><img data-parallax-layer src="media/helene-1000.webp" loading="lazy" width="1000" height="561" alt="Curving cloud bands over the Gulf of Mexico below the curved horizon, photographed from the space station."><figcaption><strong>Helene from orbit</strong><span>25 September 2024 · NASA / ISS Expedition 72</span></figcaption></figure>
 </div></section>
-<section class="chapter method-chapter" id="research"><div class="wrap">
-  <div class="chapter-intro"><p class="kicker"><span class="dot"></span> Research design</p><h2>Three gauges.<br>One forecast clock.</h2><p>At Jefferson, Galax and Sugar Grove, each model learns a local adjustment to the NWM flow for each of the next 18 hours. All comparisons use matching forecasts and accepted gauge observations.</p></div>
+<section class="chapter method-chapter" id="research">
+  <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
+  <div class="wrap">
+  <div class="chapter-intro"><p class="kicker"><span class="dot"></span> Research design</p><h2>Three gauges.<br>One forecast clock.</h2><p>We used supervised machine learning at Jefferson, Galax and Sugar Grove. At each gauge and forecast lead, the training target was the observed flow minus the matching NWM forecast. Each network learned from past examples of that error to correct new forecasts.</p></div>
   <div class="source-flow">
     <article><p class="source-type">Gauge observations</p><h3>USGS</h3><p>Seven days of hourly streamflow describe the river leading up to issue time. Future observations verify each forecast. Missing or rejected labels stay missing.</p><a href="https://waterdata.usgs.gov/">USGS Water Data ↗</a></article>
     <article><p class="source-type">National forecast</p><h3>NWM</h3><p>Archived short-range streamflow supplies the starting forecast. The NWM issue time sets the clock, and its original hourly leads H1–H18 line up with their exact valid times.</p><a href="https://water.noaa.gov/about/nwm">NOAA National Water Model ↗</a></article>
@@ -54,33 +58,40 @@
     <a class="text-link" href="https://github.com/Mitchel34/hydra-nwm-streamflow-correction/blob/agu-hrrr-2026/dashboard/agu-hrrr/SOURCES.md#archive-inputs-and-panel-construction">Source files and construction records ↗</a>
   </div>
   <details class="method-detail"><summary>Which cases entered training and scoring?</summary><p>History, issued forecasts and verification had to stay inside their assigned period. Certain absent gauge-history slots could use an accepted earlier reading up to two hours old. Missing forecasts and missing or rejected labels kept their masks. Paired models and input removals used the same eligible cases.</p><p>Scales came from the training window at each gauge. For the final refits we rebuilt the first year as one continuous period, including NWM and HRRR source records at the former February split.</p></details>
-  <div class="model-intro"><p class="kicker"><span class="dot"></span> Model design</p><h3>Three ways to learn a correction</h3><p>Every network adds a residual to NWM. The three families differ in how they represent history and the hours ahead. Each shares one training recipe across sites and learns separate weights at each gauge.</p></div>
-  <div class="models">
-    <article><h4>LSTM</h4><p>A recurrent encoder summarizes the past week. A decoder carries that memory from one forecast hour to the next.</p><small>AdamW LR 0.0003 · up to 200 epochs</small></article>
-    <article><h4>GRU + convolution</h4><p>A gated recurrent network carries streamflow history forward. Temporal convolutions combine information across neighboring forecast hours.</p><small>AdamW LR 0.0001 · up to 100 epochs</small></article>
-    <article><h4>Temporal Transformer</h4><p>Attention connects three-hour patches of gauge history with forecast-hour tokens and a separate soil-state token.</p><small>AdamW LR 0.0003 · up to 100 epochs</small></article>
-  </div>
+</div></section>
+<section class="chapter architecture-chapter" id="architectures" aria-labelledby="architectures-heading">
+  <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
+  <div class="wrap">
+  <div class="chapter-intro"><p class="kicker"><span class="dot"></span> Model architecture</p><h2 id="architectures-heading">Inside the residual<br>networks.</h2><p>The three networks see the same gauge history, soil moisture and issued flow and weather forecasts. Each learns how much streamflow to add to or subtract from NWM at each of the next 18 hours. Follow the arrows to compare how recurrence, convolution and attention learn that correction.</p></div>
+  @@MODEL_FIGURES@@
+  <a class="model-source text-link" href="https://github.com/Mitchel34/hydra-nwm-streamflow-correction/blob/agu-hrrr-2026/dashboard/agu-hrrr/SOURCES.md#full-input-architecture-diagrams">Model specifications and sources ↗</a>
   <div class="timeline-head"><h3>How we separated training and evaluation</h3></div>
   <ol class="timeline"><li><span>May 2021 – Jan 2022</span><h4>Fit</h4><p>Fit local weights and scales.</p></li><li><span>Feb – Apr 2022</span><h4>Validate</h4><p>Select the trained epoch. Refit on the full first year for that many epochs.</p></li><li><span>May 2022 – Apr 2023</span><h4>Evaluate</h4><p>Score frozen forecasts on matching cases. Earlier studies had used this year.</p></li></ol>
-  <p class="method-foot">Three gauges × three families × three seeds × nine input sets yielded 243 development models and 243 first-year refits. Checkpoints minimized pooled normalized squared error on validation with patience 10. Evaluation used RMSE, MAE, original Kling–Gupta efficiency, Nash–Sutcliffe efficiency and Pearson correlation. Signed and percent bias were secondary diagnostics.</p>
+  <p class="method-foot">Each family used one training recipe across sites and learned separate weights at each gauge. Three gauges × three families × three seeds × nine input sets yielded 243 development models and 243 first-year refits. Checkpoints minimized pooled normalized squared error on validation with patience 10. Evaluation used RMSE, MAE, original Kling–Gupta efficiency, Nash–Sutcliffe efficiency and Pearson correlation. Signed and percent bias were secondary diagnostics.</p>
 </div></section>
-<section class="chapter evidence" id="evidence"><div class="wrap">
-  <div class="chapter-intro"><p class="kicker"><span class="dot"></span> Results by forecast lead</p><h2>When does local<br>correction help?</h2><p>At Galax, all three networks improve on NWM from hour five onward by mean absolute error (MAE). A simpler forecast is hard to beat early in the day. Explore each gauge to see where that pattern holds.</p></div>
+<section class="chapter evidence" id="evidence">
+  <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
+  <div class="wrap">
+  <div class="chapter-intro"><p class="kicker"><span class="dot"></span> Results by forecast lead</p><h2>When does local<br>correction help?</h2><p>At Galax, all three deep-learning models reduced mean absolute error (MAE) relative to NWM from hours 5 through 18, averaged across three seeds. Through hour 7, simply repeating the latest gauge reading beat all three. Explore how the balance changes at the other gauges.</p></div>
   <div class="gauge-switch js-only" role="group" aria-label="Select a gauge">@@GAUGE_CONTROLS@@</div>
   <div class="figure-shell">@@GAUGES@@</div>
   <p class="figure-note">Each line compares MAE on the same observed cases. Positive values mean lower error than NWM. Network lines use the mean across three refit seeds. Persistence repeats the latest eligible gauge reading.</p>
   <a class="text-link" href="technical.html#nwm">Explore all five metrics, baselines and intervals <span aria-hidden="true">↗</span></a>
 </div></section>
-<section class="chapter findings" id="interpretation"><div class="wrap interpretation-layout">
-  <div class="chapter-text"><p class="kicker"><span class="dot"></span> Discussion</p><h2>What carries<br>the forecast?</h2><p>The answer depends on the gauge, the lead and which error matters.</p><a class="text-link" href="technical.html#inputs">Explore all input removals ↗</a></div>
+<section class="chapter findings" id="interpretation">
+  <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
+  <div class="wrap interpretation-layout">
+  <div class="chapter-text"><p class="kicker"><span class="dot"></span> Discussion</p><h2>What carries<br>the forecast?</h2><p>Where did deep learning earn its complexity? We compared each network with simple local corrections and retrained it with individual inputs removed. The answer depended on the gauge, forecast lead and metric.</p><a class="text-link" href="technical.html#inputs">Explore all input removals ↗</a></div>
   <div class="insights">
   <article><h3>Soil moisture mattered most where correction worked.</h3><p>Removing it and retraining raised pooled squared error by @@SOIL_J@@ at Jefferson and @@SOIL_G@@ at Galax. The experiments measure predictive contributions under a fixed recipe. They cannot isolate a physical cause.</p></article>
-  <article><h3>Simple forecasts set a demanding benchmark.</h3><p>At Jefferson, all three intervals comparing networks with a lead-specific linear regression included zero. At Galax, persistence retained a higher Kling–Gupta efficiency at every lead.</p></article>
+  <article><h3>Simple forecasts set a demanding benchmark.</h3><p>At Jefferson, all three uncertainty intervals for the difference in pooled squared error between a network and a lead-specific linear regression included zero. At Galax, persistence retained a higher Kling–Gupta efficiency at every lead.</p></article>
   <article><h3>Sugar Grove sets a limit on the claim.</h3><p>The three networks stayed within about 1% of NWM’s pooled squared error. At H1, the Transformer’s MAE was @@GROVE_MODEL_H1@@ m³/s, compared with @@GROVE_NWM_H1@@ m³/s for NWM. The evidence supports local gains at two sites and leaves their hydrologic cause open.</p></article>
   <article><h3>One November week shaped the year.</h3><p>The week starting 8 November 2022 supplied 45–67% of NWM squared error across the gauges. They share storms, so independent flood-event skill remains open. Training used NWM v2.1, while v2.2 supplied 85% of scored cells. The pointwise week-block intervals hold the three fitted seeds fixed and undercovered in calibration.</p></article>
   </div>
 </div></section>
-<section class="chapter credits" id="people"><div class="wrap">
+<section class="chapter credits" id="people">
+  <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
+  <div class="wrap">
   <div class="credit-intro"><div><p class="kicker"><span class="dot"></span> AGU26 · Poster H51P-1404</p><h2>The study team.</h2></div><a class="text-link" href="https://github.com/Mitchel34/hydra-nwm-streamflow-correction/tree/agu-hrrr-2026">Study on GitHub ↗</a></div>
   <div class="team">
     <div><div class="logo-plate"><img src="media/ut-austin.svg" alt="The University of Texas at Austin" loading="lazy" width="182" height="56"></div><p class="role">Author affiliation</p><h3>Mitchel Carson</h3><p>The University of Texas at Austin</p></div>
