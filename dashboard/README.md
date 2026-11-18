@@ -1,3 +1,5 @@
+This branch serves the AGU HRRR study from [agu-hrrr/site](agu-hrrr/site). See the [study and deployment notes](../README.md). The dashboard described below belongs to the earlier project on the prod branch.
+
 # Hydra Dashboard
 
 Interactive visualization dashboard for the Hydra Transformer NWM streamflow error correction thesis project.

@@ -1,171 +1,30 @@
-# Watauga Streamflow Residual Corrections
+# AGU HYDRA · Local correction of NWM streamflow forecasts
 
-This repository holds the data acquisition scripts, modeling code, and thesis documentation for correcting National Water Model (NWM) streamflow guidance with a hybrid GRU–transformer residual learner. The codebase is trimmed to the pieces you need to regenerate the dataset and models while keeping large artefacts on your own machine.
+This is the HRRR study accompanying AGU26 poster H51P-1404 by Mitchel Carson, Mohammad Ali Javidian and William P. Anderson Jr. We tested when locally trained neural networks improve National Water Model (NWM) forecasts and which inputs contribute to those gains. [Interactive results](https://www.hydramodel.ai/) · [Reviewed findings](dashboard/agu-hrrr/site/files/FINDINGS.md) · [Full scorecards](dashboard/agu-hrrr/site/files/REPORT.md) · [Chart data](dashboard/agu-hrrr/site/data.json)
 
-## Repository Layout
+## Study design
 
-- `config/` – site definitions used by every acquisition script (`master_study_sites.py`).
-- `configs/` – JSON split specifications (train/val/test, rolling windows).
-- `data_acquisition_scripts/` – standalone collectors for USGS, NWM, and ERA5 (+ helper tools).
-- `modeling/` – dataset builder, transformer training loop, plotting utilities, and HPO entry-points.
-- `scripts/` – orchestration helpers (`run_acquisition_pipeline.sh`, `run_site_pipeline.py`, `setup_local_storage.sh`).
-- `docs/` – thesis draft plus run logs such as `MODEL_RUN_2010_2020.md`.
-- `local_only/` – ignored directory that now houses archives, logs, figures, and other large artefacts.
-- `.gitignore`, `Makefile`, `requirements.txt` – repo hygiene, training shortcuts, and dependency lock.
+- **Gauges.** South Fork New River near Jefferson, NC (03161000), New River near Galax, VA (03164000), and Watauga River near Sugar Grove, NC (03479000). Forecast leads are native H1–H18. Labels are observed streamflow. HRRR supplies the weather forecasts and initial soil moisture.
+- **Training.** A sequence-to-sequence LSTM, GRU with convolutions, and temporal Transformer each predict a residual added to NWM. The study selected one recipe per architecture across the three sites and fitted the parameters separately at each gauge. The frozen AdamW learning rates and epoch caps were 0.0003 and 200 for the LSTM, 0.0001 and 100 for GRU+Conv, and 0.0003 and 100 for the Transformer.
+- **Input removal.** Three architectures × three gauges × three seeds (1729–1731) × nine input variants produced 243 development fits. Each full-input model has eight paired retrained variants removing soil moisture, all HRRR, gauge history, the NWM predictor, precipitation, temperature, humidity, or snow. Removing the NWM predictor retains NWM as the residual forecast anchor.
+- **Evaluation.** Development used May 2021–January 2022 for fitting and February–April 2022 for validation. Each combination was refitted on the full first year for its validation-selected epoch count. The 243 frozen refits were scored on eligible cases from May 2022–April 2023. Matching comparators were NWM, the latest eligible observed flow, a lead-specific mean-residual correction and a lead-specific affine regression.
 
-## Setup
+## What the forecasts showed
 
-1. **Python environment (3.11 recommended).**
+Averaged over seeds and pooled over 18 leads, the networks lowered squared error relative to NWM by 41–46% at Jefferson and 36–49% at Galax. At Galax all three had lower mean absolute error than NWM from H5 through H18. Persistence had lower mean absolute error than every network through H7. At Sugar Grove the networks stayed within about 1% of NWM in pooled squared error, and the Transformer had higher mean absolute error at every lead. At Jefferson, the intervals comparing each network with the affine regression included zero.
 
-   ```bash
-   python3.11 -m venv .venv
-   source .venv/bin/activate
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
+The evaluation year had been scored in earlier work. The current campaign opened it once after freezing its models and analysis. The gauges share storms, one November week accounted for 45–67% of NWM squared error, and the three model seeds are held fixed in the week-block intervals. The input-removal results describe predictive contributions for these fitted models. See the [evaluation report](dashboard/agu-hrrr/site/files/REPORT.md) and [post hoc aggregate diagnostics](dashboard/agu-hrrr/site/files/posthoc.json).
 
-2. **Initialize the local-only storage tree.** This keeps raw data, logs, checkpoints, and plots off of version control.
+## Website source and deployment
 
-   ```bash
-   bash scripts/ops/setup_local_storage.sh
-   ```
+The [site generator](dashboard/agu-hrrr/build_site.py), [browser charts](dashboard/agu-hrrr/site/app.js) and reviewed aggregate releases are in `dashboard/agu-hrrr/`. To inspect the committed site locally from the repository root, run:
 
-   The script creates `local_only/{archive,artifacts,results,figs,logs,experiments,data/...}` and you can symlink or copy any long-lived artefacts there.
-
-3. **Set `PYTHONPATH`** to the repo root (many scripts do this automatically, but exporting it avoids surprises):
-
-   ```bash
-   export PYTHONPATH="$(pwd)"
-   ```
-
-4. **(Optional but recommended) Install pre-commit hooks.** They format code with Black/Ruff and
-  catch trailing whitespace before you commit:
-
-  ```bash
-  pre-commit install
-  ```
-
-## Credentials & External Access
-
-| Source | Requirements |
-| --- | --- |
-| **ERA5 / ERA5-Land** | Create `~/.cdsapirc` with a Copernicus Climate Data Store API key. Example:<br>`url: https://cds.climate.copernicus.eu/api/v2`<br>`key: <uid>:<api-key>`<br>`verify: 1` |
-| **NWM Retrospective / Operational** | Public NOAA S3 buckets (`noaa-nwm-retrospective-3-0-pds`, `noaa-nwm-pds`) can be accessed anonymously. If you rely on a mirrored archive, set `NWM_ARCHIVE_BASE_URL` before running `scripts/acquisition/run_acquisition_pipeline.sh`. Optional AWS credentials (`AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc.) are only needed for private mirrors. |
-| **USGS NWIS** | HTTPS requests only; be mindful of rate limits. No API key required. |
-
-## Data Acquisition
-
-You can run each collector individually or use the orchestration script that sequences USGS → NWM → ERA5:
-
-```bash
-bash scripts/acquisition/run_acquisition_pipeline.sh
+```sh
+python3 -m http.server 8000 --bind 127.0.0.1 --directory dashboard/agu-hrrr/site
 ```
 
-Each script exposes CLI arguments so you can narrow the time range or site list. Common examples:
+Open `http://127.0.0.1:8000/`. Maintainers with the campaign checkout can regenerate the public tables and page using `python3 -B dashboard/agu-hrrr/build_site.py /path/to/hydra-campaign`. The production build serves the committed files and requires no research data or model execution.
 
-```bash
-# USGS hourly discharge
-python data_acquisition_scripts/usgs.py \
-  --sites 03479000 \
-  --start-date 2010-01-01 \
-  --end-date 2023-12-31 \
-  --out-dir data/raw/usgs
+The existing Vercel project uses `dashboard` as its root directory. On this branch [vercel.json](dashboard/vercel.json) selects the static site, skips dependency installation, and validates the chart JavaScript before serving `agu-hrrr/site`. The poster’s GitHub QR opens this branch. `/study` is its readable shortcut on the deployed site.
 
-# NWM v2 retrospective (2010–2020 coverage)
-python data_acquisition_scripts/nwm.py \
-  --mode retrospective \
-  --start-date 2010-01-01 \
-  --end-date 2020-12-31 \
-  --out-dir data/raw/nwm_v2 \
-  --max-workers 6 \
-  --resume
-
-# NWM v2 short-range forecasts with explicit lead times
-python data_acquisition_scripts/nwm.py \
-  --mode short_range_v2 \
-  --start-date 2020-01-01 \
-  --end-date 2020-01-03 \
-  --out-dir data/raw/nwm_v2_short_range \
-  --processed-dir data/processed/nwm_v2_short_range \
-  --smoke-test
-
-# ERA5 + ERA5-Land atmospheric forcings
-python data_acquisition_scripts/era5.py \
-  --sites 03479000 \
-  --years 2010 2023 \
-  --cadence hourly \
-  --out-dir data/raw/era5
-```
-
-Logs will land in `logs/` (ignored by Git); move any long-lived CSV/Parquet outputs into `local_only/` once you finish a run.
-
-The short-range workflow writes two artefacts for each run:
-
-- CSV snapshots of every downloaded file under `data/raw/nwm_v2_short_range/short_range/`.
-- Per-site Parquet panels under `data/processed/nwm_v2_short_range/<usgs_id>/` with columns<br>
-  `site_id`, `site_name`, `comid`, `init_time`, `lead_time_hours`, `valid_time`, `streamflow_cms`, `usgs_cms`, `nwm_version`, `nwm_product`, and the source file metadata. These panels are indexed by (`site_id`, `init_time`, `lead_time_hours`) so you can evaluate the 1–18 hour forecast horizon consistently.
-
-## Building Datasets & Training Models
-
-1. **Assemble the modeling parquet** (creates residual targets and splits):
-
-   ```bash
-   python modeling/dataset/build_training_dataset.py \
-     --raw-dir data/raw \
-     --out-dir data/clean/modeling \
-     --start 2010-01-01 \
-     --end 2020-12-31 \
-     --sites 03479000 04137500 09234500 \
-     --nwm-version v2
-   ```
-
-Static land-use descriptors from NLCD are no longer merged into the parquet; runs rely solely on dynamic NWM/ERA5 features plus the per-site regulation flag.
-
-2. **Train the hybrid transformer via `make`:**
-
-   ```bash
-   make train_full OUTPUT_PREFIX=watauga_hydra DATA_PATH=data/clean/modeling/hourly_training_03479000_20100101_20201231.parquet
-   ```
-
-   Results are written to `data/clean/modeling/watauga_hydra_eval.csv` plus accompanying NumPy arrays. Copy the evaluation bundle to `local_only/results/` after inspection.
-
-3. **Full site pipeline (data → train → plots → optional HPO):**
-
-   ```bash
-   python scripts/archive/run_site_pipeline.py 03479000 "Watauga River, NC" watauga_hydra \
-     --hpo-trials 10
-   ```
-
-   This command reuses the acquisition outputs already stored under `data/` and kicks off Optuna-based hyperparameter search when the baseline improvement is <5 %. To process the four study gauges sequentially, run `python scripts/archive/run_multi_site_pipeline.py` (Watauga Sugar Grove, Watauga Elizabethton, South Fork New River, New River Galax).
-
-### Rolling-Origin Cross-Validation
-
-To evaluate multiple chronological folds, point the transformer trainer at a JSON definition such as `configs/rolling_windows.json`:
-
-```bash
-python modeling/training/train_quick_transformer_torch.py \
-  --data data/clean/modeling/hourly_training_03479000_2010-01-01_2020-12-31.parquet \
-  --rolling-config configs/rolling_windows.json \
-  --output-prefix watauga_cv
-```
-
-Each fold inherits the same hyperparameters but uses its own train/validation/test windows, writing individual metrics plus a consolidated summary at `data/clean/modeling/watauga_cv_rolling_summary.json`.
-
-## Local-Only Storage Policy
-
-- Keep any of the following inside `local_only/`: `archive/` sweeps, `artifacts/` (figures, tables), `results/` evaluation CSVs, `figs/`, `logs/`, and Hydra/Optuna exports. Everything in that directory is ignored except `README.md` and `.gitkeep`.
-- If you need to share artefacts, publish them through an external channel (S3, figshare, etc.) and link to them from the docs instead of pushing binaries to Git.
-
-## Supporting Documents
-
-- `docs/MODEL_RUN_2010_2020.md` – refactored plan for the NWM v2-only training/validation/test cycle (2010–2020).
-- `docs/PROJECT_PLAN.md` – scope of thesis milestones and upcoming experiments.
-- `docs/wrr_draft.tex` – manuscript submitted to *Water Resources Research*.
-
-Use these notes as the single source of truth for regenerating data and models; any future experiments should add their own local-only bundle plus a short write-up under `docs/`.
-
-## Contributing
-
-Contributions are welcome! Please read `CONTRIBUTING.md` for environment setup, testing, and
-documentation expectations before opening a pull request. Running `pre-commit install` keeps your
-commits aligned with the automated formatting and linting rules.
+The [prod branch](https://github.com/Mitchel34/hydra-nwm-streamflow-correction/tree/prod) preserves the previous dashboard and the separate historical research it presents.
