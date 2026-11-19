@@ -128,6 +128,7 @@ function scorecard(q, history) {
     nse: "NSE",
     r: "Pearson correlation",
   }[metric];
+  const leadScores = [site + " · " + label + " scorecard", "technical.html?metric=" + metric + "#nwm"];
   const value = (name) =>
     Number.isFinite(values[name][lead - 1])
       ? values[name][lead - 1].toFixed(units ? 2 : 3) + units
@@ -144,14 +145,14 @@ function scorecard(q, history) {
         " for NWM and " +
         value("Persistence") +
         " for the latest-observation persistence baseline.",
-      scores,
+      leadScores,
     ],
     [
       data.architectures.map((name) => name + " " + value(name)).join(" · ") +
         ". These are three-seed mean scores on matching observations from the historical evaluation year. " +
         (units ? "Lower" : "Higher") +
         " values are better.",
-      scores,
+      leadScores,
     ],
   ]);
 }

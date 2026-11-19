@@ -119,15 +119,19 @@
     }
     return link;
   }
-  function links(node, sources) {
+  function links(node, sources, cited = []) {
     const list = make("ul"),
       seen = new Set();
     list.className = "chat-sources";
     for (const source of sources) {
-      if (seen.has(source.href)) continue;
-      const link = sourceLink(source);
+      const key = source.href + " " + source.title;
+      if (seen.has(key)) continue;
+      const index = cited.findIndex((s) => s.id === source.id);
+      const label =
+        index >= 0 && cited.length > 1 ? "[" + (index + 1) + "] " + source.title : source.title;
+      const link = sourceLink(source, label);
       if (!link) continue;
-      seen.add(source.href);
+      seen.add(key);
       const li = make("li");
       li.append(link);
       list.append(li);
@@ -147,6 +151,7 @@
   }
   function render(reply) {
     let item, text;
+    const cited = ["study", "ai"].includes(reply.mode) ? reply.sources : [];
     if (reply.mode === "study" || reply.mode === "ai") {
       const label = reply.mode === "study" ? "From the published study" : "HYDRA · AI response";
       item = turn(label, "ai-turn");
@@ -165,8 +170,16 @@
           }
         item.append(p);
       }
-      links(item, sources);
+      links(
+        item,
+        sources.filter((s) => !s.id.startsWith("W")),
+        cited,
+      );
       text = reply.paragraphs.map((p) => p.text).join(" ");
+    } else if (reply.mode === "publications") {
+      item = turn("USGS publication search", "source-turn");
+      text = "Searched publication titles for “" + reply.web.terms + "”.";
+      if (reply.web.status === "found") item.append(make("p", text));
     } else {
       const sources = reply.sources || [];
       const hasWeb = Boolean(reply.web?.sources?.length);
@@ -199,7 +212,7 @@
       block.className = "chat-web";
       block.append(make("strong", "External reading · USGS Publications Warehouse"));
       if (reply.web.status === "found") {
-        links(block, reply.web.sources);
+        links(block, reply.web.sources, cited);
         text += " USGS publication records: " + reply.web.sources.map((s) => s.title).join(", ");
       } else
         block.append(

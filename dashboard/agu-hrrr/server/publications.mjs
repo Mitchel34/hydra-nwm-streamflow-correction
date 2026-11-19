@@ -1,8 +1,18 @@
 const ignored = new Set(
-  "a an the me some on about what is are how do does can you i please could would usgs publication publications papers paper research studies study find look up search for external sources source internet web related to tell show any recent work by articles article from in using journal have there other literature evidence work that mentions mentioning published available".split(
+  "a an the me some of list give would lookup on about what is are how do does can you i please could would usgs publication publications papers paper research studies study find look up search for external sources source internet web related to tell show any recent work by articles article from in using journal have there other literature evidence work that mentions mentioning published available".split(
     " ",
   ),
 );
+
+export function requestsReadingList(question) {
+  return (
+    /^(?:(?:please|can you|could you|would you)\s+)*(?:find|list|give me|show(?: me)?|search(?: for)?|look up)\b/i.test(
+      question,
+    ) &&
+    /\b(?:publications?|papers?|studies|articles?|literature|reading)\b/i.test(question) &&
+    !/\b(?:explain|compare|evaluate|discuss|summari[sz]e|how|why)\b/i.test(question)
+  );
+}
 
 export function searchTerms(question) {
   const quoted = question.match(/["“]([^"”]{3,100})["”]/);

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { studyAnswer } from "./answers.mjs";
-import { publications } from "./publications.mjs";
+import { publications, requestsReadingList } from "./publications.mjs";
 import { LIMIT, allowance, browserSession, startSession, counterStore } from "./sessions.mjs";
 import { retrieve } from "./knowledge.mjs";
 
@@ -271,7 +271,9 @@ export function makeHandler({
           session: allowance(LIMIT, session),
         });
       const sessionInfo = allowance(used, session);
-      const web = input.search ? await publications(input.question, searchFetch, request.signal) : null;
+      const listing = requestsReadingList(input.question);
+      const useWeb = input.search || (listing && /\busgs\b/i.test(input.question));
+      const web = useWeb ? await publications(input.question, searchFetch, request.signal) : null;
       const respond = (data) =>
         json(200, {
           ...data,
@@ -284,6 +286,7 @@ export function makeHandler({
             },
           }),
         });
+      if (listing && web) return respond({ mode: "publications" });
       if (direct) return respond(direct);
       const sources = [...local, ...(web?.sources || [])];
       const fallback = (reason) =>

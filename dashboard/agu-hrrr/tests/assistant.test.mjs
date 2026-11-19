@@ -87,6 +87,13 @@ test("all 270 site/lead/primary metric lookups reflect the released scores; foll
     studyAnswer("What about Sugar Grove?", [{ role: "user", content: q }]).paragraphs[0].text,
     /Sugar Grove, 18 hours/,
   );
+  assert.equal(studyAnswer(q).sources[0].href, "technical.html?metric=mae#nwm");
+  assert.equal(
+    retrieve("How should I interpret KGE compared with MAE at Galax?").some(
+      (s) => s.title === "What the metrics measure",
+    ),
+    true,
+  );
   assert.equal(studyAnswer("Compare Galax and Jefferson MAE at H18"), undefined);
   assert.equal(studyAnswer("What was Galax MAE from H1 to H18?"), undefined);
   assert.equal(studyAnswer("What was Galax MAE at H19?"), undefined);
@@ -244,8 +251,26 @@ test("USGS lookup is opt-in, bounded, and source links come from USGS identifier
   const original = await (
     await h(post(cookie(issued()), "Find USGS publications on streamflow forecasting.", { search: true }))
   ).json();
-  assert.equal(original.mode, "sources");
+  assert.equal(original.mode, "publications");
   assert.equal(original.web.sources[0].title, "A & B (2001)");
+  const mixed = await (
+    await h(
+      post(cookie(issued()), 'How does the study compare with "streamflow forecasting" papers?', {
+        search: true,
+      }),
+    )
+  ).json();
+  assert.equal(mixed.mode, "sources");
+  assert.equal(mixed.web.status, "found");
+  const explicit = makeHandler({ env: {}, now: () => clock, send: forbidden, searchFetch: send });
+  assert.equal(
+    (
+      await (
+        await explicit(post(cookie(issued()), "List USGS publications on streamflow forecasting"))
+      ).json()
+    ).mode,
+    "publications",
+  );
   const direct = makeHandler({ env: {}, now: () => clock, send: forbidden, searchFetch: forbidden });
   const normal = await (await direct(post(cookie(issued())))).json();
   assert.equal(normal.mode, "study");

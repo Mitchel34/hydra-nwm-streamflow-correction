@@ -116,6 +116,8 @@ function chunks(text, limit = 2050) {
   return out;
 }
 const guideTopics = {
+  "What the metrics measure":
+    "interpret measure original kge mae variability bias Pearson ratio correlation paired_metrics",
   "Baselines and scoring":
     "persistence donor persistence_donor fit_coefficients forecast linear regression latest observation coefficients",
   "Where the correction is added": "residual added nwm reconstruct reconstruction validation_metrics",
@@ -226,7 +228,7 @@ function build() {
           "Native lead | " + columns.join(" | "),
           ...rows,
         ].join("\n"),
-        "technical.html#nwm",
+        "technical.html?metric=" + metric.key + "#nwm",
         site + " " + metric.key + " lead hour metric scorecard",
         title,
       );
@@ -373,6 +375,7 @@ export function retrieve(question, history = []) {
         doc.title === "Baselines and scoring"
       )
         value += 18;
+      if (metrics.length > 1 && doc.title === "What the metrics measure") value += 18;
       if (current.includes("checkpoint") && doc.head.has("checkpoint")) value += 7;
       return value > 0 ? [{ doc, value }] : [];
     })

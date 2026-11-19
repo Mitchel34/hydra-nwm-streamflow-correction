@@ -14,7 +14,9 @@
     { name: "Transformer", color: "--s-transformer", width: 2.5 }
   ];
   var SEED_COLORS = ["--seed-1", "--seed-2", "--seed-3"];
-  var state = { metric: data.metrics[0], simple: false, site: data.sites[0] };
+  var requestedMetric = new URLSearchParams(window.location.search).get("metric");
+  var initialMetric = data.metrics.find(function (metric) { return metric.key === requestedMetric; });
+  var state = { metric: initialMetric || data.metrics[0], simple: false, site: data.sites[0] };
 
   function el(name, attributes, parent) {
     var node = document.createElementNS(NS, name);
