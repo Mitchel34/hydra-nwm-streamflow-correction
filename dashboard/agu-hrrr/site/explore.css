@@ -211,16 +211,22 @@
 .flow-explorer .table-scroll {
   max-height: 390px;
 }
+.assistant-section {
+  background: var(--sand);
+  padding-bottom: clamp(40px, 5vw, 76px);
+}
 .ask-study {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: clamp(24px, 6vw, 85px);
-  margin-top: clamp(55px, 8vw, 110px);
   padding-top: clamp(35px, 5vw, 70px);
   border-top: 1px solid var(--line);
 }
 .ask-about h2 {
   font-size: clamp(2.45rem, 4vw, 4.3rem);
+  line-height: 1;
+  letter-spacing: -0.055em;
+  font-weight: 550;
 }
 .ask-library {
   margin-top: 18px;

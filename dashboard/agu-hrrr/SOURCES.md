@@ -56,7 +56,7 @@ The assistant searches the published findings, data-acquisition notes, three-see
 
 ## Photography
 
-- New River at Grandview, West Virginia. National Park Service photo by Dave Bieri. Used as regional scenery downstream of the study gauges. Locally resized WebP copies preserve the photograph and responsive crops are for display. [NPS source and photographer credit](https://www.nps.gov/places/grandview.htm) · [Agency image](https://www.nps.gov/common/uploads/cropped_image/primary/32A18302-B83B-5ED3-E6E4960F4647F044.jpg?width=2350&quality=90&mode=crop)
+- *New River Ice Flows* by Joe Giordano (Appalachian Encounters), 9 January 2010. The photographer’s record places the image in Boone, Watauga County, North Carolina. The caption uses “Boone area” because the precise river reach is unverified. The image provides geographic context. The two WebP versions preserve the full frame and are cropped by the page to fit each screen. [Photographer’s original and attribution](https://www.flickr.com/photos/28744394@N08/4264120476/) · [Creative Commons Attribution 2.0](https://creativecommons.org/licenses/by/2.0/)
 - Hurricane Helene, Gulf of Mexico, 25 September 2024. NASA, International Space Station Expedition 72, image ISS072-E-001649. Used only for the historical motivation. The evaluation ended in April 2023. Locally resized WebP. [NASA image record](https://images.nasa.gov/details/iss072e001649) · [Agency image](https://images-assets.nasa.gov/image/iss072e001649/iss072e001649~large.jpg)
 
 ## Author affiliations and meeting identification

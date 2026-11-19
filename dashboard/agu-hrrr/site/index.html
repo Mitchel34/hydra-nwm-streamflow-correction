@@ -7,8 +7,8 @@
 <meta name="color-scheme" content="light dark">
 <script src="theme.js?v=671a075811"></script>
 <link rel="preload" href="media/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="story.css?v=4d93a52105">
-<link rel="stylesheet" href="explore.css?v=f19ddd0396">
+<link rel="stylesheet" href="story.css?v=3ef0effc8c">
+<link rel="stylesheet" href="explore.css?v=18af534d34">
 <script defer src="story.js?v=a93f41a6b5"></script>
 <script defer src="vendor/chart.umd.min.js?v=4.6.1"></script>
 <script defer src="hydrograph.js?v=60b6790bf5"></script>
@@ -18,25 +18,41 @@
 <a class="skip" href="#main">Skip to research</a>
 <header class="mast"><div class="mast-inner">
   <a class="brand" href="./" aria-label="HYDRA home"><svg viewBox="0 0 33 30" aria-hidden="true"><path d="M1 9c6 0 8-6 13-6s6 5 11 5h7M1 16c6 0 8-6 13-6s6 5 11 5h7M1 23c6 0 8-6 13-6s6 5 11 5h7"/></svg>HYDRA</a>
-  <nav aria-label="Study navigation"><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a><a href="#ask">Ask the study</a></nav>
-  <div class="nav-actions"><details class="mobile-nav"><summary>Menu</summary><div><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a><a href="#hydrographs">Hydrographs</a><a href="#ask">Ask the study</a><a href="#people">Study team</a><a class="menu-scorecards" href="technical.html">Scorecards ↗</a></div></details><label class="appearance js-only"><span class="visually-hidden">Color theme</span><span aria-hidden="true">◐</span><select data-theme-picker><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+  <nav aria-label="Study navigation"><a href="#ask">Ask the study</a><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a></nav>
+  <div class="nav-actions"><details class="mobile-nav"><summary>Menu</summary><div><a href="#ask">Ask the study</a><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a><a href="#hydrographs">Hydrographs</a><a href="#people">Study team</a><a class="menu-scorecards" href="technical.html">Scorecards ↗</a></div></details><label class="appearance js-only"><span class="visually-hidden">Color theme</span><span aria-hidden="true">◐</span><select data-theme-picker><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
   <a class="nav-data" href="technical.html">Scorecards <span aria-hidden="true">↗</span></a></div>
 </div></header>
 <main id="main">
 <section class="opening" data-parallax="hero" aria-labelledby="hero-title">
-  <picture><source srcset="media/grandview-800.webp 800w, media/grandview-2048.webp 2048w" sizes="100vw"><img class="hero-image" data-parallax-layer src="media/grandview-2048.webp" width="2048" height="1152" alt="" fetchpriority="high"></picture>
+  <picture><source srcset="media/new-river-boone-640.webp 640w, media/new-river-boone-1024.webp 1024w" sizes="100vw"><img class="hero-image" data-parallax-layer src="media/new-river-boone-1024.webp" width="1024" height="681" alt="Ice stretches across the New River beneath wooded mountain ridges at dusk." fetchpriority="high"></picture>
   <div class="shade"></div><div class="wrap hero-frame">
     <div class="hero-type"><p class="kicker hero-kicker"><span></span> AGU26 &nbsp;/&nbsp; HYDROLOGY</p>
     <h1 id="hero-title">A local forecast<br>for Appalachian<br><em>rivers.</em></h1>
     <p class="hero-lead">Can deep learning improve the National Water Model’s next 18 hourly streamflow predictions using a week of gauge readings and HRRR weather forecasts?</p>
-    <div class="actions"><a class="cta" href="#evidence">Explore the results <span aria-hidden="true">↓</span></a><a class="hero-more" href="#research">Study design <span aria-hidden="true">↗</span></a></div></div>
-    <p class="frame-credit">New River Gorge, West Virginia <span>Regional view · NPS / Dave Bieri</span></p>
+    <div class="actions"><a class="cta" href="#evidence">Explore the results <span aria-hidden="true">↓</span></a><a class="hero-more" href="#ask">Ask the assistant <span aria-hidden="true">↓</span></a></div></div>
+    <a class="frame-credit" href="https://www.flickr.com/photos/28744394@N08/4264120476/">New River · Boone area, North Carolina <span>Joe Giordano · CC BY 2.0 ↗</span></a>
   </div>
 </section>
 <section class="signal" aria-labelledby="signals-heading"><div class="wrap">
   <div class="signal-title"><h2 id="signals-heading">Squared error versus NWM</h2><p>Full-input refits · pooled over H1–H18 · range across three network families</p></div>
   <div class="signals"><div><h3>Jefferson <span>NC</span></h3><strong>41–46%</strong><p>lower squared error</p></div><div><h3>Galax <span>VA</span></h3><strong>36–49%</strong><p>lower squared error</p></div><div><h3>Sugar Grove <span>NC</span></h3><strong><small>within</small> 1%</strong><p>of the NWM benchmark</p></div></div>
 </div></section>
+<section id="ask" class="assistant-section" aria-labelledby="ask-heading">
+  <div class="wrap ask-study">
+    <div class="ask-about"><p class="kicker"><span class="dot"></span> AI research assistant</p>
+    <h2 id="ask-heading">Ask about<br> the study.</h2>
+    <p>Explore a result, trace a model through the code, or ask how the team compared forecasts. Answers link back to the evidence.</p>
+    <div class="ask-library"><a href="files/FINDINGS.md">Reviewed findings ↗</a><a href="files/CODE_GUIDE.md">Implementation guide ↗</a><a href="technical.html#nwm">Forecast scorecards ↗</a></div></div>
+    <div class="chat-interactive" hidden>
+      <p class="chat-mode" aria-live="polite" hidden></p>
+      <div class="chat-starters" aria-label="Suggested research questions"><button type="button" data-question="Why did Sugar Grove gain less than Galax and Jefferson?">Why did Sugar Grove gain less?</button><button type="button" data-question="How does the GRU+Conv use the gauge history and NWM forecast?">How does GRU+Conv work?</button><button type="button" data-question="Which input removals changed performance most?">Which inputs helped most?</button></div>
+      <div class="chat-log" role="log" aria-label="Research conversation" aria-live="polite" aria-relevant="additions"></div>
+      <form><label for="study-question">Your question</label><textarea name="question" id="study-question" rows="2" maxlength="700" required placeholder="What did the soil-moisture ablation show at Galax?" aria-describedby="chat-privacy"></textarea>
+      <div class="chat-actions"><button class="ask-submit" type="submit">Ask the study <span aria-hidden="true">↗</span></button><button class="chat-clear" type="button" hidden>Clear conversation</button></div></form>
+      <p class="chat-state" role="status"></p><p id="chat-privacy">When AI is available, your question and recent turns go to OpenAI. Check the cited sources before using an answer.</p>
+    </div>
+  </div>
+</section>
 <section class="chapter motivation" id="motivation">
   <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
   <div class="wrap two-col">
@@ -118,7 +134,7 @@
   <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
   <div class="wrap">
   <div class="chapter-intro"><p class="kicker"><span class="dot"></span> Results by forecast lead</p><h2>When does local<br>correction help?</h2><p>At Galax, all three deep-learning models reduced mean absolute error (MAE) relative to NWM from hours 5 through 18, averaged across three seeds. Through hour 7, simply repeating the latest gauge reading beat all three. Explore how the balance changes at the other gauges.</p></div>
-  <div class="evidence-jump"><a href="#hydrographs">Observed hydrographs ↓</a><a href="#ask">Ask about a result ↓</a></div>
+  <div class="evidence-jump"><a href="#hydrographs">Observed hydrographs ↓</a><a href="#ask">Ask about a result ↑</a></div>
   <div class="gauge-switch js-only" role="group" aria-label="Select a gauge"><button type="button" aria-controls="panel-03164000" aria-pressed="true" data-pick="Galax">Galax</button><button type="button" aria-controls="panel-03161000" aria-pressed="false" data-pick="Jefferson">Jefferson</button><button type="button" aria-controls="panel-03479000" aria-pressed="false" data-pick="Sugar Grove">Sugar Grove</button></div>
   <div class="figure-shell"><article class="gauge-panel" id="panel-03164000" data-gauge="Galax" aria-labelledby="g-03164000">
       <div class="chart-header"><div><p class="kicker">New River · Virginia</p><h3 id="g-03164000">Galax</h3></div>
@@ -205,20 +221,6 @@
   <article><h3>One November week shaped the year.</h3><p>The week starting 8 November 2022 supplied 45–67% of NWM squared error across the gauges. They share storms, so independent flood-event skill remains open. Training used NWM v2.1, while v2.2 supplied 85% of scored cells. The pointwise week-block intervals hold the three fitted seeds fixed and undercovered in calibration.</p></article>
   </div>
 </div>
-  <section id="ask" class="wrap ask-study" aria-labelledby="ask-heading">
-    <div class="ask-about"><p class="kicker"><span class="dot"></span> Research assistant</p>
-    <h2 id="ask-heading">Ask about<br> the study.</h2>
-    <p>Explore a result, trace a model through the code, or ask how the team compared forecasts. Answers link back to the evidence.</p>
-    <div class="ask-library"><a href="files/FINDINGS.md">Reviewed findings ↗</a><a href="files/CODE_GUIDE.md">Implementation guide ↗</a><a href="technical.html#nwm">Forecast scorecards ↗</a></div></div>
-    <div class="chat-interactive" hidden>
-      <p class="chat-mode" aria-live="polite" hidden></p>
-      <div class="chat-starters" aria-label="Suggested research questions"><button type="button" data-question="Why did Sugar Grove gain less than Galax and Jefferson?">Why did Sugar Grove gain less?</button><button type="button" data-question="How does the GRU+Conv use the gauge history and NWM forecast?">How does GRU+Conv work?</button><button type="button" data-question="Which input removals changed performance most?">Which inputs helped most?</button></div>
-      <div class="chat-log" role="log" aria-label="Research conversation" aria-live="polite" aria-relevant="additions"></div>
-      <form><label for="study-question">Your question</label><textarea name="question" id="study-question" rows="2" maxlength="700" required placeholder="What did the soil-moisture ablation show at Galax?" aria-describedby="chat-privacy"></textarea>
-      <div class="chat-actions"><button class="ask-submit" type="submit">Ask the study <span aria-hidden="true">↗</span></button><button class="chat-clear" type="button" hidden>Clear conversation</button></div></form>
-      <p class="chat-state" role="status"></p><p id="chat-privacy">When AI is available, your question and recent turns go to OpenAI. Check the cited sources before using an answer.</p>
-    </div>
-  </section>
 </section>
 <section class="chapter credits" id="people">
   <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
@@ -230,7 +232,8 @@
     <div><div class="logo-plate"><img src="media/logo_agu.jpg" alt="American Geophysical Union" loading="lazy" width="195" height="39"></div><p class="role">Conference venue</p><h3>AGU Annual Meeting</h3><p>11 December 2026 · San Francisco</p><a href="https://www.agu.org/agu26">Meeting information ↗</a></div>
   </div>
   <details class="credit-detail"><summary>Photography, identity and scientific sources</summary>
-  <p>The Grandview regional photograph is by Dave Bieri, National Park Service. NASA’s Expedition 72 crew photographed Helene over the Gulf of Mexico. Both images were resized for the web. <a href="https://www.nps.gov/places/grandview.htm">NPS photograph</a> · <a href="https://images.nasa.gov/details/iss072e001649">NASA photograph</a></p>
+  <p>Joe Giordano (Appalachian Encounters) photographed the ice on the New River on 9 January 2010. His photo is geotagged in Boone, North Carolina. The site resizes the image and crops it to fit the screen. <a href="https://www.flickr.com/photos/28744394@N08/4264120476/">New River Ice Flows</a> · <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a></p>
+  <p>NASA’s Expedition 72 crew photographed Helene over the Gulf of Mexico. <a href="https://images.nasa.gov/details/iss072e001649">NASA photograph</a></p>
   <p>The universities’ public wordmarks identify author affiliations. The AGU mark identifies the meeting. <a href="https://umac.utexas.edu/brand-center/university-csu-wordmarks/">UT Austin brand guide</a> · <a href="https://uc.appstate.edu/brand-and-identity-guide/identity-guide/logos">App State logo guide</a> · <a href="https://commons.wikimedia.org/wiki/File:AGU_Logo.jpg">AGU mark, DGOvwCWp, unmodified</a> (<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>)</p>
   <p>All numerical figures come from the reviewed evaluation. The authors froze models and scoring before opening the year in this campaign. The same historical year had already served as validation or test in earlier work. <a href="files/FINDINGS.md">Reviewed findings</a> · <a href="files/REPORT.md">Technical report</a> · <a href="data.json">Public chart data</a></p></details>
 </div></section>
