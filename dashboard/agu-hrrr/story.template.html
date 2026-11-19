@@ -8,14 +8,18 @@
 <script src="theme.js?v=@@THEME_JS@@"></script>
 <link rel="preload" href="media/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="story.css?v=@@STORY_CSS@@">
+<link rel="stylesheet" href="explore.css?v=@@EXPLORE_CSS@@">
 <script defer src="story.js?v=@@STORY_JS@@"></script>
+<script defer src="vendor/chart.umd.min.js?v=4.6.1"></script>
+<script defer src="hydrograph.js?v=@@FLOW_JS@@"></script>
+<script defer src="research-chat.js?v=@@CHAT_JS@@"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to research</a>
 <header class="mast"><div class="mast-inner">
   <a class="brand" href="./" aria-label="HYDRA home"><svg viewBox="0 0 33 30" aria-hidden="true"><path d="M1 9c6 0 8-6 13-6s6 5 11 5h7M1 16c6 0 8-6 13-6s6 5 11 5h7M1 23c6 0 8-6 13-6s6 5 11 5h7"/></svg>HYDRA</a>
-  <nav aria-label="Study navigation"><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a></nav>
-  <div class="nav-actions"><details class="mobile-nav"><summary>Menu</summary><div><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a><a href="#people">Study team</a><a class="menu-scorecards" href="technical.html">Scorecards ↗</a></div></details><label class="appearance js-only"><span class="visually-hidden">Color theme</span><span aria-hidden="true">◐</span><select data-theme-picker><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+  <nav aria-label="Study navigation"><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a><a href="#ask">Ask the study</a></nav>
+  <div class="nav-actions"><details class="mobile-nav"><summary>Menu</summary><div><a href="#research">Study design</a><a href="#architectures">Models</a><a href="#evidence">Results</a><a href="#interpretation">Discussion</a><a href="#hydrographs">Hydrographs</a><a href="#ask">Ask the study</a><a href="#people">Study team</a><a class="menu-scorecards" href="technical.html">Scorecards ↗</a></div></details><label class="appearance js-only"><span class="visually-hidden">Color theme</span><span aria-hidden="true">◐</span><select data-theme-picker><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
   <a class="nav-data" href="technical.html">Scorecards <span aria-hidden="true">↗</span></a></div>
 </div></header>
 <main id="main">
@@ -73,10 +77,12 @@
   <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
   <div class="wrap">
   <div class="chapter-intro"><p class="kicker"><span class="dot"></span> Results by forecast lead</p><h2>When does local<br>correction help?</h2><p>At Galax, all three deep-learning models reduced mean absolute error (MAE) relative to NWM from hours 5 through 18, averaged across three seeds. Through hour 7, simply repeating the latest gauge reading beat all three. Explore how the balance changes at the other gauges.</p></div>
+  <div class="evidence-jump"><a href="#hydrographs">Observed hydrographs ↓</a><a href="#ask">Ask about a result ↓</a></div>
   <div class="gauge-switch js-only" role="group" aria-label="Select a gauge">@@GAUGE_CONTROLS@@</div>
   <div class="figure-shell">@@GAUGES@@</div>
-  <p class="figure-note">Each line compares MAE on the same observed cases. Positive values mean lower error than NWM. Network lines use the mean across three refit seeds. Persistence repeats the latest eligible gauge reading.</p>
+  <p class="figure-note">Hover, tap or use the slider to inspect a lead. Select a legend entry to show or hide its line. Each line compares MAE on the same observed cases. Positive values mean lower error than NWM. Network lines use the mean across three refit seeds. Persistence repeats the latest eligible gauge reading.</p>
   <a class="text-link" href="technical.html#nwm">Explore all five metrics, baselines and intervals <span aria-hidden="true">↗</span></a>
+  @@HYDROGRAPHS@@
 </div></section>
 <section class="chapter findings" id="interpretation">
   <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
@@ -88,7 +94,22 @@
   <article><h3>Sugar Grove sets a limit on the claim.</h3><p>The three networks stayed within about 1% of NWM’s pooled squared error. At H1, the Transformer’s MAE was @@GROVE_MODEL_H1@@ m³/s, compared with @@GROVE_NWM_H1@@ m³/s for NWM. The evidence supports local gains at two sites and leaves their hydrologic cause open.</p></article>
   <article><h3>One November week shaped the year.</h3><p>The week starting 8 November 2022 supplied 45–67% of NWM squared error across the gauges. They share storms, so independent flood-event skill remains open. Training used NWM v2.1, while v2.2 supplied 85% of scored cells. The pointwise week-block intervals hold the three fitted seeds fixed and undercovered in calibration.</p></article>
   </div>
-</div></section>
+</div>
+  <section id="ask" class="wrap ask-study" aria-labelledby="ask-heading">
+    <div class="ask-about"><p class="kicker"><span class="dot"></span> Research assistant</p>
+    <h2 id="ask-heading">Ask about<br> the study.</h2>
+    <p>Explore a result, trace a model through the code, or ask how the team compared forecasts. Answers link back to the evidence.</p>
+    <div class="ask-library"><a href="files/FINDINGS.md">Reviewed findings ↗</a><a href="files/CODE_GUIDE.md">Implementation guide ↗</a><a href="technical.html#nwm">Forecast scorecards ↗</a></div></div>
+    <div class="chat-interactive" hidden>
+      <p class="chat-mode" aria-live="polite" hidden></p>
+      <div class="chat-starters" aria-label="Suggested research questions"><button type="button" data-question="Why did Sugar Grove gain less than Galax and Jefferson?">Why did Sugar Grove gain less?</button><button type="button" data-question="How does the GRU+Conv use the gauge history and NWM forecast?">How does GRU+Conv work?</button><button type="button" data-question="Which input removals changed performance most?">Which inputs helped most?</button></div>
+      <div class="chat-log" role="log" aria-label="Research conversation" aria-live="polite" aria-relevant="additions"></div>
+      <form><label for="study-question">Your question</label><textarea name="question" id="study-question" rows="2" maxlength="700" required placeholder="What did the soil-moisture ablation show at Galax?" aria-describedby="chat-privacy"></textarea>
+      <div class="chat-actions"><button class="ask-submit" type="submit">Ask the study <span aria-hidden="true">↗</span></button><button class="chat-clear" type="button" hidden>Clear conversation</button></div></form>
+      <p class="chat-state" role="status"></p><p id="chat-privacy">When AI is available, your question and recent turns go to OpenAI. Check the cited sources before using an answer.</p>
+    </div>
+  </section>
+</section>
 <section class="chapter credits" id="people">
   <div class="chapter-divider" data-parallax="section" aria-hidden="true"></div>
   <div class="wrap">

@@ -1,0 +1,3 @@
+node_modules/
+site/vendor/
+__pycache__/

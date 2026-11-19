@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "",
-  "buildCommand": "node --check agu-hrrr/site/app.js && node --check agu-hrrr/site/theme.js && node --check agu-hrrr/site/story.js",
+  "installCommand": "npm ci --prefix agu-hrrr --ignore-scripts --no-audit --no-fund",
+  "buildCommand": "npm --prefix agu-hrrr run build && node --check agu-hrrr/site/app.js && node --check agu-hrrr/site/story.js && node --check agu-hrrr/site/theme.js && node --check agu-hrrr/site/hydrograph.js && node --check agu-hrrr/site/research-chat.js && npm --prefix agu-hrrr test",
   "outputDirectory": "agu-hrrr/site",
   "cleanUrls": true,
   "redirects": [
@@ -26,5 +26,11 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/research-chat.mjs": {
+      "maxDuration": 45,
+      "includeFiles": "agu-hrrr/{SOURCES.md,story.py,prepare_hydrographs.py,site/data.json,site/files/{FINDINGS.md,CODE_GUIDE.md,flow-weeks.json}}"
+    }
+  }
 }

@@ -5,6 +5,7 @@ from math import ceil, floor
 from pathlib import Path
 
 from model_figures import render_models
+from hydrograph import hydrograph
 
 HERE = Path(__file__).resolve().parent
 SERIES = [("LSTM", "lstm"), ("GRU+Conv", "gru"), ("Transformer", "transformer"), ("Persistence", "persist")]
@@ -78,7 +79,9 @@ def render(data, preview=False):
     sites = ("Galax", "Jefferson", "Sugar Grove")
     controls = "".join(f'<button type="button" aria-controls="panel-{IDS[site]}" aria-pressed="{str(i==0).lower()}" data-pick="{site}">{site}</button>'
                        for i,site in enumerate(sites))
-    values = {"MODEL_FIGURES": render_models(), "GAUGE_CONTROLS": controls, "GAUGES": "\n".join(gauge_panel(data, s) for s in sites),
+    values = {"HYDROGRAPHS": hydrograph(), "EXPLORE_CSS": digest("explore.css"),
+              "FLOW_JS": digest("hydrograph.js"), "CHAT_JS": digest("research-chat.js"),
+              "MODEL_FIGURES": render_models(), "GAUGE_CONTROLS": controls, "GAUGES": "\n".join(gauge_panel(data, s) for s in sites),
               "JEFFERSON": q["jefferson_reduction"], "GALAX": q["galax_reduction"], "GROVE": q["grove_within"],
               "GROVE_MODEL_H1": q["grove_mae"]["network"]["1h"], "GROVE_NWM_H1": q["grove_mae"]["nwm"]["1h"],
               "SOIL_J": q["soil_jefferson"], "SOIL_G": q["soil_galax"],

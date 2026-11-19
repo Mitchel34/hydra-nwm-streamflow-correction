@@ -496,7 +496,7 @@ def page(data, preview=False):
     <a class="brand" href="./">← HYDRA study</a>
     <a href="#findings">Findings</a><a href="#nwm">Against NWM</a><a href="#simple">Against simple corrections</a>
     <a href="#inputs">Input removal</a><a href="#design">Refit and validation</a><a href="#verdicts">Verdicts</a><a href="#methods">Methods</a>
-    <a href="#limits">Limits</a><a href="#files">Files</a>
+    <a href="#limits">Limits</a><a href="#files">Files</a><a href="index.html#hydrographs">Hydrographs</a><a href="index.html#ask">Ask the study</a>
     <label class="report-theme">Theme <select data-theme-picker><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
   </nav>
 </header>

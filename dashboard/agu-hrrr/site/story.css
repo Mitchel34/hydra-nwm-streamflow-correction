@@ -139,7 +139,7 @@ caption{text-align:left;padding:6px 0;color:var(--sub)}td,th{padding:7px 10px;te
 
 
 .mobile-nav,.mobile-nav a.menu-scorecards{display:none}
-@media(max-width:800px){
+@media(max-width:930px){
   .mast nav{display:none}.nav-actions{margin-left:auto}
   .mobile-nav{display:block;position:relative}
   .mobile-nav summary{font-size:.77rem;font-weight:600;min-height:36px;padding:8px 3px;list-style:none}

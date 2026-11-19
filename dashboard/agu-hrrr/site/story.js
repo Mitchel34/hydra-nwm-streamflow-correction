@@ -44,12 +44,35 @@
     }
     slider.addEventListener("input", selectLead);
     const plot = panel.querySelector(".lead-plot");
-    plot.addEventListener("click", event => {
-      const rect = plot.getBoundingClientRect();
-      const x = (event.clientX - rect.left) * plot.viewBox.baseVal.width / rect.width;
+    function inspectAt(event) {
+      const matrix = plot.getScreenCTM();
+      if (!matrix) return;
+      const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
       const first = positions.getItem(0).x, last = positions.getItem(rows.length - 1).x;
-      slider.value = 1 + Math.round(Math.max(0, Math.min(1, (x - first) / (last - first))) * (rows.length - 1));
+      const fraction = Math.max(0, Math.min(1, (point.x - first) / (last - first)));
+      slider.value = 1 + Math.round(fraction * (rows.length - 1));
       selectLead();
+    }
+    plot.addEventListener("pointermove", event => {
+      if (event.pointerType === "mouse" || event.pointerType === "pen") inspectAt(event);
+    });
+    plot.addEventListener("click", inspectAt);
+    const curves = [...plot.querySelectorAll("polyline[data-series]")];
+    const toggles = [...panel.querySelectorAll(".plot-legend > span")].map((item, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-pressed", "true");
+      button.setAttribute("aria-label", "Show " + curves[index].dataset.series + " line at " + panel.dataset.gauge);
+      button.append(...item.childNodes);
+      item.replaceWith(button);
+      button.addEventListener("click", () => {
+        const visible = button.getAttribute("aria-pressed") !== "true";
+        button.setAttribute("aria-pressed", String(visible));
+        curves[index].classList.toggle("curve-off", !visible);
+        const shown = toggles.filter(b => b.getAttribute("aria-pressed") === "true");
+        toggles.forEach(b => { b.disabled = shown.length === 1 && b === shown[0]; });
+      });
+      return button;
     });
   }
 

@@ -44,6 +44,16 @@ The three diagrams trace the forward passes used in the 2026 study. The LSTM pas
 | Development plan in `plans/ablate-20261110.json` | `9dcf0b4368c6b28d520a22d1cbf17c0b6f988b872bf7f550b335b959f2237cda` |
 | Refit plan in `plans/refit-20261114.json` | `3a4704d43ac441f82c677acae570079921d7248f686d90b25cee4683675f7dc7` |
 
+## Observed weekly hydrographs
+
+The time series use public USGS daily mean discharge (parameter 00060, statistic 00003) for Jefferson (03161000), Galax (03164000), and Sugar Grove (03479000). The window covers the 39 complete Monday–Sunday weeks fully inside the fitting period, May 3, 2021 through January 30, 2022. A point requires seven finite, nonnegative, approved and unflagged daily values. The calculation converts ft³/s to m³/s using 0.028316846592 and averages across station-local dates. Rejected or missing days leave a break in the line. Weekly averaging smooths short-lived peaks.
+
+The saved file contains weekly means, accepted-day counts, each bounded USGS query and a fingerprint of its source fields. It contains 34 complete weeks at Galax, 36 at Jefferson and 36 at Sugar Grove. The study's evaluation charts instead report forecast errors on matched cases by native lead H1–H18. [Public USGS daily-values collection](https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily) · [Weekly summaries](site/files/flow-weeks.json) · [Aggregation code](prepare_hydrographs.py)
+
+## Research assistant sources
+
+The assistant searches the published findings, data-acquisition notes, three-seed lead scorecards, baseline and input-removal tables, observed weekly summaries, verified notes on the frozen model implementation and selected public plotting code. Source links identify the evidence supplied for each answer. The historical research elsewhere in this repository is outside the search collection. [Implementation guide](site/files/CODE_GUIDE.md) · [Source retrieval](server/knowledge.mjs)
+
 ## Photography
 
 - New River at Grandview, West Virginia. National Park Service photo by Dave Bieri. Used as regional scenery downstream of the study gauges. Locally resized WebP copies preserve the photograph and responsive crops are for display. [NPS source and photographer credit](https://www.nps.gov/places/grandview.htm) · [Agency image](https://www.nps.gov/common/uploads/cropped_image/primary/32A18302-B83B-5ED3-E6E4960F4647F044.jpg?width=2350&quality=90&mode=crop)

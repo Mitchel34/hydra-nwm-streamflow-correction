@@ -1,0 +1,13 @@
+{
+  "name": "hydra-hrrr-study-site",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "node build_assets.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "dev": "node build_assets.mjs && node dev.mjs"
+  },
+  "dependencies": {
+    "chart.js": "4.6.1"
+  }
+}

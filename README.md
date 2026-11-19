@@ -23,14 +23,20 @@ The evaluation year had been scored in earlier work. The current campaign opened
 
 The homepage follows the study from Helene’s historical motivation through data preparation, architecture choices, the chronological split and results. Its Galax, Jefferson and Sugar Grove figures provide all 18 lead values in accessible tables. [Complete technical scorecards](dashboard/agu-hrrr/site/technical.html) · [Photography, affiliation marks and data sources](dashboard/agu-hrrr/SOURCES.md)
 
-The [site generator](dashboard/agu-hrrr/build_site.py), [narrative renderer](dashboard/agu-hrrr/story.py), [technical charts](dashboard/agu-hrrr/site/app.js) and reviewed aggregate releases are in `dashboard/agu-hrrr/`. To inspect the committed site locally from the repository root, run:
+The observed hydrograph compares weekly USGS discharge at the three gauges during the fitting period. The lead explorer shows how the forecast models performed against NWM. The research assistant retrieves from the reviewed findings, exact by-lead scorecards, public code, and a verified guide to the frozen implementation. [Implementation guide](dashboard/agu-hrrr/site/files/CODE_GUIDE.md) · [Chart data and processing](dashboard/agu-hrrr/SOURCES.md#observed-weekly-hydrographs)
+
+From the repository root, run the local website and its API on Node 22 or later.
 
 ```sh
-python3 -m http.server 8000 --bind 127.0.0.1 --directory dashboard/agu-hrrr/site
+cd dashboard/agu-hrrr
+npm ci --ignore-scripts
+npm run dev
 ```
 
-Open `http://127.0.0.1:8000/`. Maintainers with the campaign checkout can regenerate the public tables and page using `python3 -B dashboard/agu-hrrr/build_site.py /path/to/hydra-campaign`. The production build serves the committed files and requires no research data or model execution.
+Open `http://127.0.0.1:8000/`. With an empty `OPENAI_API_KEY`, the endpoint returns matching source excerpts labeled as source search. For generated answers, set a dedicated server-side `OPENAI_API_KEY` in the launching environment or in the Vercel project settings. Select Preview and the `agu-hrrr-2026` branch for coauthor review, then redeploy that branch after saving the variable. Set Production separately when promoting the study. The default model is `gpt-4.1-mini`; `OPENAI_MODEL` can select a Responses API model that supports strict structured output. [OpenAI Responses API](https://developers.openai.com/api/docs/guides/structured-outputs)
 
-The existing Vercel project uses `dashboard` as its root directory. On this branch [vercel.json](dashboard/vercel.json) selects the static site, skips dependency installation, and validates the browser JavaScript before serving `agu-hrrr/site`. The poster’s GitHub QR opens this branch directly. The website QR opens the owner’s public production domain. The branch defines its own `/study` shortcut, which will reach the public domain when the owner promotes this site.
+Only a visitor's question, at most two prior question/answer pairs, and up to five published excerpts go to OpenAI. Requests set `store: false`. The server resolves citation IDs against those excerpts. It uses a 28-second upstream timeout and a 560-token response limit. Within each warm server instance it allows six generated requests per client per minute, 32 total per minute, and four in flight. For production-wide usage controls, use OpenAI project limits or a Vercel Firewall rate-limit rule for POST `/api/research-chat`. The app keeps conversation history in page memory.
+
+The Vercel project root is `dashboard`. The branch installs only the locked chart package, stages its browser bundle and licenses, tests the assistant, serves `agu-hrrr/site`, and deploys `api/research-chat.mjs`. Static charts and tables are generated from published summaries. Maintainers with the campaign checkout can regenerate the scorecards using `python3 -B dashboard/agu-hrrr/build_site.py /path/to/hydra-campaign`. The poster’s GitHub QR opens this branch. Its website QR opens the production domain. [Site generator](dashboard/agu-hrrr/build_site.py) · [Vercel configuration](dashboard/vercel.json)
 
 The [prod branch](https://github.com/Mitchel34/hydra-nwm-streamflow-correction/tree/prod) preserves the previous dashboard and the separate historical research it presents.
