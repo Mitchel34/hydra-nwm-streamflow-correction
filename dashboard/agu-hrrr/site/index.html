@@ -8,11 +8,11 @@
 <script src="theme.js?v=671a075811"></script>
 <link rel="preload" href="media/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="story.css?v=3ef0effc8c">
-<link rel="stylesheet" href="explore.css?v=18af534d34">
+<link rel="stylesheet" href="explore.css?v=02cb1dd887">
 <script defer src="story.js?v=a93f41a6b5"></script>
 <script defer src="vendor/chart.umd.min.js?v=4.6.1"></script>
 <script defer src="hydrograph.js?v=60b6790bf5"></script>
-<script defer src="research-chat.js?v=578f8a1345"></script>
+<script defer src="research-chat.js?v=8f7a719e50"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to research</a>
@@ -44,12 +44,18 @@
     <p>Explore a result, trace a model through the code, or ask how the team compared forecasts. Answers link back to the evidence.</p>
     <div class="ask-library"><a href="files/FINDINGS.md">Reviewed findings ↗</a><a href="files/CODE_GUIDE.md">Implementation guide ↗</a><a href="technical.html#nwm">Forecast scorecards ↗</a></div></div>
     <div class="chat-interactive" hidden>
-      <p class="chat-mode" aria-live="polite" hidden></p>
-      <div class="chat-starters" aria-label="Suggested research questions"><button type="button" data-question="Why did Sugar Grove gain less than Galax and Jefferson?">Why did Sugar Grove gain less?</button><button type="button" data-question="How does the GRU+Conv use the gauge history and NWM forecast?">How does GRU+Conv work?</button><button type="button" data-question="Which input removals changed performance most?">Which inputs helped most?</button></div>
+      <div class="chat-meta"><p class="chat-mode">Findings &amp; code</p><span class="chat-count">25 questions per session</span></div>
+      <div class="chat-starters" aria-label="Suggested research questions">
+        <button type="button" data-question="What did you find, in plain English?">What did you find?</button>
+        <button type="button" data-question="Why did Sugar Grove gain less than Galax and Jefferson?">Why was Sugar Grove different?</button>
+        <button type="button" data-question="Where in the code is the correction added to NWM, and how do you select a checkpoint?">Show me the training code</button>
+        <button type="button" data-question="Which input removals changed performance most?">Which inputs helped most?</button>
+      </div>
       <div class="chat-log" role="log" aria-label="Research conversation" aria-live="polite" aria-relevant="additions"></div>
-      <form><label for="study-question">Your question</label><textarea name="question" id="study-question" rows="2" maxlength="700" required placeholder="What did the soil-moisture ablation show at Galax?" aria-describedby="chat-privacy"></textarea>
+      <form><label for="study-question">Your question</label><textarea name="question" id="study-question" rows="2" maxlength="700" required placeholder="What was the Galax mean absolute error at H18?" aria-describedby="chat-privacy"></textarea>
+      <label class="chat-search"><input type="checkbox" name="search"> Search USGS publications with this question</label>
       <div class="chat-actions"><button class="ask-submit" type="submit">Ask the study <span aria-hidden="true">↗</span></button><button class="chat-clear" type="button" hidden>Clear conversation</button></div></form>
-      <p class="chat-state" role="status"></p><p id="chat-privacy">When AI is available, your question and recent turns go to OpenAI. Check the cited sources before using an answer.</p>
+      <p class="chat-state" role="status"></p><p id="chat-privacy">Common questions use published study answers. Other questions and recent turns may go to OpenAI. Optional search sends topic words to USGS. Clearing the conversation keeps your 24-hour question count.</p>
     </div>
   </div>
 </section>

@@ -9,6 +9,7 @@
     "check": "node --check site/app.js && node --check site/theme.js && node --check site/story.js && node --check site/hydrograph.js && node --check site/research-chat.js && node --check ../api/research-chat.mjs"
   },
   "dependencies": {
+    "@vercel/blob": "2.9.0",
     "chart.js": "4.6.1"
   }
 }

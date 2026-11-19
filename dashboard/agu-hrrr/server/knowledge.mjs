@@ -62,6 +62,13 @@ const aliases = {
   gru: "gruconv",
   convolution: "gruconv",
   convolutions: "gruconv",
+  function: "implementation",
+  functions: "implementation",
+  implements: "implementation",
+  implemented: "implementation",
+  codebase: "implementation",
+  aggregated: "aggregate",
+  aggregation: "aggregate",
   coding: "implementation",
   code: "implementation",
   floods: "flood",
@@ -108,6 +115,20 @@ function chunks(text, limit = 2050) {
   if (part.trim()) out.push(part.trim());
   return out;
 }
+const guideTopics = {
+  "Baselines and scoring":
+    "persistence donor persistence_donor fit_coefficients forecast linear regression latest observation coefficients",
+  "Where the correction is added": "residual added nwm reconstruct reconstruction validation_metrics",
+  "Scaling, loss and checkpoint selection":
+    "checkpoint _fit_loop early stopping epochs normalized_residual_loss optimizer masks",
+  "Retrained input ablations": "project_inputs AblationModel neutralize masks ablations",
+  "How the website reads the study": "website generator dashboard charts",
+};
+let publishedData;
+export function studyData() {
+  publishedData ||= JSON.parse(read("site/data.json"));
+  return publishedData;
+}
 let corpus;
 function build() {
   const docs = [];
@@ -126,7 +147,8 @@ function build() {
       const body = section.slice(cut + 1).trim();
       if (!body) continue;
       const url = hrefFor(heading, i);
-      for (const chunk of chunks(body)) add(heading, chunk, url, tags, heading);
+      for (const chunk of chunks(body))
+        add(heading, chunk, url, tags + " " + (guideTopics[heading] || ""), heading);
     }
   }
   markdown(
@@ -164,7 +186,7 @@ function build() {
       "    weeks = []",
       "    if not any",
       "Code for the seven-day flow average",
-      "implementation hydrograph weekly average complete days missing observed",
+      "implementation hydrograph weekly summarize aggregation aggregate average complete days missing observed gauge",
     ],
   ]) {
     const lines = read(file).split("\n"),
@@ -178,7 +200,7 @@ function build() {
       tags,
     );
   }
-  const d = JSON.parse(read("site/data.json"));
+  const d = studyData();
   for (const site of d.sites) {
     for (const metric of d.metrics) {
       const values = d.by_lead[site][metric.key];
@@ -222,7 +244,9 @@ function build() {
         r.interval.map((n) => n.toFixed(2) + "%").join(", ") +
         "] | " +
         r.per_seed.map((n) => n.toFixed(2) + "%").join(", ") +
-        (r.cap_limited_seeds.length ? " | capped development twin: " + r.cap_limited_seeds.join(", ") : ""),
+        (r.cap_limited_seeds.length
+          ? " | capped development twin: " + r.cap_limited_seeds.join(", ")
+          : ""),
     );
     add(
       pair + " · retrained input removals",
@@ -233,7 +257,9 @@ function build() {
     const comparisons = { NWM: d.against_nwm[pair], ...d.against_simple[pair] };
     const changes = Object.entries(comparisons).map(
       ([name, row]) =>
-        name + " | " + [row.estimate, row.low, row.high].map((n) => (100 * n).toFixed(2) + "%").join(" | "),
+        name +
+        " | " +
+        [row.estimate, row.low, row.high].map((n) => (100 * n).toFixed(2) + "%").join(" | "),
     );
     add(
       pair + " · comparison with NWM and simple baselines",
@@ -299,9 +325,11 @@ export function retrieve(question, history = []) {
       return n + idf * (doc.head.has(t) ? 3 : 1);
     }, 0);
   const shortFollowup =
-    current.length <= 6 &&
-    (current.some((t) => frequencies.has(t)) ||
-      /^(and |why\b|what about|what else|explain|tell me more|how so|why is that)/i.test(question));
+    history.length > 0 &&
+    current.length <= 9 &&
+    /^(?:and\b|why[?!. ]*$|what about\b|how about\b|what else\b|explain that\b|tell me more\b|how so\b|why is that\b)|\b(?:there|that result|those models)\b/i.test(
+      question,
+    );
   const sites = ["galax", "jefferson", "sugargrove"].filter((site) => current.includes(site));
   const metricWords = ["mae", "rmse", "pearson", "kge", "nse"];
   const metrics = metricWords.filter(
@@ -317,18 +345,34 @@ export function retrieve(question, history = []) {
     /how (does|do|did)|under the hood|architecture|encode|decoder|implementation/i.test(question);
   const ranked = docs
     .flatMap((doc) => {
-      if (doc.title.includes(" / ") && sites.length && !sites.some((site) => doc.head.has(site))) return [];
-      if (doc.title.includes(" / ") && families.length && !families.some((f) => doc.head.has(f))) return [];
-      if (doc.head.has("scorecard") && sites.length && !sites.some((site) => doc.head.has(site))) return [];
+      if (doc.title.includes(" / ") && sites.length && !sites.some((site) => doc.head.has(site)))
+        return [];
+      if (doc.title.includes(" / ") && families.length && !families.some((f) => doc.head.has(f)))
+        return [];
+      if (doc.head.has("scorecard") && sites.length && !sites.some((site) => doc.head.has(site)))
+        return [];
       if (doc.head.has("scorecard") && metrics.length && !metrics.some((metric) => doc.head.has(metric)))
         return [];
       const local = score(current, doc);
       if (!local && !shortFollowup) return [];
-      let value = local + score(previous, doc) * (shortFollowup ? 0.62 : 0.12);
-      if (mechanism && doc.head.has("implementation") && families.some((f) => doc.head.has(f))) value += 23;
+      let value = local + (shortFollowup ? score(previous, doc) * 0.62 : 0);
+      if (mechanism && doc.head.has("implementation") && families.some((f) => doc.head.has(f)))
+        value += 23;
       if (metrics.length && doc.head.has("scorecard") && sites.length) value += 8;
       if (sites.length > 1 && sites.every((site) => doc.head.has(site)) && !metrics.length) value += 9;
       if (current.includes("removal") && doc.head.has("removal")) value += 7;
+      if (
+        current.includes("hydrograph") &&
+        current.some((t) => ["aggregate", "week", "implementation", "average"].includes(t)) &&
+        doc.title === "Code for the seven-day flow average"
+      )
+        value += 18;
+      if (
+        current.includes("implementation") &&
+        current.includes("persistence") &&
+        doc.title === "Baselines and scoring"
+      )
+        value += 18;
       if (current.includes("checkpoint") && doc.head.has("checkpoint")) value += 7;
       return value > 0 ? [{ doc, value }] : [];
     })

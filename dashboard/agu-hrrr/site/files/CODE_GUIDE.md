@@ -14,6 +14,10 @@ This guide follows the implementation frozen for the evaluated campaign at commi
 
 `TemporalTransformer` in `src/agu_hydra/models/architectures.py` (line 211) projects 56 ordered three-hour gauge patches into 64-dimensional embeddings. Two self-attention encoder layers build the history memory. The projected HRRR soil token joins the memory after encoding. The 18 known forecast queries use learned lead positions, self-attention across issued leads and cross-attention to the memory. The decoder also has two layers, with four heads in each attention module. A shared perceptron reads out a signed residual at each lead. The frozen family recipe uses AdamW at 0.0003 and a 100-epoch cap.
 
+## Where the correction is added
+
+The model predicts a signed discharge residual for each of 18 forecast leads. In the frozen campaign, `validation_metrics` in `src/agu_hydra/training/ablation_campaign.py` reads the matching NWM baseline and adds `baseline + residual` at line 346. The CPU scorer `score_validation` in `src/agu_hydra/training/cpu_campaign.py` uses the same sum at lines 241 and 246. An unready forecast stays missing. The scoring mask also requires an accepted observed discharge at that lead.
+
 ## Scaling, loss and checkpoint selection
 
 The target in physical units is observed discharge minus NWM at the same native valid hour. The network output is rescaled before addition to the matching NWM forecast. The engine checks site, chronological origin order, support and masks. Only forecast-ready cells with accepted observed verification contribute to pooled, site-normalized squared error. An empty batch contributes no optimizer update. AdamW uses chronological batches of 32, weight decay 0.0001 and gradient-norm clipping at 1. Development selected the earliest trained epoch achieving the lowest validation loss, with patience 10 and minimum improvement zero. Initialization was diagnostic. A first-year refit recomputed training statistics on that year and ran for its development twin's selected number of epochs.

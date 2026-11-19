@@ -2,17 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { makeHandler, limiter } from "../server/chat.mjs";
 import { retrieve } from "../server/knowledge.mjs";
+import { startSession } from "../server/sessions.mjs";
 import endpoint from "../../api/research-chat.mjs";
 
 const url = "https://study.example/api/research-chat";
+const cookie = startSession(new Request(url), Date.now()).cookie.split(";")[0];
 function post(data, headers = {}) {
   return new Request(url, {
     method: "POST",
-    headers: { "content-type": "application/json", origin: "https://study.example", ...headers },
+    headers: { "content-type": "application/json", origin: "https://study.example", cookie, ...headers },
     body: JSON.stringify(data),
   });
 }
-const ask = { question: "At Galax, what is the MAE at H18?" };
+const ask = { question: "What does the Galax MAE scorecard measure?" };
 const noProvider = () => {
   throw new Error("Unexpected provider request");
 };
@@ -55,7 +57,9 @@ test("retrieval distinguishes the three model implementations and the lead-speci
 });
 test("a missing credential returns actual ranked sources, never a generated answer", async () => {
   const handle = makeHandler({ env: {}, send: noProvider });
-  assert.deepEqual(await (await handle(new Request(url))).json(), { mode: "sources" });
+  const status = await handle(new Request(url));
+  assert.equal((await status.json()).session.remaining, 25);
+  assert.match(status.headers.get("set-cookie"), /HttpOnly/);
   const result = await (await handle(post(ask))).json();
   assert.equal(result.reason, "unconfigured");
   assert.equal(result.mode, "sources");

@@ -52,7 +52,7 @@ The saved file contains weekly means, accepted-day counts, each bounded USGS que
 
 ## Research assistant sources
 
-The assistant searches the published findings, data-acquisition notes, three-seed lead scorecards, baseline and input-removal tables, observed weekly summaries, verified notes on the frozen model implementation and selected public plotting code. Source links identify the evidence supplied for each answer. The historical research elsewhere in this repository is outside the search collection. [Implementation guide](site/files/CODE_GUIDE.md) · [Source retrieval](server/knowledge.mjs)
+The assistant searches the published findings, data-acquisition notes, three-seed lead scorecards, baseline and input-removal tables, observed weekly summaries, verified notes on the frozen model implementation and selected public plotting code. Source links identify the evidence supplied for each answer. Common questions draw from those same published findings and source-code descriptions. A site, lead and metric can be looked up directly in the released scorecards. Optional external reading searches USGS publication titles, separately from the study evidence. [USGS Publications Warehouse search](https://pubs.usgs.gov/documentation/web_service_documentation). The historical research elsewhere in this repository is outside the search collection. [Implementation guide](site/files/CODE_GUIDE.md) · [Source retrieval](server/knowledge.mjs)
 
 ## Photography
 
