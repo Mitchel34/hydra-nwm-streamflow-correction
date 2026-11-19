@@ -3,9 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build": "node build_assets.mjs",
+    "build": "node build_assets.mjs && npm run check && npm test",
     "test": "node --test tests/*.test.mjs",
-    "dev": "node build_assets.mjs && node dev.mjs"
+    "dev": "node build_assets.mjs && node dev.mjs",
+    "check": "node --check site/app.js && node --check site/theme.js && node --check site/story.js && node --check site/hydrograph.js && node --check site/research-chat.js && node --check ../api/research-chat.mjs"
   },
   "dependencies": {
     "chart.js": "4.6.1"
