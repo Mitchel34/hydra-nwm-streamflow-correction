@@ -89,6 +89,92 @@ const metricPatterns = {
   r: /pearson|correlation/,
 };
 const siteNames = ["Galax", "Jefferson", "Sugar Grove"];
+const metricLabels = {
+  mae: "mean absolute error",
+  rmse: "root mean squared error",
+  kge: "original KGE",
+  nse: "NSE",
+  r: "Pearson correlation",
+};
+const predictors = [
+  [
+    "Linear regression on NWM",
+    /\b(?:linear regression|affine(?: regression| correction)?)(?: on (?:the )?(?:nwm|national water model))?\b/g,
+  ],
+  ["Mean error per lead", /\b(?:mean[- ]residual(?: correction)?|mean error per lead)\b/g],
+  ["Persistence", /\b(?:persistence|latest[- ]observation baseline)\b/g],
+  ["NWM", /\b(?:nwm|national water model)\b/g],
+  ["LSTM", /\blstm\b/g],
+  ["GRU+Conv", /\bgru(?:\s*[+ -]\s*conv)?\b/g],
+  ["Transformer", /\btransformer\b/g],
+];
+const displayName = {
+  Persistence: "persistence",
+  Transformer: "the Transformer",
+  LSTM: "the LSTM",
+  "Mean error per lead": "the mean-residual correction",
+  "Linear regression on NWM": "the affine correction",
+};
+function namedPredictors(text) {
+  const models = [];
+  for (const [name, pattern] of predictors) {
+    const remaining = text.replace(pattern, " ");
+    if (remaining !== text) models.push(name);
+    text = remaining;
+  }
+  return models;
+}
+function metricCard(site, metric, lead) {
+  const data = studyData(),
+    values = data.by_lead[site][metric];
+  const units = ["rmse", "mae"].includes(metric) ? " m³/s" : "";
+  const raw = (name) => values[name][lead - 1];
+  return {
+    label: metricLabels[metric],
+    better: data.metrics.find((m) => m.key === metric).better,
+    raw,
+    value: (name) =>
+      Number.isFinite(raw(name)) ? raw(name).toFixed(units ? 2 : 3) + units : "unavailable",
+    source: [
+      site + " · " + metricLabels[metric] + " scorecard",
+      "technical.html?metric=" + metric + "#nwm",
+    ],
+  };
+}
+function comparePair(card, [a, b]) {
+  const name = (model) => displayName[model] || model;
+  if (![card.raw(a), card.raw(b)].every(Number.isFinite))
+    return (
+      card.label +
+      " was " +
+      card.value(a) +
+      " for " +
+      name(a) +
+      " and " +
+      card.value(b) +
+      " for " +
+      name(b) +
+      "."
+    );
+  if (card.value(a) === card.value(b))
+    return "both forecasts had " + card.label + " of " + card.value(a) + " at the displayed precision.";
+  const betterA = card.better === "lower" ? card.raw(a) < card.raw(b) : card.raw(a) > card.raw(b);
+  const [best, other] = betterA ? [a, b] : [b, a];
+  return (
+    name(best) +
+    " had " +
+    card.better +
+    " " +
+    card.label +
+    " (" +
+    card.value(best) +
+    ") than " +
+    name(other) +
+    " (" +
+    card.value(other) +
+    ")."
+  );
+}
 function dimensions(text) {
   const sites = siteNames.filter((s) => text.includes(s.toLowerCase()));
   const metrics = Object.keys(metricPatterns).filter((key) => metricPatterns[key].test(text));
@@ -97,11 +183,11 @@ function dimensions(text) {
       /\b(?:h\s*|(?:lead|hour)\s*[-#]?\s*)(\d{1,2})\b|\b(\d{1,2})[- ]?(?:h|hrs?|hours?)\b/g,
     ),
   ].map((m) => Number(m[1] || m[2]));
-  return { sites, metrics, leads: [...new Set(leads)] };
+  return { sites, metrics, leads: [...new Set(leads)], models: namedPredictors(text) };
 }
 function scorecard(q, history) {
   if (
-    /\b(why|ablat\w*|remov\w*|validat\w*|train\w*|seed|percent|interval|difference|bias|versus other sites|between|through|from)\b|\d\s*[-–]\s*(?:h\s*)?\d/.test(
+    /\b(why|ablat\w*|remov\w*|validat\w*|train\w*|seed|percent|interval|difference|bias|versus other sites|through|from)\b|\d\s*[-–]\s*(?:h\s*)?\d/.test(
       q,
     )
   )
@@ -110,49 +196,64 @@ function scorecard(q, history) {
   if (/^(?:and\b|what about\b|how about\b|at h\d|at hour\b)|\bthere\b/.test(q)) {
     for (const turn of history.filter((turn) => turn.role === "user").reverse()) {
       const older = dimensions(turn.content.toLowerCase());
-      for (const k of ["sites", "metrics", "leads"]) if (!d[k].length) d[k] = older[k];
+      for (const k of ["sites", "metrics", "leads", "models"]) if (!d[k].length) d[k] = older[k];
     }
   }
-  if (d.sites.length !== 1 || d.metrics.length !== 1 || d.leads.length !== 1) return;
+  if (d.sites.length !== 1 || !d.metrics.length || d.leads.length !== 1) return;
   const [site] = d.sites,
-    [metric] = d.metrics,
     [lead] = d.leads;
   if (lead < 1 || lead > 18) return;
-  const data = studyData();
-  const values = data.by_lead[site][metric];
-  const units = ["rmse", "mae"].includes(metric) ? " m³/s" : "";
-  const label = {
-    mae: "mean absolute error",
-    rmse: "root mean squared error",
-    kge: "original KGE",
-    nse: "NSE",
-    r: "Pearson correlation",
-  }[metric];
-  const leadScores = [site + " · " + label + " scorecard", "technical.html?metric=" + metric + "#nwm"];
-  const value = (name) =>
-    Number.isFinite(values[name][lead - 1])
-      ? values[name][lead - 1].toFixed(units ? 2 : 3) + units
-      : "unavailable";
+  const when = lead + (lead === 1 ? " hour ahead" : " hours ahead");
+  if (d.models.length === 2) {
+    const rows = d.metrics.map((metric, i) => {
+      const card = metricCard(site, metric, lead),
+        comparison = comparePair(card, d.models);
+      const text = i
+        ? comparison[0].toUpperCase() + comparison.slice(1)
+        : "At " + site + ", " + when + ", " + comparison;
+      return [text, card.source];
+    });
+    rows[rows.length - 1][0] +=
+      " Both forecasts were scored on matching observations in the historical evaluation year.";
+    return answer(rows);
+  }
+  if (d.metrics.length !== 1 || d.models.length > 2) return;
+  const card = metricCard(site, d.metrics[0], lead);
+  if (d.models.length === 1 && d.models[0] !== "NWM")
+    return answer([
+      [
+        "At " +
+          site +
+          ", " +
+          when +
+          ", " +
+          comparePair(card, [d.models[0], "NWM"]) +
+          " The scorecard uses matched observations.",
+        card.source,
+      ],
+    ]);
   return answer([
     [
       site +
         ", " +
-        lead +
-        (lead === 1 ? " hour ahead: " : " hours ahead: ") +
-        label +
+        when +
+        ": " +
+        card.label +
         " was " +
-        value("NWM") +
+        card.value("NWM") +
         " for NWM and " +
-        value("Persistence") +
+        card.value("Persistence") +
         " for the latest-observation persistence baseline.",
-      leadScores,
+      card.source,
     ],
     [
-      data.architectures.map((name) => name + " " + value(name)).join(" · ") +
+      studyData()
+        .architectures.map((name) => name + " " + card.value(name))
+        .join(" · ") +
         ". These are three-seed mean scores on matching observations from the historical evaluation year. " +
-        (units ? "Lower" : "Higher") +
+        (card.better === "lower" ? "Lower" : "Higher") +
         " values are better.",
-      leadScores,
+      card.source,
     ],
   ]);
 }

@@ -99,6 +99,29 @@ test("all 270 site/lead/primary metric lookups reflect the released scores; foll
   assert.equal(studyAnswer("What was Galax MAE at H19?"), undefined);
 });
 
+test("paired rankings use each metric’s published direction and keep KGE distinct from MAE", () => {
+  const q =
+    "At Galax, how do persistence and the Transformer compare at H18 on both MAE and original KGE?";
+  const pair = studyAnswer(q);
+  assert.equal(pair.mode, "study");
+  assert.match(
+    pair.paragraphs[0].text,
+    /the Transformer had lower mean absolute error \(9.24 m³.s\) than persistence \(10.34 m³.s\)/,
+  );
+  assert.match(
+    pair.paragraphs[1].text,
+    /Persistence had higher original KGE \(0.681\) than the Transformer \(0.625\)/,
+  );
+  assert.deepEqual(
+    pair.sources.map((s) => s.href),
+    ["technical.html?metric=mae#nwm", "technical.html?metric=kge#nwm"],
+  );
+  const next = studyAnswer("What about Jefferson?", [{ role: "user", content: q }]);
+  assert.match(next.paragraphs[0].text, /At Jefferson, 18 hours ahead/);
+  const simple = studyAnswer("Compare affine correction on NWM versus NWM at Galax H18 on MAE");
+  assert.match(simple.paragraphs[0].text, /NWM had lower mean absolute error.*affine correction/);
+});
+
 test("one 24-hour cookie budget spans workers, GET, reloads and direct answers; question 26 makes no external call", async () => {
   let time = clock,
     generated = 0,
